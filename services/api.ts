@@ -249,19 +249,22 @@ export const api = {
         console.log('API: Response status', response.status, response.statusText);
         console.log('API: Response content-type', response.headers.get('content-type'));
         
-        const contentType = response.headers.get('content-type');
-        if (contentType && !contentType.includes('application/json')) {
-          const text = await response.text();
-          console.error('API: Received non-JSON response:', text.substring(0, 200));
-          throw new Error('Server returned an invalid response. Please check if the API URL is correct.');
-        }
-        
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
           throw new Error(errorData.message || 'Invalid credentials');
         }
         
-        const data: LoginResponse = await response.json();
+        const text = await response.text();
+        console.log('API: Response text (first 200 chars):', text.substring(0, 200));
+        
+        let data: LoginResponse;
+        try {
+          data = JSON.parse(text);
+        } catch (parseError) {
+          console.error('API: Failed to parse JSON response:', parseError);
+          console.error('API: Response text:', text.substring(0, 500));
+          throw new Error('Server returned an invalid response. Please check if the API URL is correct.');
+        }
         console.log('API: Received login response', { success: data.success, code: data.code, err: data.err });
         
         if (data.success === "true" && data.err === 0) {
