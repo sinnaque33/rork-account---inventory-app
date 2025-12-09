@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { BookUser, FileText, LogOut, Package, Boxes } from 'lucide-react-native';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import colors from '@/constants/colors';
 
@@ -51,10 +51,15 @@ export default function DashboardScreen() {
         </View>
       </LinearGradient>
 
-      <View style={styles.content}>
-        <Text style={styles.sectionTitle}>Quick Access</Text>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+      >
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>Quick Access</Text>
 
-        <View style={styles.cardGrid}>
+          <View style={styles.cardGrid}>
           <Pressable
             style={({ pressed }) => [
               styles.card,
@@ -123,8 +128,9 @@ export default function DashboardScreen() {
               </View>
             </LinearGradient>
           </Pressable>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -167,8 +173,13 @@ const styles = StyleSheet.create({
   logoutButtonPressed: {
     opacity: 0.7,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  content: {
     paddingHorizontal: 24,
     paddingTop: 24,
   },
@@ -195,33 +206,33 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   cardGradient: {
-    padding: 24,
-    minHeight: 160,
+    padding: 20,
+    minHeight: 120,
     justifyContent: 'space-between',
   },
   cardIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700' as const,
     color: colors.text.primary,
     marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.text.primary,
     opacity: 0.8,
   },
   cardArrow: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
+    bottom: 20,
+    right: 20,
   },
 });

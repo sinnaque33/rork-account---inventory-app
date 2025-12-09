@@ -49,8 +49,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         setLoginMsg(data.msg);
         return;
       }
-      console.log('AuthContext: Setting user');
-      setUser({
+      console.log('AuthContext: Setting user and navigating to dashboard');
+      const newUser = {
         uid: data.uid,
         code: data.code,
         email: data.email,
@@ -60,8 +60,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         admin: data.admin,
         userName: variables.userCode,
         password: variables.password,
-      });
-      router.replace('/(app)/dashboard' as any);
+      };
+      setUser(newUser);
+      setTimeout(() => {
+        router.replace('/(app)/dashboard' as any);
+      }, 100);
     },
     onError: (error: Error) => {
       console.error('AuthContext: Login failed', error.message);

@@ -60,7 +60,8 @@ export default function KoliListesiScreen() {
     const query = searchQuery.toLowerCase();
     return items.filter(
       (item) =>
-        item.PackageNo.toLowerCase().includes(query)
+        item.PackageNo.toLowerCase().includes(query) ||
+        (item.Explanation && item.Explanation.toLowerCase().includes(query))
     );
   }, [allItems, searchQuery]);
 
@@ -106,6 +107,9 @@ export default function KoliListesiScreen() {
         </View>
         <View style={styles.itemInfo}>
           <Text style={styles.packageNo}>{item.PackageNo}</Text>
+          {item.Explanation ? (
+            <Text style={styles.explanation}>{item.Explanation}</Text>
+          ) : null}
         </View>
       </View>
     </View>
@@ -129,7 +133,7 @@ export default function KoliListesiScreen() {
           <Search size={20} color={colors.text.secondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by package number"
+            placeholder="Search packages"
             placeholderTextColor={colors.text.secondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -269,6 +273,11 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: colors.text.primary,
     lineHeight: 22,
+  },
+  explanation: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    lineHeight: 20,
   },
   footerLoader: {
     paddingVertical: 20,

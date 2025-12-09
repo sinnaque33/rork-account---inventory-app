@@ -178,6 +178,7 @@ export interface InventoryItem {
 
 export interface KoliItem {
   PackageNo: string;
+  Explanation: string;
 }
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
