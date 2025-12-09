@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Package } from 'lucide-react-native';
+import { AlertCircle, Package, ShoppingCart, Save } from 'lucide-react-native';
 import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
@@ -87,6 +88,20 @@ export default function KoliDetayScreen() {
           </View>
         }
       />
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.actionButton}>
+          <ShoppingCart size={24} color="#000" />
+          <Text style={styles.buttonText}>Add by{"\n"}Order Receipt</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton}>
+          <Package size={24} color="#000" />
+          <Text style={styles.buttonText}>Add by{"\n"}Item Barcode</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.saveButton}>
+          <Save size={24} color="#000" />
+          <Text style={styles.buttonText}>Save</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -184,5 +199,53 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: colors.button.primary,
     lineHeight: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    padding: 16,
+    paddingBottom: 32,
+    gap: 12,
+    backgroundColor: colors.background.dark,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.default,
+  },
+  actionButton: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  buttonText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#000',
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });
