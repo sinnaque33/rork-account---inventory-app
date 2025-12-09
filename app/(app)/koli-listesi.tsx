@@ -100,7 +100,15 @@ export default function KoliListesiScreen() {
   }
 
   const renderItem = ({ item }: { item: KoliItem }) => (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.7}
+      onPress={() => {
+        console.log('KoliListesiScreen: Item clicked with id', item.id);
+        router.push(`/(app)/koli-detay?id=${item.id}` as any);
+      }}
+      testID={`koli-item-${item.id}`}
+    >
       <View style={styles.cardHeader}>
         <View style={styles.iconContainer}>
           <Package size={24} color={colors.button.primary} />
@@ -112,7 +120,7 @@ export default function KoliListesiScreen() {
           ) : null}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderFooter = () => {

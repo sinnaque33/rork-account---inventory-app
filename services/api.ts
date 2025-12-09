@@ -177,8 +177,14 @@ export interface InventoryItem {
 }
 
 export interface KoliItem {
+  id: number;
   PackageNo: string;
   Explanation: string;
+}
+
+export interface KoliDetailItem {
+  InventoryName: string;
+  Quantity: number;
 }
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
@@ -423,6 +429,48 @@ export const api = {
       
       if (data.success !== "true") {
         throw new Error(data.msg || 'Failed to fetch koli listesi');
+      }
+      
+      return data.data?.items || [];
+    },
+    
+    async getDetail(userName: string, password: string, id: number): Promise<KoliDetailItem[]> {
+      console.log('API: Fetching koli detail for id', id);
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      
+      const requestBody: Record<string, string> = {
+        userName,
+        password,
+        licenseKey: "16016923",
+        data: `{ "name": "koliDetay", "id": "${id}"}`
+      };
+
+      if (companyCode) {
+        requestBody.companyCode = companyCode;
+      }
+      if (companyPassword) {
+        requestBody.companyPassword = companyPassword;
+      }
+      
+      const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      
+      const data: RunJsonServiceResponse<{ items: KoliDetailItem[] }> = await response.json();
+      console.log('API: Received koli detail response', { success: data.success, itemsCount: data.data?.items?.length });
+      
+      if (data.success !== "true") {
+        throw new Error(data.msg || 'Failed to fetch koli detail');
       }
       
       return data.data?.items || [];
