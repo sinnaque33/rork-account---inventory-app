@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Package, Search } from 'lucide-react-native';
+import { AlertCircle, Package, Search, Plus } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -8,13 +8,16 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { api, KoliItem } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import colors from '@/constants/colors';
 
 export default function KoliListesiScreen() {
+  const router = useRouter();
   const { credentials } = useAuth();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -155,6 +158,15 @@ export default function KoliListesiScreen() {
           </View>
         }
       />
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/(app)/create-koli')}
+        activeOpacity={0.8}
+        testID="create-koli-button"
+      >
+        <Plus size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -261,5 +273,21 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 20,
     alignItems: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.button.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
 });

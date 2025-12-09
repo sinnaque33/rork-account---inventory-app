@@ -39,6 +39,12 @@ export default function AppLayout() {
           title: 'Koli Listesi',
         }}
       />
+      <Stack.Screen
+        name="create-koli"
+        options={{
+          title: 'Create Koli',
+        }}
+      />
     </Stack>
   );
 }
