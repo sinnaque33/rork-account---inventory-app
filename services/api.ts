@@ -247,6 +247,14 @@ export const api = {
         });
         
         console.log('API: Response status', response.status, response.statusText);
+        console.log('API: Response content-type', response.headers.get('content-type'));
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('API: Received non-JSON response:', text.substring(0, 200));
+          throw new Error('Server returned an invalid response. Please check if the API URL is correct.');
+        }
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
