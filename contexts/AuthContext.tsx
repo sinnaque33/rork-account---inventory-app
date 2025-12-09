@@ -43,9 +43,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       return api.auth.login(credentials);
     },
     onSuccess: (data: LoginResponse, variables: LoginCredentials) => {
-      console.log('AuthContext: Login successful, checking err status');
-      if (data.err !== 0) {
-        console.log('AuthContext: Login failed with err:', data.err, 'msg:', data.msg);
+      console.log('AuthContext: Login successful, checking success and err status');
+      if (data.success !== "true" || data.err !== 0) {
+        console.log('AuthContext: Login failed with success:', data.success, 'err:', data.err, 'msg:', data.msg);
         setLoginMsg(data.msg);
         return;
       }
