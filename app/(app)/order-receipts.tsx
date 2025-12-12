@@ -50,9 +50,9 @@ export default function OrderReceiptsScreen() {
     const query = searchQuery.toLowerCase();
     return items.filter(
       (item) =>
-        (item.ReceiptNo && item.ReceiptNo.toLowerCase().includes(query)) ||
-        (item.CurrentAccountName && item.CurrentAccountName.toLowerCase().includes(query)) ||
-        (item.RecId && item.RecId.toString().includes(query))
+        (item.ReceiptNo?.toLowerCase().includes(query)) ||
+        (item.CurrentAccountName?.toLowerCase().includes(query)) ||
+        (item.RecId?.toString().includes(query))
     );
   }, [orderReceiptsQuery.data, searchQuery]);
 

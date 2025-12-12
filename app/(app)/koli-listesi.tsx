@@ -60,8 +60,8 @@ export default function KoliListesiScreen() {
     const query = searchQuery.toLowerCase();
     return items.filter(
       (item) =>
-        (item.PackageNo && item.PackageNo.toLowerCase().includes(query)) ||
-        (item.Explanation && item.Explanation.toLowerCase().includes(query))
+        (item.PackageNo?.toLowerCase().includes(query)) ||
+        (item.Explanation?.toLowerCase().includes(query))
     );
   }, [allItems, searchQuery]);
 
