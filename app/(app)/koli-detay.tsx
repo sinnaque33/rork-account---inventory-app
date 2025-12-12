@@ -1,13 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Package, ShoppingCart, Save } from 'lucide-react-native';
+import { AlertCircle, Package, ShoppingCart, Save, FileText } from 'lucide-react-native';
 import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from 'react-native';
+import { useState } from 'react';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { api, KoliDetailItem } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,9 +19,12 @@ import colors from '@/constants/colors';
 export default function KoliDetayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { credentials } = useAuth();
+  const [showBarcodeInput, setShowBarcodeInput] = useState(false);
+  const [barcodeType, setBarcodeType] = useState<'order' | 'item' | null>(null);
+  const [barcodeValue, setBarcodeValue] = useState('');
 
   const koliDetailQuery = useQuery({
-    queryKey: ['koli-detay', id, credentials?.userCode, credentials?.password],
+    queryKey: ['koli-detay', id, credentials],
     queryFn: async () => {
       console.log('KoliDetayScreen: Fetching koli detail for id', id);
       if (!credentials || !id) {
@@ -89,19 +95,90 @@ export default function KoliDetayScreen() {
         }
       />
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.actionButton}>
-          <ShoppingCart size={24} color="#000" />
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => {
+            setBarcodeType('order');
+            setShowBarcodeInput(true);
+          }}
+        >
+          <ShoppingCart size={20} color="#000" />
           <Text style={styles.buttonText}>Add by{"\n"}Order Receipt</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Package size={24} color="#000" />
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => {
+            setBarcodeType('item');
+            setShowBarcodeInput(true);
+          }}
+        >
+          <Package size={20} color="#000" />
           <Text style={styles.buttonText}>Add by{"\n"}Item Barcode</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton}>
+          <FileText size={20} color="#000" />
+          <Text style={styles.buttonText}>Create{"\n"}Receipt</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.saveButton}>
-          <Save size={24} color="#000" />
+          <Save size={20} color="#000" />
           <Text style={styles.buttonText}>Save</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={showBarcodeInput}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowBarcodeInput(false);
+          setBarcodeValue('');
+          setBarcodeType(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              {barcodeType === 'order' ? 'Order Receipt Barcode' : 'Item Barcode'}
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              Enter or scan barcode
+            </Text>
+            <TextInput
+              style={styles.barcodeInput}
+              placeholder="Enter barcode"
+              placeholderTextColor={colors.text.secondary}
+              value={barcodeValue}
+              onChangeText={setBarcodeValue}
+              autoFocus
+              keyboardType="default"
+              returnKeyType="done"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  setShowBarcodeInput(false);
+                  setBarcodeValue('');
+                  setBarcodeType(null);
+                }}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.modalSubmitButton}
+                onPress={() => {
+                  console.log(`${barcodeType === 'order' ? 'Order' : 'Item'} barcode:`, barcodeValue);
+                  setShowBarcodeInput(false);
+                  setBarcodeValue('');
+                  setBarcodeType(null);
+                }}
+              >
+                <Text style={styles.modalSubmitText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -212,11 +289,11 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -228,11 +305,11 @@ const styles = StyleSheet.create({
   saveButton: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -242,10 +319,76 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
   },
   buttonText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600' as const,
     color: '#000',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    gap: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  barcodeInput: {
+    backgroundColor: colors.background.dark,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: colors.text.primary,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: colors.background.dark,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: colors.text.primary,
+  },
+  modalSubmitButton: {
+    flex: 1,
+    backgroundColor: colors.button.primary,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+  },
+  modalSubmitText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
   },
 });
