@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Package, ShoppingCart, Save, FileText } from 'lucide-react-native';
+import { AlertCircle, Package, ShoppingCart, Save, FileText, Receipt } from 'lucide-react-native';
 import {
   ActivityIndicator,
   FlatList,
@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { useState } from 'react';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { api, KoliDetailItem } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import colors from '@/constants/colors';
@@ -19,8 +19,9 @@ import colors from '@/constants/colors';
 export default function KoliDetayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { credentials } = useAuth();
+  const router = useRouter();
   const [showBarcodeInput, setShowBarcodeInput] = useState(false);
-  const [barcodeType, setBarcodeType] = useState<'order' | 'item' | null>(null);
+  const [barcodeType, setBarcodeType] = useState<'item' | null>(null);
   const [barcodeValue, setBarcodeValue] = useState('');
 
   const koliDetailQuery = useQuery({
@@ -98,8 +99,8 @@ export default function KoliDetayScreen() {
         <TouchableOpacity 
           style={styles.actionButton}
           onPress={() => {
-            setBarcodeType('order');
-            setShowBarcodeInput(true);
+            console.log('KoliDetayScreen: Navigating to order-receipts');
+            router.push('/(app)/order-receipts');
           }}
         >
           <ShoppingCart size={20} color="#000" />
@@ -138,7 +139,7 @@ export default function KoliDetayScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              {barcodeType === 'order' ? 'Order Receipt Barcode' : 'Item Barcode'}
+              Item Barcode
             </Text>
             <Text style={styles.modalSubtitle}>
               Enter or scan barcode
@@ -167,7 +168,7 @@ export default function KoliDetayScreen() {
               <TouchableOpacity 
                 style={styles.modalSubmitButton}
                 onPress={() => {
-                  console.log(`${barcodeType === 'order' ? 'Order' : 'Item'} barcode:`, barcodeValue);
+                  console.log('Item barcode:', barcodeValue);
                   setShowBarcodeInput(false);
                   setBarcodeValue('');
                   setBarcodeType(null);

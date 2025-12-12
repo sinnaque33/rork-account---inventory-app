@@ -187,6 +187,12 @@ export interface KoliDetailItem {
   Quantity: number;
 }
 
+export interface OrderReceipt {
+  RecId: number;
+  ReceiptNo: string;
+  CurrentAccountName: string;
+}
+
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = await tokenStorage.getToken();
   const apiBaseUrl = await getApiBaseUrl();
@@ -471,6 +477,48 @@ export const api = {
       
       if (data.success !== "true") {
         throw new Error(data.msg || 'Failed to fetch koli detail');
+      }
+      
+      return data.data?.items || [];
+    },
+    
+    async getOrderReceipts(userName: string, password: string): Promise<OrderReceipt[]> {
+      console.log('API: Fetching order receipts');
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      
+      const requestBody: Record<string, string> = {
+        userName,
+        password,
+        licenseKey: "16016923",
+        data: '{ "name": "orderReceipts"}'
+      };
+
+      if (companyCode) {
+        requestBody.companyCode = companyCode;
+      }
+      if (companyPassword) {
+        requestBody.companyPassword = companyPassword;
+      }
+      
+      const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      
+      const data: RunJsonServiceResponse<{ items: OrderReceipt[] }> = await response.json();
+      console.log('API: Received order receipts response', { success: data.success, itemsCount: data.data?.items?.length });
+      
+      if (data.success !== "true") {
+        throw new Error(data.msg || 'Failed to fetch order receipts');
       }
       
       return data.data?.items || [];
