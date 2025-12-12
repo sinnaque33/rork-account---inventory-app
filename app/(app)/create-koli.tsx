@@ -10,12 +10,13 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import colors from '@/constants/colors';
 
-type BarcodeType = 'receipt' | 'item' | null;
+type BarcodeType = 'item' | null;
 
 export default function CreateKoliScreen() {
+  const router = useRouter();
   const [selectedType, setSelectedType] = useState<BarcodeType>(null);
   const [barcode, setBarcode] = useState<string>('');
 
@@ -51,11 +52,11 @@ export default function CreateKoliScreen() {
 
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
-                style={[
-                  styles.optionButton,
-                  selectedType === 'receipt' && styles.optionButtonSelected,
-                ]}
-                onPress={() => handleTypeSelect('receipt')}
+                style={styles.optionButton}
+                onPress={() => {
+                  console.log('CreateKoli: Navigating to order-receipts');
+                  router.push('/(app)/order-receipts');
+                }}
                 activeOpacity={0.7}
                 testID="receipt-barcode-button"
               >
@@ -64,7 +65,7 @@ export default function CreateKoliScreen() {
                 </View>
                 <Text style={styles.optionTitle}>Order Receipt</Text>
                 <Text style={styles.optionDescription}>
-                  Add item by scanning order receipt barcode
+                  Add item from order receipt list
                 </Text>
               </TouchableOpacity>
 
@@ -89,9 +90,7 @@ export default function CreateKoliScreen() {
 
             {selectedType && (
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>
-                  {selectedType === 'receipt' ? 'Order Receipt Barcode' : 'Item Barcode'}
-                </Text>
+                <Text style={styles.inputLabel}>Item Barcode</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Enter or scan barcode"
