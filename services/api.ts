@@ -130,13 +130,13 @@ export interface LoginResponse {
     name: string;
     email: string;
   };
-  privs: Array<{
+  privs: {
     logical: number;
     module: number;
     item: number;
     subitem: number;
     privilege: number;
-  }>;
+  }[];
   decs: {
     pDecs: string;
     fpDecs: string;
@@ -193,40 +193,6 @@ export interface OrderReceipt {
   CurrentAccountName: string;
 }
 
-async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-  const token = await tokenStorage.getToken();
-  const apiBaseUrl = await getApiBaseUrl();
-  
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (options.headers) {
-    Object.assign(headers, options.headers);
-  }
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  const response = await fetch(`${apiBaseUrl}${endpoint}`, {
-    ...options,
-    headers,
-  });
-  
-  if (!response.ok) {
-    if (response.status === 401) {
-      await tokenStorage.removeToken();
-      throw new Error('Unauthorized. Please login again.');
-    }
-    
-    const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(errorData.message || `Request failed with status ${response.status}`);
-  }
-  
-  return response.json();
-}
-
 export const api = {
   auth: {
     async login(credentials: LoginCredentials): Promise<LoginResponse> {
@@ -238,14 +204,9 @@ export const api = {
       const requestBody: Record<string, string> = {
         userName: credentials.userCode,
         password: credentials.password,
-        licenseKey: "16016923"
-      };
-
-      if (companyCode) {
-        requestBody.companyCode = companyCode;
-      }
-      if (companyPassword) {
-        requestBody.companyPassword = companyPassword;
+        licenseKey: "16016923",
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || ""
       };
       
       console.log('API: Making request to', `${apiBaseUrl}/Login`);
@@ -321,14 +282,9 @@ export const api = {
         userName,
         password,
         licenseKey: "16016923",
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
         data: '{ "name": "accounts"}'
-      };
-
-      if (companyCode) {
-        requestBody.companyCode = companyCode;
-      }
-      if (companyPassword) {
-        requestBody.companyPassword = companyPassword;
       };
       
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
@@ -365,15 +321,10 @@ export const api = {
         userName,
         password,
         licenseKey: "16016923",
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
         data: '{ "name": "inventory"}'
       };
-
-      if (companyCode) {
-        requestBody.companyCode = companyCode;
-      }
-      if (companyPassword) {
-        requestBody.companyPassword = companyPassword;
-      }
       
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
         method: 'POST',
@@ -409,15 +360,10 @@ export const api = {
         userName,
         password,
         licenseKey: "16016923",
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
         data: '{ "name": "koliListesi"}'
       };
-
-      if (companyCode) {
-        requestBody.companyCode = companyCode;
-      }
-      if (companyPassword) {
-        requestBody.companyPassword = companyPassword;
-      }
       
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
         method: 'POST',
@@ -451,15 +397,10 @@ export const api = {
         userName,
         password,
         licenseKey: "16016923",
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
         data: `{ "name": "koliDetay", "id": "${id}"}`
       };
-
-      if (companyCode) {
-        requestBody.companyCode = companyCode;
-      }
-      if (companyPassword) {
-        requestBody.companyPassword = companyPassword;
-      }
       
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
         method: 'POST',
@@ -493,15 +434,10 @@ export const api = {
         userName,
         password,
         licenseKey: "16016923",
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
         data: '{ "name": "orderReceipts"}'
       };
-
-      if (companyCode) {
-        requestBody.companyCode = companyCode;
-      }
-      if (companyPassword) {
-        requestBody.companyPassword = companyPassword;
-      }
       
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
         method: 'POST',
