@@ -259,7 +259,7 @@ export const api = {
           body: JSON.stringify(requestBody),
         });
         
-        console.log('API: Login Request', body);
+        console.log('API: Login Request', requestBody);
         console.log('API: Response status', response.status, response.statusText);
         console.log('API: Response content-type', response.headers.get('content-type'));
         
