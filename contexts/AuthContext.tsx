@@ -28,10 +28,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     queryKey: ['auth-check'],
     queryFn: async () => {
       console.log('AuthContext: Checking authentication status');
-      const isAuth = await api.auth.checkAuth();
-      return isAuth;
+      try {
+        const isAuth = await api.auth.checkAuth();
+        console.log('AuthContext: Auth check result:', isAuth);
+        return isAuth;
+      } catch (error) {
+        console.error('AuthContext: Auth check failed:', error);
+        return false;
+      }
     },
     retry: false,
+    staleTime: 0,
   });
 
   const loginMutation = useMutation({
@@ -87,12 +94,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const { mutateAsync: logoutMutateAsync } = logoutMutation;
 
   useEffect(() => {
+    console.log('AuthContext: Route protection effect running', {
+      isLoading: authCheckQuery.isLoading,
+      authData: authCheckQuery.data,
+      hasUser: !!user,
+      segments,
+    });
+
     if (authCheckQuery.isLoading) {
+      console.log('AuthContext: Still loading auth check, skipping route protection');
       return;
     }
 
     const inAuthGroup = segments[0] === '(app)';
-    const isAuthenticated = authCheckQuery.data === true && user !== null;
+    const isAuthenticated = user !== null;
 
     console.log('AuthContext: Route protection check', {
       isAuthenticated,
@@ -103,9 +118,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     if (!isAuthenticated && inAuthGroup) {
       console.log('AuthContext: Redirecting to login - not authenticated');
       router.replace('/login' as any);
-    } else if (isAuthenticated && !inAuthGroup && segments[0] !== 'login') {
-      console.log('AuthContext: Redirecting to dashboard - already authenticated');
-      router.replace('/(app)/dashboard' as any);
     }
   }, [authCheckQuery.isLoading, authCheckQuery.data, user, segments, router]);
 
