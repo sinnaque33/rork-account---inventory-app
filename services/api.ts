@@ -424,6 +424,52 @@ export const api = {
       return data.data?.items || [];
     },
     
+    async addItemByBarcode(userName: string, password: string, boxId: number, barcode: string): Promise<{ success: string; msg: string }> {
+      console.log('API: Adding item by barcode to box', boxId);
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      
+      const dataPayload = {
+        serviceType: 2,
+        boxId: boxId,
+        boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
+        inventoryBarcode: barcode,
+        quantity: 1,
+        orderConnection: 1,
+        orderShipmentControlType: 1
+      };
+      
+      const requestBody = {
+        data: JSON.stringify(dataPayload),
+        userName,
+        password,
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        licenseKey: "16016923",
+        logout: true
+      };
+      
+      console.log('API: AddItemByBarcode Request:', JSON.stringify(requestBody, null, 2));
+      
+      const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API: AddItemByBarcode Response:', JSON.stringify(data, null, 2));
+      
+      return { success: data.success, msg: data.msg };
+    },
+
     async getOrderReceipts(userName: string, password: string): Promise<OrderReceipt[]> {
       console.log('API: Fetching order receipts');
       const apiBaseUrl = await getApiBaseUrl();

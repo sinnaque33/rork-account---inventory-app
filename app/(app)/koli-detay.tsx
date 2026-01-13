@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Package, ShoppingCart, Save, FileText, Receipt } from 'lucide-react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, Package, ShoppingCart, Save, FileText } from 'lucide-react-native';
 import {
   ActivityIndicator,
   FlatList,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
   Modal,
+  Alert,
 } from 'react-native';
 import { useState } from 'react';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
@@ -20,9 +21,37 @@ export default function KoliDetayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { credentials } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showBarcodeInput, setShowBarcodeInput] = useState(false);
-  const [barcodeType, setBarcodeType] = useState<'item' | null>(null);
+  const [, setBarcodeType] = useState<'item' | null>(null);
   const [barcodeValue, setBarcodeValue] = useState('');
+
+  const addItemMutation = useMutation({
+    mutationFn: async (barcode: string) => {
+      if (!credentials || !id) {
+        throw new Error('No credentials or id available');
+      }
+      console.log('KoliDetayScreen: Adding item by barcode', barcode, 'to box', id);
+      return api.koliListesi.addItemByBarcode(
+        credentials.userCode,
+        credentials.password,
+        parseInt(id, 10),
+        barcode
+      );
+    },
+    onSuccess: (data) => {
+      console.log('KoliDetayScreen: Add item success', data);
+      Alert.alert('Result', data.msg || 'Operation completed');
+      setShowBarcodeInput(false);
+      setBarcodeValue('');
+      setBarcodeType(null);
+      queryClient.invalidateQueries({ queryKey: ['koli-detay', id] });
+    },
+    onError: (error) => {
+      console.error('KoliDetayScreen: Add item error', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to add item');
+    },
+  });
 
   const koliDetailQuery = useQuery({
     queryKey: ['koli-detay', id, credentials],
@@ -166,15 +195,21 @@ export default function KoliDetayScreen() {
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.modalSubmitButton}
+                style={[styles.modalSubmitButton, addItemMutation.isPending && styles.disabledButton]}
                 onPress={() => {
-                  console.log('Item barcode:', barcodeValue);
-                  setShowBarcodeInput(false);
-                  setBarcodeValue('');
-                  setBarcodeType(null);
+                  if (barcodeValue.trim()) {
+                    addItemMutation.mutate(barcodeValue.trim());
+                  } else {
+                    Alert.alert('Error', 'Please enter a barcode');
+                  }
                 }}
+                disabled={addItemMutation.isPending}
               >
-                <Text style={styles.modalSubmitText}>Submit</Text>
+                {addItemMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalSubmitText}>Submit</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -391,5 +426,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#fff',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });
