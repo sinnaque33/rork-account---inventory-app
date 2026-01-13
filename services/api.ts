@@ -431,7 +431,7 @@ export const api = {
       const companyPassword = await getCompanyPassword();
       
       const dataPayload = {
-        serviceType: 2,
+        serviceType: 11,
         boxId: boxId,
         boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
         inventoryBarcode: barcode,
