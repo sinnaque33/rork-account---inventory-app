@@ -470,7 +470,7 @@ export const api = {
       return { success: data.success, msg: data.msg };
     },
 
-    async createKoliFromOrderReceipt(userName: string, password: string, orderReceiptId: number): Promise<{ success: string; msg: string }> {
+    async createKoliFromOrderReceipt(userName: string, password: string, orderReceiptId: number): Promise<{ success: string; msg: string; boxId?: number }> {
       console.log('API: Creating koli from order receipt', orderReceiptId);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
@@ -514,7 +514,17 @@ export const api = {
       const data = await response.json();
       console.log('API: CreateKoliFromOrderReceipt Response:', JSON.stringify(data, null, 2));
       
-      return { success: data.success, msg: data.msg };
+      let boxId: number | undefined;
+      if (data.data) {
+        try {
+          const parsedData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+          boxId = parsedData.boxId || parsedData.id || parsedData.RecId;
+        } catch {
+          console.log('API: Could not parse boxId from response data');
+        }
+      }
+      
+      return { success: data.success, msg: data.msg, boxId };
     },
 
     async getOrderReceipts(userName: string, password: string): Promise<OrderReceipt[]> {

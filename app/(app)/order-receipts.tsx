@@ -51,7 +51,17 @@ export default function OrderReceiptsScreen() {
       console.log('OrderReceiptsScreen: Koli created successfully', data);
       Alert.alert('Result', data.msg || 'Operation completed');
       queryClient.invalidateQueries({ queryKey: ['koli-listesi'] });
-      router.back();
+      
+      if (data.boxId) {
+        console.log('OrderReceiptsScreen: Navigating to koli detail with boxId:', data.boxId);
+        router.replace({
+          pathname: '/(app)/koli-detay',
+          params: { id: data.boxId.toString() }
+        });
+      } else {
+        console.log('OrderReceiptsScreen: No boxId returned, going back');
+        router.back();
+      }
     },
     onError: (error) => {
       console.error('OrderReceiptsScreen: Failed to create koli', error);
