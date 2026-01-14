@@ -470,6 +470,53 @@ export const api = {
       return { success: data.success, msg: data.msg };
     },
 
+    async createKoliFromOrderReceipt(userName: string, password: string, orderReceiptId: number): Promise<{ success: string; msg: string }> {
+      console.log('API: Creating koli from order receipt', orderReceiptId);
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      
+      const dataPayload = {
+        serviceType: 1,
+        boxType: 2,
+        boxId: 0,
+        boxCode: "",
+        orderReceiptId: orderReceiptId,
+        boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
+        orderConnection: 1,
+        orderShipmentControlType: 2
+      };
+      
+      const requestBody = {
+        data: JSON.stringify(dataPayload),
+        userName,
+        password,
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        licenseKey: "16016923",
+        logout: true
+      };
+      
+      console.log('API: CreateKoliFromOrderReceipt Request:', JSON.stringify(requestBody, null, 2));
+      
+      const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API: CreateKoliFromOrderReceipt Response:', JSON.stringify(data, null, 2));
+      
+      return { success: data.success, msg: data.msg };
+    },
+
     async getOrderReceipts(userName: string, password: string): Promise<OrderReceipt[]> {
       console.log('API: Fetching order receipts');
       const apiBaseUrl = await getApiBaseUrl();

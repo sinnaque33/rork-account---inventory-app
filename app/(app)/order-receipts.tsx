@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, FileText, Search } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -19,11 +20,12 @@ import colors from '@/constants/colors';
 export default function OrderReceiptsScreen() {
   const router = useRouter();
   const { credentials } = useAuth();
+  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const orderReceiptsQuery = useQuery({
-    queryKey: ['order-receipts', credentials?.userCode, credentials?.password],
+    queryKey: ['order-receipts', credentials],
     queryFn: async () => {
       console.log('OrderReceiptsScreen: Fetching order receipts');
       if (!credentials) {
@@ -33,6 +35,34 @@ export default function OrderReceiptsScreen() {
     },
     enabled: !!credentials,
   });
+
+  const createKoliMutation = useMutation({
+    mutationFn: async (orderReceiptId: number) => {
+      if (!credentials) {
+        throw new Error('No credentials available');
+      }
+      return api.koliListesi.createKoliFromOrderReceipt(
+        credentials.userCode,
+        credentials.password,
+        orderReceiptId
+      );
+    },
+    onSuccess: (data) => {
+      console.log('OrderReceiptsScreen: Koli created successfully', data);
+      Alert.alert('Result', data.msg || 'Operation completed');
+      queryClient.invalidateQueries({ queryKey: ['koli-listesi'] });
+      router.back();
+    },
+    onError: (error) => {
+      console.error('OrderReceiptsScreen: Failed to create koli', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create koli');
+    },
+  });
+
+  const handleReceiptSelect = (item: OrderReceipt) => {
+    console.log('OrderReceiptsScreen: Receipt selected', item.RecId);
+    createKoliMutation.mutate(item.RecId);
+  };
 
   const onRefresh = async () => {
     console.log('OrderReceiptsScreen: Manual refresh triggered');
@@ -85,10 +115,8 @@ export default function OrderReceiptsScreen() {
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.7}
-      onPress={() => {
-        console.log('OrderReceiptsScreen: Receipt selected', item.RecId);
-        router.back();
-      }}
+      onPress={() => handleReceiptSelect(item)}
+      disabled={createKoliMutation.isPending}
       testID={`order-receipt-${item.RecId}`}
     >
       <View style={styles.cardHeader}>
@@ -120,6 +148,13 @@ export default function OrderReceiptsScreen() {
           />
         </View>
       </View>
+
+      {createKoliMutation.isPending && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={colors.button.primary} />
+          <Text style={styles.loadingOverlayText}>Creating koli...</Text>
+        </View>
+      )}
 
       <FlatList
         data={filteredItems}
@@ -250,5 +285,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text.secondary,
     lineHeight: 18,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  loadingOverlayText: {
+    fontSize: 16,
+    color: colors.text.primary,
+    marginTop: 12,
   },
 });
