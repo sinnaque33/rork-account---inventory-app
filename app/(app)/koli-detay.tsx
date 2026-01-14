@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { useState } from 'react';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { api, KoliDetailItem } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import colors from '@/constants/colors';
@@ -20,11 +20,45 @@ import colors from '@/constants/colors';
 export default function KoliDetayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { credentials } = useAuth();
+  const router = useRouter();
 
   const queryClient = useQueryClient();
   const [showBarcodeInput, setShowBarcodeInput] = useState(false);
   const [, setBarcodeType] = useState<'item' | null>(null);
   const [barcodeValue, setBarcodeValue] = useState('');
+
+  const createReceiptMutation = useMutation({
+    mutationFn: async () => {
+      if (!credentials || !id) {
+        throw new Error('No credentials or id available');
+      }
+      console.log('KoliDetayScreen: Creating receipt for box', id);
+      return api.koliListesi.createReceipt(
+        credentials.userCode,
+        credentials.password,
+        parseInt(id, 10)
+      );
+    },
+    onSuccess: (data) => {
+      console.log('KoliDetayScreen: Create receipt success', data);
+      Alert.alert('Result', data.msg || 'Operation completed', [
+        {
+          text: 'OK',
+          onPress: () => {
+            if (data.resultBoxId) {
+              router.replace(`/koli-detay?id=${data.resultBoxId}`);
+            } else {
+              queryClient.invalidateQueries({ queryKey: ['koli-detay', id] });
+            }
+          }
+        }
+      ]);
+    },
+    onError: (error) => {
+      console.error('KoliDetayScreen: Create receipt error', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create receipt');
+    },
+  });
 
   const addItemMutation = useMutation({
     mutationFn: async (barcode: string) => {
@@ -135,8 +169,25 @@ export default function KoliDetayScreen() {
           <Package size={20} color="#000" />
           <Text style={styles.buttonText}>Add by{"\n"}Item Barcode</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <FileText size={20} color="#000" />
+        <TouchableOpacity 
+          style={[styles.actionButton, createReceiptMutation.isPending && styles.disabledButton]}
+          onPress={() => {
+            Alert.alert(
+              'Create Receipt',
+              'Are you sure you want to create a receipt for this koli?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Create', onPress: () => createReceiptMutation.mutate() }
+              ]
+            );
+          }}
+          disabled={createReceiptMutation.isPending}
+        >
+          {createReceiptMutation.isPending ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <FileText size={20} color="#000" />
+          )}
           <Text style={styles.buttonText}>Create{"\n"}Receipt</Text>
         </TouchableOpacity>
       </View>

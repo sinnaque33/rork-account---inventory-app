@@ -530,6 +530,60 @@ export const api = {
       return { success: data.success, msg: data.msg, resultBoxId };
     },
 
+    async createReceipt(userName: string, password: string, boxId: number): Promise<{ success: string; msg: string; resultBoxId?: number }> {
+      console.log('API: Creating receipt for box', boxId);
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      
+      const dataPayload = {
+        serviceType: 100,
+        boxId: boxId,
+        orderConnection: 1,
+        orderShipmentControlType: 2
+      };
+      
+      const requestBody = {
+        data: JSON.stringify(dataPayload),
+        userName,
+        password,
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        licenseKey: "16016923",
+        logout: true
+      };
+      
+      console.log('API: CreateReceipt Request:', JSON.stringify(requestBody, null, 2));
+      
+      const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API: CreateReceipt Response:', JSON.stringify(data, null, 2));
+      
+      let resultBoxId: number | undefined = data.resultBoxId;
+      
+      if (!resultBoxId && data.data) {
+        try {
+          const parsedData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+          resultBoxId = parsedData.resultBoxId || parsedData.boxId || parsedData.id || parsedData.RecId;
+        } catch {
+          console.log('API: Could not parse resultBoxId from response data');
+        }
+      }
+      
+      return { success: data.success, msg: data.msg, resultBoxId };
+    },
+
     async getOrderReceipts(userName: string, password: string): Promise<OrderReceipt[]> {
       console.log('API: Fetching order receipts');
       const apiBaseUrl = await getApiBaseUrl();
