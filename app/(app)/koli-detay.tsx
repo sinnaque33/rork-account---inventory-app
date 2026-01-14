@@ -128,14 +128,24 @@ export default function KoliDetayScreen() {
 
   const items = koliDetailQuery.data || [];
 
-  const renderItem = ({ item }: { item: KoliDetailItem }) => (
+  const renderItem = ({ item }: { item: KoliDetailItem }) => {
+    const hasValidThumbnail = item.Thumbnail && item.Thumbnail.trim().length > 0;
+    console.log('KoliDetayScreen: Item thumbnail check', { 
+      itemName: item.InventoryName, 
+      hasThumbnail: !!item.Thumbnail,
+      thumbnailLength: item.Thumbnail?.length,
+      hasValidThumbnail 
+    });
+    
+    return (
     <View style={styles.card}>
       <View style={styles.cardContent}>
-        {item.Thumbnail ? (
+        {hasValidThumbnail ? (
           <Image 
             source={{ uri: `data:image/png;base64,${item.Thumbnail}` }}
             style={styles.thumbnailImage}
             resizeMode="cover"
+            onError={(e) => console.log('KoliDetayScreen: Image load error', e.nativeEvent.error)}
           />
         ) : (
           <View style={styles.iconContainer}>
@@ -152,6 +162,7 @@ export default function KoliDetayScreen() {
       </View>
     </View>
   );
+  };
 
   return (
     <View style={styles.container}>
