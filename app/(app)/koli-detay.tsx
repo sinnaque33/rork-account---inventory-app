@@ -18,6 +18,32 @@ import { api, KoliDetailItem } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import colors from '@/constants/colors';
 
+function byteArrayToBase64(byteArray: number[] | Uint8Array | string | null | undefined): string | null {
+  if (!byteArray) return null;
+  
+  // If it's already a string (base64), return it
+  if (typeof byteArray === 'string') {
+    return byteArray.trim().length > 0 ? byteArray : null;
+  }
+  
+  // If it's an array or Uint8Array, convert to base64
+  if (Array.isArray(byteArray) || byteArray instanceof Uint8Array) {
+    try {
+      const bytes = Array.isArray(byteArray) ? new Uint8Array(byteArray) : byteArray;
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    } catch (e) {
+      console.log('byteArrayToBase64: Error converting byte array', e);
+      return null;
+    }
+  }
+  
+  return null;
+}
+
 export default function KoliDetayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { credentials } = useAuth();
@@ -129,11 +155,14 @@ export default function KoliDetayScreen() {
   const items = koliDetailQuery.data || [];
 
   const renderItem = ({ item }: { item: KoliDetailItem }) => {
-    const hasValidThumbnail = item.Thumbnail && item.Thumbnail.trim().length > 0;
+    const base64Thumbnail = byteArrayToBase64(item.Thumbnail as unknown as number[] | Uint8Array | string | null);
+    const hasValidThumbnail = !!base64Thumbnail;
+    
     console.log('KoliDetayScreen: Item thumbnail check', { 
       itemName: item.InventoryName, 
       hasThumbnail: !!item.Thumbnail,
-      thumbnailLength: item.Thumbnail?.length,
+      thumbnailType: typeof item.Thumbnail,
+      isArray: Array.isArray(item.Thumbnail),
       hasValidThumbnail 
     });
     
@@ -142,7 +171,7 @@ export default function KoliDetayScreen() {
       <View style={styles.cardContent}>
         {hasValidThumbnail ? (
           <Image 
-            source={{ uri: `data:image/png;base64,${item.Thumbnail}` }}
+            source={{ uri: `data:image/png;base64,${base64Thumbnail}` }}
             style={styles.thumbnailImage}
             resizeMode="cover"
             onError={(e) => console.log('KoliDetayScreen: Image load error', e.nativeEvent.error)}
