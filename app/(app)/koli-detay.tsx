@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Package, ShoppingCart, Save, FileText } from 'lucide-react-native';
+import { AlertCircle, Package, FileText } from 'lucide-react-native';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { useState } from 'react';
-import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
+import { useLocalSearchParams, Stack } from 'expo-router';
 import { api, KoliDetailItem } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import colors from '@/constants/colors';
@@ -20,7 +20,7 @@ import colors from '@/constants/colors';
 export default function KoliDetayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { credentials } = useAuth();
-  const router = useRouter();
+
   const queryClient = useQueryClient();
   const [showBarcodeInput, setShowBarcodeInput] = useState(false);
   const [, setBarcodeType] = useState<'item' | null>(null);
@@ -128,16 +128,6 @@ export default function KoliDetayScreen() {
         <TouchableOpacity 
           style={styles.actionButton}
           onPress={() => {
-            console.log('KoliDetayScreen: Navigating to order-receipts');
-            router.push('/(app)/order-receipts');
-          }}
-        >
-          <ShoppingCart size={20} color="#000" />
-          <Text style={styles.buttonText}>Add by{"\n"}Order Receipt</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => {
             setBarcodeType('item');
             setShowBarcodeInput(true);
           }}
@@ -148,10 +138,6 @@ export default function KoliDetayScreen() {
         <TouchableOpacity style={styles.actionButton}>
           <FileText size={20} color="#000" />
           <Text style={styles.buttonText}>Create{"\n"}Receipt</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.saveButton}>
-          <Save size={20} color="#000" />
-          <Text style={styles.buttonText}>Save</Text>
         </TouchableOpacity>
       </View>
 
@@ -338,22 +324,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.default,
   },
-  saveButton: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
+
   buttonText: {
     fontSize: 10,
     fontWeight: '600' as const,
