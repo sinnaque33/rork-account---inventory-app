@@ -52,14 +52,14 @@ export default function OrderReceiptsScreen() {
       Alert.alert('Result', data.msg || 'Operation completed');
       queryClient.invalidateQueries({ queryKey: ['koli-listesi'] });
       
-      if (data.boxId) {
-        console.log('OrderReceiptsScreen: Navigating to koli detail with boxId:', data.boxId);
+      if (data.resultBoxId) {
+        console.log('OrderReceiptsScreen: Navigating to koli detail with resultBoxId:', data.resultBoxId);
         router.replace({
           pathname: '/(app)/koli-detay',
-          params: { id: data.boxId.toString() }
+          params: { id: data.resultBoxId.toString() }
         });
       } else {
-        console.log('OrderReceiptsScreen: No boxId returned, going back');
+        console.log('OrderReceiptsScreen: No resultBoxId returned, going back');
         router.back();
       }
     },
