@@ -539,6 +539,8 @@ export const api = {
       const dataPayload = {
         serviceType: 100,
         boxId: boxId,
+        inventoryReceiptType: 120,
+        inventoryReceiptWarehouseId: 3,
         orderConnection: 1,
         orderShipmentControlType: 2
       };
