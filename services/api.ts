@@ -185,6 +185,7 @@ export interface KoliItem {
 export interface KoliDetailItem {
   InventoryName: string;
   Quantity: number;
+  Thumbnail?: string | null;
 }
 
 export interface OrderReceipt {

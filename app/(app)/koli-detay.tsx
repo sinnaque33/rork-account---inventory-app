@@ -10,6 +10,7 @@ import {
   View,
   Modal,
   Alert,
+  Image,
 } from 'react-native';
 import { useState } from 'react';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
@@ -26,6 +27,7 @@ export default function KoliDetayScreen() {
   const [showBarcodeInput, setShowBarcodeInput] = useState(false);
   const [, setBarcodeType] = useState<'item' | null>(null);
   const [barcodeValue, setBarcodeValue] = useState('');
+  const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
 
   const createReceiptMutation = useMutation({
     mutationFn: async () => {
@@ -129,9 +131,17 @@ export default function KoliDetayScreen() {
   const renderItem = ({ item }: { item: KoliDetailItem }) => (
     <View style={styles.card}>
       <View style={styles.cardContent}>
-        <View style={styles.iconContainer}>
-          <Package size={24} color={colors.button.primary} />
-        </View>
+        {item.Thumbnail ? (
+          <Image 
+            source={{ uri: `data:image/png;base64,${item.Thumbnail}` }}
+            style={styles.thumbnailImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.iconContainer}>
+            <Package size={24} color={colors.button.primary} />
+          </View>
+        )}
         <View style={styles.itemInfo}>
           <Text style={styles.itemName}>{item.InventoryName}</Text>
           <View style={styles.quantityContainer}>
@@ -171,16 +181,7 @@ export default function KoliDetayScreen() {
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.actionButton, createReceiptMutation.isPending && styles.disabledButton]}
-          onPress={() => {
-            Alert.alert(
-              'Create Receipt',
-              'Are you sure you want to create a receipt for this koli?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Create', onPress: () => createReceiptMutation.mutate() }
-              ]
-            );
-          }}
+          onPress={() => setShowReceiptConfirm(true)}
           disabled={createReceiptMutation.isPending}
         >
           {createReceiptMutation.isPending ? (
@@ -246,6 +247,47 @@ export default function KoliDetayScreen() {
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text style={styles.modalSubmitText}>Submit</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showReceiptConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowReceiptConfirm(false)}
+      >
+        <View style={styles.receiptModalOverlay}>
+          <View style={styles.receiptModalContent}>
+            <View style={styles.receiptIconContainer}>
+              <FileText size={48} color="#DC143C" />
+            </View>
+            <Text style={styles.receiptModalTitle}>Create Receipt</Text>
+            <Text style={styles.receiptModalSubtitle}>
+              Are you sure you want to create a receipt for this koli?
+            </Text>
+            <View style={styles.receiptModalButtons}>
+              <TouchableOpacity 
+                style={styles.receiptCancelButton}
+                onPress={() => setShowReceiptConfirm(false)}
+              >
+                <Text style={styles.receiptCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.receiptConfirmButton, createReceiptMutation.isPending && styles.disabledButton]}
+                onPress={() => {
+                  setShowReceiptConfirm(false);
+                  createReceiptMutation.mutate();
+                }}
+                disabled={createReceiptMutation.isPending}
+              >
+                {createReceiptMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.receiptConfirmText}>Create</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -324,6 +366,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(220, 20, 60, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  thumbnailImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: colors.background.dark,
   },
   itemInfo: {
     flex: 1,
@@ -451,5 +499,76 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  receiptModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  receiptModalContent: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 20,
+    padding: 28,
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DC143C',
+  },
+  receiptIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(220, 20, 60, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  receiptModalTitle: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  receiptModalSubtitle: {
+    fontSize: 15,
+    color: '#aaa',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  receiptModalButtons: {
+    flexDirection: 'row' as const,
+    gap: 12,
+    width: '100%',
+  },
+  receiptCancelButton: {
+    flex: 1,
+    backgroundColor: '#333',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  receiptCancelText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  receiptConfirmButton: {
+    flex: 1,
+    backgroundColor: '#DC143C',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center' as const,
+  },
+  receiptConfirmText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
   },
 });
