@@ -26,7 +26,7 @@ export default function KoliListesiScreen() {
   const ITEMS_PER_PAGE = 20 as const;
 
   const koliQuery = useQuery({
-    queryKey: ['koli-listesi', credentials?.userCode, credentials?.password],
+    queryKey: ['koli-listesi', credentials],
     queryFn: async () => {
       console.log('KoliListesiScreen: Fetching koli listesi');
       if (!credentials) {
@@ -76,7 +76,7 @@ export default function KoliListesiScreen() {
     }
   };
 
-  if (koliQuery.isLoading && !refreshing) {
+  if ((koliQuery.isLoading || koliQuery.isFetching) && allItems.length === 0 && !refreshing) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.button.primary} />
