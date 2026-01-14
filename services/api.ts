@@ -180,6 +180,7 @@ export interface KoliItem {
   id: number;
   PackageNo: string;
   Explanation: string;
+  ReceiptNo?: string;
 }
 
 export interface KoliDetailItem {

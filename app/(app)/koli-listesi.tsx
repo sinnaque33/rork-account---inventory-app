@@ -105,7 +105,7 @@ export default function KoliListesiScreen() {
       activeOpacity={0.7}
       onPress={() => {
         console.log('KoliListesiScreen: Item clicked with id', item.id);
-        router.push(`/(app)/koli-detay?id=${item.id}` as any);
+        router.push(`/(app)/koli-detay?id=${item.id}&receiptNo=${item.ReceiptNo || ''}` as any);
       }}
       testID={`koli-item-${item.id}`}
     >
@@ -115,6 +115,9 @@ export default function KoliListesiScreen() {
         </View>
         <View style={styles.itemInfo}>
           <Text style={styles.packageNo}>{item.PackageNo}</Text>
+          {item.ReceiptNo ? (
+            <Text style={styles.receiptNo}>Receipt: {item.ReceiptNo}</Text>
+          ) : null}
           {item.Explanation ? (
             <Text style={styles.explanation}>{item.Explanation}</Text>
           ) : null}
@@ -286,6 +289,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.secondary,
     lineHeight: 20,
+  },
+  receiptNo: {
+    fontSize: 13,
+    color: colors.button.primary,
+    fontWeight: '500' as const,
+    lineHeight: 18,
   },
   footerLoader: {
     paddingVertical: 20,
