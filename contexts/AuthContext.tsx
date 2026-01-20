@@ -1,7 +1,6 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useRouter, useSegments } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, LoginCredentials, LoginResponse } from '@/services/api';
 
@@ -25,8 +24,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginMsg, setLoginMsg] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<LoginCredentials | null>(null);
-  const router = useRouter();
-  const segments = useSegments();
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
   const authCheckQuery = useQuery({
     queryKey: ['auth-check'],
@@ -91,9 +89,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser)).catch(err => {
         console.error('AuthContext: Failed to persist user:', err);
       });
-      setTimeout(() => {
-        router.replace('/(app)/dashboard' as any);
-      }, 100);
+      setPendingNavigation('/(app)/dashboard');
     },
     onError: (error: Error) => {
       console.error('AuthContext: Login failed', error.message);
@@ -111,39 +107,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     onSuccess: () => {
       console.log('AuthContext: Logout successful');
       setUser(null);
-      router.replace('/login' as any);
+      setPendingNavigation('/login');
     },
   });
   const { mutateAsync: logoutMutateAsync } = logoutMutation;
 
-  useEffect(() => {
-    console.log('AuthContext: Route protection effect running', {
-      isLoading: authCheckQuery.isLoading,
-      isInitialized,
-      authData: authCheckQuery.data,
-      hasUser: !!user,
-      segments,
-    });
-
-    if (authCheckQuery.isLoading || !isInitialized) {
-      console.log('AuthContext: Still loading/initializing, skipping route protection');
-      return;
-    }
-
-    const inAuthGroup = segments[0] === '(app)';
-    const isAuthenticated = user !== null;
-
-    console.log('AuthContext: Route protection check', {
-      isAuthenticated,
-      inAuthGroup,
-      segments,
-    });
-
-    if (!isAuthenticated && inAuthGroup) {
-      console.log('AuthContext: Redirecting to login - not authenticated');
-      router.replace('/login' as any);
-    }
-  }, [authCheckQuery.isLoading, isInitialized, authCheckQuery.data, user, segments, router]);
+  const clearPendingNavigation = useCallback(() => {
+    setPendingNavigation(null);
+  }, []);
 
   const login = useCallback(
     async (credentials: LoginCredentials) => {
@@ -166,5 +137,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     loginMsg,
     isLoggingIn,
     credentials,
+    pendingNavigation,
+    clearPendingNavigation,
   };
 });
