@@ -37,6 +37,12 @@ export default function BarcodeScannerScreen() {
     },
     onSuccess: (data) => {
       console.log('BarcodeScannerScreen: Received koli detail:', data);
+      if (data.err === 99) {
+        console.log('BarcodeScannerScreen: Error 99 received, showing message:', data.msg);
+        Alert.alert('Error', data.msg || 'An error occurred');
+        setScanned(false);
+        return;
+      }
       if (data.id) {
         router.replace(`/(app)/koli-detay?id=${data.id}&receiptNo=${data.receiptNo || ''}` as any);
       } else {
