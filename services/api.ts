@@ -624,6 +624,49 @@ export const api = {
       
       return data.data?.items || [];
     },
+
+    async getKoliDetailByBarcode(userName: string, password: string, barcode: string): Promise<{ id: number; items: KoliDetailItem[]; receiptNo?: string }> {
+      console.log('API: Fetching koli detail by barcode', barcode);
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      
+      const requestBody: Record<string, string> = {
+        userName,
+        password,
+        licenseKey: "16016923",
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        data: `{ "name": "koliDetayWithBarcode", "val": "${barcode}"}`
+      };
+      
+      console.log('API: getKoliDetailByBarcode Request:', JSON.stringify(requestBody, null, 2));
+      
+      const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      
+      const data: RunJsonServiceResponse<{ id: number; items: KoliDetailItem[]; receiptNo?: string }> = await response.json();
+      console.log('API: getKoliDetailByBarcode Response:', JSON.stringify(data, null, 2));
+      
+      if (data.success !== "true") {
+        throw new Error(data.msg || 'Failed to fetch koli detail by barcode');
+      }
+      
+      return {
+        id: data.data?.id || 0,
+        items: data.data?.items || [],
+        receiptNo: data.data?.receiptNo
+      };
+    },
   },
 };
 

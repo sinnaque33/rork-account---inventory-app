@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Package, Search, Plus } from 'lucide-react-native';
+import { AlertCircle, Package, Search, Plus, ScanBarcode } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -175,6 +175,15 @@ export default function KoliListesiScreen() {
       />
 
       <TouchableOpacity
+        style={styles.fabSecondary}
+        onPress={() => router.push('/(app)/barcode-scanner')}
+        activeOpacity={0.8}
+        testID="barcode-scanner-button"
+      >
+        <ScanBarcode size={26} color="#fff" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push('/(app)/create-koli')}
         activeOpacity={0.8}
@@ -308,6 +317,24 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.button.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabSecondary: {
+    position: 'absolute',
+    right: 20,
+    bottom: 88,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.background.card,
+    borderWidth: 2,
+    borderColor: colors.button.primary,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,

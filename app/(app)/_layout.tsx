@@ -45,6 +45,14 @@ export default function AppLayout() {
           title: 'Create Koli',
         }}
       />
+      <Stack.Screen
+        name="barcode-scanner"
+        options={{
+          title: 'Barcode Scanner',
+          headerShown: false,
+          presentation: 'fullScreenModal',
+        }}
+      />
     </Stack>
   );
 }
