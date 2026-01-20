@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Account & Inventory App",
-    "slug": "account-inventory-app",
+    "slug": "xtrbs-inventoryapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -55,6 +55,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "c27a0432-9c73-4ca2-9e48-f51fa2970130"
+      }
+    },
+    "owner": "xtrbstest"
   }
 }
