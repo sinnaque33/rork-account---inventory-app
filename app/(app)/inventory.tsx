@@ -57,8 +57,8 @@ export default function InventoryScreen() {
     const query = searchQuery.toLowerCase();
     return items.filter(
       (item) =>
-        item.InventoryName.toLowerCase().includes(query) ||
-        item.InventoryCode.toLowerCase().includes(query)
+        (item.InventoryName?.toLowerCase() || '').includes(query) ||
+        (item.InventoryCode?.toLowerCase() || '').includes(query)
     );
   }, [allItems, searchQuery]);
 
@@ -113,9 +113,9 @@ export default function InventoryScreen() {
           </View>
         )}
         <View style={styles.itemInfo}>
-          <Text style={styles.itemCode}>{item.InventoryCode}</Text>
+          <Text style={styles.itemCode}>{item.InventoryCode || '-'}</Text>
           <Text style={styles.itemName} numberOfLines={2}>
-            {item.InventoryName}
+            {item.InventoryName || '-'}
           </Text>
         </View>
       </View>
