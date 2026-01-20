@@ -34,13 +34,41 @@ export default function KoliListesiScreen() {
     mutationFn: async (barcode: string) => {
       if (!credentials) throw new Error('No credentials available');
       console.log('KoliListesiScreen: Searching koli by barcode', barcode);
-      return await api.koliListesi.getKoliDetailByBarcode(credentials.userCode, credentials.password, barcode);
+      
+      // First get the RecId from koliDetayWithBarcode
+      const barcodeResult = await api.koliListesi.getKoliDetailByBarcode(credentials.userCode, credentials.password, barcode);
+      console.log('KoliListesiScreen: koliDetayWithBarcode result:', barcodeResult);
+      
+      // Check for error 99
+      if (barcodeResult.err === 99) {
+        return { err: 99, msg: barcodeResult.msg, recId: 0 };
+      }
+      
+      if (!barcodeResult.recId) {
+        throw new Error('Koli not found for this barcode');
+      }
+      
+      // Now fetch the full koli detail using the RecId
+      console.log('KoliListesiScreen: Fetching koliDetay with RecId:', barcodeResult.recId);
+      const koliDetail = await api.koliListesi.getDetail(credentials.userCode, credentials.password, barcodeResult.recId);
+      console.log('KoliListesiScreen: koliDetay result:', koliDetail);
+      
+      return { recId: barcodeResult.recId, items: koliDetail };
     },
     onSuccess: (data) => {
       console.log('KoliListesiScreen: Barcode search success', data);
+      if (data.err === 99) {
+        console.log('KoliListesiScreen: Error 99 received, showing message:', data.msg);
+        Alert.alert('Error', data.msg || 'An error occurred');
+        return;
+      }
       setBarcodeModalVisible(false);
       setBarcodeInput('');
-      router.push(`/(app)/koli-detay?id=${data.id}&receiptNo=${data.receiptNo || ''}` as any);
+      if (data.recId) {
+        router.push(`/(app)/koli-detay?id=${data.recId}` as any);
+      } else {
+        Alert.alert('Error', 'Koli not found for this barcode');
+      }
     },
     onError: (error) => {
       console.error('KoliListesiScreen: Barcode search error', error);

@@ -29,11 +29,36 @@ export default function BarcodeScannerScreen() {
         throw new Error('No credentials available');
       }
       console.log('BarcodeScannerScreen: Calling getKoliDetailByBarcode with barcode:', barcode);
-      return api.koliListesi.getKoliDetailByBarcode(
+      
+      // First get the RecId from koliDetayWithBarcode
+      const barcodeResult = await api.koliListesi.getKoliDetailByBarcode(
         credentials.userCode,
         credentials.password,
         barcode
       );
+      
+      console.log('BarcodeScannerScreen: koliDetayWithBarcode result:', barcodeResult);
+      
+      // Check for error 99
+      if (barcodeResult.err === 99) {
+        return { err: 99, msg: barcodeResult.msg, recId: 0 };
+      }
+      
+      if (!barcodeResult.recId) {
+        throw new Error('Koli not found for this barcode');
+      }
+      
+      // Now fetch the full koli detail using the RecId
+      console.log('BarcodeScannerScreen: Fetching koliDetay with RecId:', barcodeResult.recId);
+      const koliDetail = await api.koliListesi.getDetail(
+        credentials.userCode,
+        credentials.password,
+        barcodeResult.recId
+      );
+      
+      console.log('BarcodeScannerScreen: koliDetay result:', koliDetail);
+      
+      return { recId: barcodeResult.recId, items: koliDetail };
     },
     onSuccess: (data) => {
       console.log('BarcodeScannerScreen: Received koli detail:', data);
@@ -43,8 +68,8 @@ export default function BarcodeScannerScreen() {
         setScanned(false);
         return;
       }
-      if (data.id) {
-        router.replace(`/(app)/koli-detay?id=${data.id}&receiptNo=${data.receiptNo || ''}` as any);
+      if (data.recId) {
+        router.replace(`/(app)/koli-detay?id=${data.recId}` as any);
       } else {
         Alert.alert('Error', 'Koli not found for this barcode');
         setScanned(false);

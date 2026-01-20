@@ -625,7 +625,7 @@ export const api = {
       return data.data?.items || [];
     },
 
-    async getKoliDetailByBarcode(userName: string, password: string, barcode: string): Promise<{ id: number; items: KoliDetailItem[]; receiptNo?: string; err?: number; msg?: string }> {
+    async getKoliDetailByBarcode(userName: string, password: string, barcode: string): Promise<{ recId: number; err?: number; msg?: string }> {
       console.log('API: Fetching koli detail by barcode', barcode);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
@@ -654,14 +654,13 @@ export const api = {
         throw new Error(`Request failed with status ${response.status}`);
       }
       
-      const data: RunJsonServiceResponse<{ id: number; items: KoliDetailItem[]; receiptNo?: string }> = await response.json();
+      const data: RunJsonServiceResponse<{ items: Array<{ RecId: number }> }> = await response.json();
       console.log('API: getKoliDetailByBarcode Response:', JSON.stringify(data, null, 2));
       
       // Return err and msg for handling in the UI
       if (data.err === 99) {
         return {
-          id: 0,
-          items: [],
+          recId: 0,
           err: data.err,
           msg: data.msg
         };
@@ -671,10 +670,12 @@ export const api = {
         throw new Error(data.msg || 'Failed to fetch koli detail by barcode');
       }
       
+      // Extract RecId from items array
+      const recId = data.data?.items?.[0]?.RecId || 0;
+      console.log('API: Extracted RecId from items:', recId);
+      
       return {
-        id: data.data?.id || 0,
-        items: data.data?.items || [],
-        receiptNo: data.data?.receiptNo
+        recId
       };
     },
   },
