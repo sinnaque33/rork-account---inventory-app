@@ -3,7 +3,9 @@ import { AlertCircle, Package, Search, Plus, ScanBarcode } from 'lucide-react-na
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
+  Modal,
   RefreshControl,
   StyleSheet,
   Text,
@@ -11,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { api, KoliItem } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,9 +24,37 @@ export default function KoliListesiScreen() {
   const { credentials } = useAuth();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [barcodeModalVisible, setBarcodeModalVisible] = useState<boolean>(false);
+  const [barcodeInput, setBarcodeInput] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [allItems, setAllItems] = useState<KoliItem[]>([]);
   const ITEMS_PER_PAGE = 20 as const;
+
+  const barcodeSearchMutation = useMutation({
+    mutationFn: async (barcode: string) => {
+      if (!credentials) throw new Error('No credentials available');
+      console.log('KoliListesiScreen: Searching koli by barcode', barcode);
+      return await api.koliListesi.getKoliDetailByBarcode(credentials.userCode, credentials.password, barcode);
+    },
+    onSuccess: (data) => {
+      console.log('KoliListesiScreen: Barcode search success', data);
+      setBarcodeModalVisible(false);
+      setBarcodeInput('');
+      router.push(`/(app)/koli-detay?id=${data.id}&receiptNo=${data.receiptNo || ''}` as any);
+    },
+    onError: (error) => {
+      console.error('KoliListesiScreen: Barcode search error', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to find koli');
+    },
+  });
+
+  const handleBarcodeSubmit = () => {
+    if (!barcodeInput.trim()) {
+      Alert.alert('Error', 'Please enter a barcode');
+      return;
+    }
+    barcodeSearchMutation.mutate(barcodeInput.trim());
+  };
 
   const koliQuery = useQuery({
     queryKey: ['koli-listesi', credentials],
@@ -176,12 +207,58 @@ export default function KoliListesiScreen() {
 
       <TouchableOpacity
         style={styles.fabSecondary}
-        onPress={() => router.push('/(app)/barcode-scanner')}
+        onPress={() => setBarcodeModalVisible(true)}
         activeOpacity={0.8}
         testID="barcode-scanner-button"
       >
         <ScanBarcode size={26} color="#fff" />
       </TouchableOpacity>
+
+      <Modal
+        visible={barcodeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setBarcodeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Enter Barcode</Text>
+            <TextInput
+              style={styles.barcodeInput}
+              placeholder="Barcode"
+              placeholderTextColor={colors.text.secondary}
+              value={barcodeInput}
+              onChangeText={setBarcodeInput}
+              autoFocus
+              onSubmitEditing={handleBarcodeSubmit}
+              returnKeyType="search"
+              testID="barcode-input"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  setBarcodeModalVisible(false);
+                  setBarcodeInput('');
+                }}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSearchButton}
+                onPress={handleBarcodeSubmit}
+                disabled={barcodeSearchMutation.isPending}
+              >
+                {barcodeSearchMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalSearchText}>Search</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <TouchableOpacity
         style={styles.fab}
@@ -342,5 +419,67 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 340,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: colors.text.primary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  barcodeInput: {
+    backgroundColor: colors.background.darker,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: colors.text.primary,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.background.darker,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    color: colors.text.secondary,
+  },
+  modalSearchButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.button.primary,
+    alignItems: 'center',
+  },
+  modalSearchText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
   },
 });
