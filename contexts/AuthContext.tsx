@@ -2,7 +2,10 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRouter, useSegments } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, LoginCredentials, LoginResponse } from '@/services/api';
+
+const USER_STORAGE_KEY = 'auth_user';
 
 interface User {
   uid: number;
@@ -18,6 +21,7 @@ interface User {
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
   const [user, setUser] = useState<User | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginMsg, setLoginMsg] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<LoginCredentials | null>(null);
@@ -27,13 +31,28 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const authCheckQuery = useQuery({
     queryKey: ['auth-check'],
     queryFn: async () => {
-      console.log('AuthContext: Checking authentication status');
+      console.log('AuthContext: Checking authentication status and restoring user');
       try {
         const isAuth = await api.auth.checkAuth();
         console.log('AuthContext: Auth check result:', isAuth);
+        
+        if (isAuth) {
+          const storedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser) as User;
+            console.log('AuthContext: Restored user from storage:', parsedUser.userName);
+            setUser(parsedUser);
+          } else {
+            console.log('AuthContext: Token exists but no user data, clearing token');
+            await api.auth.logout();
+          }
+        }
+        
+        setIsInitialized(true);
         return isAuth;
       } catch (error) {
         console.error('AuthContext: Auth check failed:', error);
+        setIsInitialized(true);
         return false;
       }
     },
@@ -69,6 +88,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         password: variables.password,
       };
       setUser(newUser);
+      AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser)).catch(err => {
+        console.error('AuthContext: Failed to persist user:', err);
+      });
       setTimeout(() => {
         router.replace('/(app)/dashboard' as any);
       }, 100);
@@ -84,6 +106,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async () => {
       console.log('AuthContext: Logout mutation started');
       await api.auth.logout();
+      await AsyncStorage.removeItem(USER_STORAGE_KEY);
     },
     onSuccess: () => {
       console.log('AuthContext: Logout successful');
@@ -96,13 +119,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   useEffect(() => {
     console.log('AuthContext: Route protection effect running', {
       isLoading: authCheckQuery.isLoading,
+      isInitialized,
       authData: authCheckQuery.data,
       hasUser: !!user,
       segments,
     });
 
-    if (authCheckQuery.isLoading) {
-      console.log('AuthContext: Still loading auth check, skipping route protection');
+    if (authCheckQuery.isLoading || !isInitialized) {
+      console.log('AuthContext: Still loading/initializing, skipping route protection');
       return;
     }
 
@@ -119,7 +143,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('AuthContext: Redirecting to login - not authenticated');
       router.replace('/login' as any);
     }
-  }, [authCheckQuery.isLoading, authCheckQuery.data, user, segments, router]);
+  }, [authCheckQuery.isLoading, isInitialized, authCheckQuery.data, user, segments, router]);
 
   const login = useCallback(
     async (credentials: LoginCredentials) => {
@@ -135,7 +159,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   return {
     user,
     isAuthenticated: !!user,
-    isLoading: authCheckQuery.isLoading,
+    isLoading: authCheckQuery.isLoading || !isInitialized,
     login,
     logout,
     loginError,
