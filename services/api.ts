@@ -625,6 +625,54 @@ export const api = {
       return data.data?.items || [];
     },
 
+    async closeBox(userName: string, password: string, boxId: number, grossWeight: string, netWeight: string): Promise<{ success: string; msg: string }> {
+      console.log('API: Closing box', boxId, 'with weights', { grossWeight, netWeight });
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      
+      const dataPayload = {
+        serviceType: 2,
+        boxId: boxId,
+        boxFieldsValue: [
+          { name: "GrossWeight", value: grossWeight },
+          { name: "NetWeight", value: netWeight },
+          { name: "Status", value: "2" }
+        ],
+        orderConnection: 1,
+        orderShipmentControlType: 1
+      };
+      
+      const requestBody = {
+        data: JSON.stringify(dataPayload),
+        userName,
+        password,
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        licenseKey: "16016923",
+        logout: true
+      };
+      
+      console.log('API: CloseBox Request:', JSON.stringify(requestBody, null, 2));
+      
+      const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API: CloseBox Response:', JSON.stringify(data, null, 2));
+      
+      return { success: data.success, msg: data.msg };
+    },
+
     async getKoliDetailByBarcode(userName: string, password: string, barcode: string): Promise<{ recId: number; err?: number; msg?: string }> {
       console.log('API: Fetching koli detail by barcode', barcode);
       const apiBaseUrl = await getApiBaseUrl();

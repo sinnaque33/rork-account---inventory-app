@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Package, FileText } from 'lucide-react-native';
+import { AlertCircle, Package, FileText, Lock } from 'lucide-react-native';
 import {
   ActivityIndicator,
   FlatList,
@@ -54,6 +54,38 @@ export default function KoliDetayScreen() {
   const [, setBarcodeType] = useState<'item' | null>(null);
   const [barcodeValue, setBarcodeValue] = useState('');
   const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
+  const [showCloseBoxModal, setShowCloseBoxModal] = useState(false);
+  const [grossWeight, setGrossWeight] = useState('');
+  const [netWeight, setNetWeight] = useState('');
+
+  const closeBoxMutation = useMutation({
+    mutationFn: async ({ grossWeight, netWeight }: { grossWeight: string; netWeight: string }) => {
+      if (!credentials || !id) {
+        throw new Error('No credentials or id available');
+      }
+      console.log('KoliDetayScreen: Closing box', id, 'with weights', { grossWeight, netWeight });
+      return api.koliListesi.closeBox(
+        credentials.userCode,
+        credentials.password,
+        parseInt(id, 10),
+        grossWeight,
+        netWeight
+      );
+    },
+    onSuccess: (data) => {
+      console.log('KoliDetayScreen: Close box success', data);
+      Alert.alert('Result', data.msg || 'Operation completed');
+      setShowCloseBoxModal(false);
+      setGrossWeight('');
+      setNetWeight('');
+      queryClient.invalidateQueries({ queryKey: ['koli-detay', id] });
+      queryClient.invalidateQueries({ queryKey: ['koli-listesi'] });
+    },
+    onError: (error) => {
+      console.error('KoliDetayScreen: Close box error', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to close box');
+    },
+  });
 
   const createReceiptMutation = useMutation({
     mutationFn: async () => {
@@ -236,6 +268,18 @@ export default function KoliDetayScreen() {
           )}
           <Text style={styles.buttonText}>Create{"\n"}Receipt</Text>
         </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, closeBoxMutation.isPending && styles.disabledButton]}
+          onPress={() => setShowCloseBoxModal(true)}
+          disabled={closeBoxMutation.isPending}
+        >
+          {closeBoxMutation.isPending ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <Lock size={20} color="#000" />
+          )}
+          <Text style={styles.buttonText}>Koli{"\n"}Kapatma</Text>
+        </TouchableOpacity>
       </View>
 
       <Modal
@@ -333,6 +377,80 @@ export default function KoliDetayScreen() {
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text style={styles.receiptConfirmText}>Create</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showCloseBoxModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowCloseBoxModal(false);
+          setGrossWeight('');
+          setNetWeight('');
+        }}
+      >
+        <View style={styles.receiptModalOverlay}>
+          <View style={styles.closeBoxModalContent}>
+            <View style={styles.receiptIconContainer}>
+              <Lock size={48} color="#DC143C" />
+            </View>
+            <Text style={styles.receiptModalTitle}>Koli Kapatma</Text>
+            <Text style={styles.receiptModalSubtitle}>
+              Enter the weights to close this box
+            </Text>
+            <View style={styles.weightInputContainer}>
+              <Text style={styles.weightLabel}>Gross Weight</Text>
+              <TextInput
+                style={styles.weightInput}
+                placeholder="0.00"
+                placeholderTextColor={colors.text.secondary}
+                value={grossWeight}
+                onChangeText={setGrossWeight}
+                keyboardType="decimal-pad"
+              />
+            </View>
+            <View style={styles.weightInputContainer}>
+              <Text style={styles.weightLabel}>Net Weight</Text>
+              <TextInput
+                style={styles.weightInput}
+                placeholder="0.00"
+                placeholderTextColor={colors.text.secondary}
+                value={netWeight}
+                onChangeText={setNetWeight}
+                keyboardType="decimal-pad"
+              />
+            </View>
+            <View style={styles.receiptModalButtons}>
+              <TouchableOpacity 
+                style={styles.receiptCancelButton}
+                onPress={() => {
+                  setShowCloseBoxModal(false);
+                  setGrossWeight('');
+                  setNetWeight('');
+                }}
+              >
+                <Text style={styles.receiptCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.receiptConfirmButton, closeBoxMutation.isPending && styles.disabledButton]}
+                onPress={() => {
+                  if (!grossWeight.trim() || !netWeight.trim()) {
+                    Alert.alert('Error', 'Please enter both weights');
+                    return;
+                  }
+                  closeBoxMutation.mutate({ grossWeight: grossWeight.trim(), netWeight: netWeight.trim() });
+                }}
+                disabled={closeBoxMutation.isPending}
+              >
+                {closeBoxMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.receiptConfirmText}>Submit</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -628,5 +746,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#fff',
+  },
+  closeBoxModalContent: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 20,
+    padding: 28,
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DC143C',
+  },
+  weightInputContainer: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  weightLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#aaa',
+    marginBottom: 8,
+  },
+  weightInput: {
+    backgroundColor: '#333',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: '#fff',
+    borderWidth: 1,
+    borderColor: '#444',
+    width: '100%',
   },
 });
