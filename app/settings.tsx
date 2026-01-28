@@ -125,15 +125,15 @@ export default function SettingsScreen() {
                 <View style={styles.iconContainer}>
                   <Settings size={40} color="#fff" strokeWidth={2} />
                 </View>
-                <Text style={styles.title}>API Configuration</Text>
+                <Text style={styles.title}>API Ayarları</Text>
                 <Text style={styles.subtitle}>
-                  Configure your API base URL
+                  API Ayarlarını yapınız
                 </Text>
               </View>
 
               <View style={styles.form}>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>API Base URL</Text>
+                  <Text style={styles.label}>API URL</Text>
                   <TextInput
                     style={[styles.input, error ? styles.inputError : null]}
                     placeholder="https://example.com/api"
@@ -156,10 +156,10 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Company Code</Text>
+                  <Text style={styles.label}>Şirket Kodu</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter company code (optional)"
+                    placeholder="Şirket Kodu (opsiyonel)"
                     placeholderTextColor={colors.input.placeholder}
                     value={code}
                     onChangeText={setCode}
@@ -171,10 +171,10 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Company Password</Text>
+                  <Text style={styles.label}>Şirket Şifresi</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter company password (optional)"
+                    placeholder="Şirket Şifresi (opsiyonel)"
                     placeholderTextColor={colors.input.placeholder}
                     value={password}
                     onChangeText={setPassword}
@@ -203,7 +203,7 @@ export default function SettingsScreen() {
                     ) : (
                       <>
                         <Save size={20} color="#fff" />
-                        <Text style={styles.buttonText}>Save Settings</Text>
+                        <Text style={styles.buttonText}>Kaydet</Text>
                       </>
                     )}
                   </Pressable>
@@ -220,15 +220,15 @@ export default function SettingsScreen() {
                     testID="reset-button"
                   >
                     <RefreshCw size={20} color="#fff" />
-                    <Text style={styles.buttonText}>Reset to Default</Text>
+                    <Text style={styles.buttonText}>Sıfırla</Text>
                   </Pressable>
                 </View>
               </View>
 
               <View style={styles.helpBox}>
-                <Text style={styles.helpTitle}>Need Help?</Text>
+                <Text style={styles.helpTitle}>Yardım</Text>
                 <Text style={styles.helpText}>
-                  The API base URL is used for all API requests. Make sure the URL is correct and includes the full path to your API services.
+                  API URL bilgisi tüm servisler için kullanılır. Doğruluğundan emin olunuz.
                 </Text>
               </View>
             </View>
