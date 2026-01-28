@@ -335,11 +335,11 @@ export default function KoliDetayScreen() {
               {barcodeMode === 'delete' ? 'Delete Item' : 'Add Item'}
             </Text>
             <Text style={styles.modalSubtitle}>
-              Enter or scan barcode
+              Barkod
             </Text>
             <TextInput
               style={styles.barcodeInput}
-              placeholder="Enter barcode"
+              placeholder="Barkod giriniz"
               placeholderTextColor={colors.text.secondary}
               value={barcodeValue}
               onChangeText={setBarcodeValue}
