@@ -34,7 +34,7 @@ export default function DashboardScreen() {
         <View style={styles.headerContent}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.greeting}>Welcome back,</Text>
+              <Text style={styles.greeting}>Hoşgeldiniz,</Text>
               <Text style={styles.userName}>{user?.firstName || user?.userName}</Text>
             </View>
             <Pressable
@@ -57,7 +57,7 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={true}
       >
         <View style={styles.content}>
-          <Text style={styles.sectionTitle}>Quick Access</Text>
+          <Text style={styles.sectionTitle}>Hızlı Erişim</Text>
 
           <View style={styles.cardGrid}>
           <Pressable
@@ -76,7 +76,7 @@ export default function DashboardScreen() {
                 <Boxes size={32} color="#fff" strokeWidth={2} />
               </View>
               <Text style={styles.cardTitle}>Koli Listesi</Text>
-              <Text style={styles.cardSubtitle}>View package list</Text>
+              <Text style={styles.cardSubtitle}>Kolilerinize buradan ulaşabilirsiniz</Text>
               <View style={styles.cardArrow}>
                 <FileText size={16} color="#fff" opacity={0.6} />
               </View>

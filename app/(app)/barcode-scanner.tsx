@@ -151,7 +151,7 @@ export default function BarcodeScannerScreen() {
           >
             <X size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Scan Barcode</Text>
+          <Text style={styles.headerTitle}>Barkod</Text>
           <TouchableOpacity
             style={styles.headerButton}
             onPress={() => setTorch(!torch)}
@@ -178,7 +178,7 @@ export default function BarcodeScannerScreen() {
           {barcodeMutation.isPending ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#fff" />
-              <Text style={styles.footerText}>Searching koli...</Text>
+              <Text style={styles.footerText}>Koli aranıyor...</Text>
             </View>
           ) : (
             <Text style={styles.footerText}>

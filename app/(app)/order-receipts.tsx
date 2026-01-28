@@ -101,7 +101,7 @@ export default function OrderReceiptsScreen() {
       <View style={styles.centerContainer}>
         <Stack.Screen options={{ title: 'Order Receipts' }} />
         <ActivityIndicator size="large" color={colors.button.primary} />
-        <Text style={styles.loadingText}>Loading order receipts...</Text>
+        <Text style={styles.loadingText}>Siparişler yükleniyor...</Text>
       </View>
     );
   }
@@ -111,7 +111,7 @@ export default function OrderReceiptsScreen() {
       <View style={styles.centerContainer}>
         <Stack.Screen options={{ title: 'Order Receipts' }} />
         <AlertCircle size={48} color={colors.border.error} />
-        <Text style={styles.errorTitle}>Error Loading Order Receipts</Text>
+        <Text style={styles.errorTitle}>Sipariş Yükleme hatası</Text>
         <Text style={styles.errorText}>
           {orderReceiptsQuery.error instanceof Error
             ? orderReceiptsQuery.error.message
@@ -162,7 +162,7 @@ export default function OrderReceiptsScreen() {
       {createKoliMutation.isPending && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.button.primary} />
-          <Text style={styles.loadingOverlayText}>Creating koli...</Text>
+          <Text style={styles.loadingOverlayText}>Koli oluşturuluyor...</Text>
         </View>
       )}
 

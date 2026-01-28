@@ -23,7 +23,7 @@ export default function CreateKoliScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Create New Koli',
+          title: 'Yeni Koli',
         }}
       />
       <KeyboardAvoidingView
@@ -35,8 +35,8 @@ export default function CreateKoliScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            <Text style={styles.title}>Add Item to Koli</Text>
-            <Text style={styles.subtitle}>Choose how you want to add items</Text>
+            <Text style={styles.title}>Malzeme Ekleme</Text>
+            <Text style={styles.subtitle}>Malzeme ekleme şeklini seçiniz</Text>
 
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
@@ -51,9 +51,9 @@ export default function CreateKoliScreen() {
                 <View style={styles.iconCircle}>
                   <ShoppingCart size={32} color={colors.text.primary} />
                 </View>
-                <Text style={styles.optionTitle}>Order Receipt</Text>
+                <Text style={styles.optionTitle}>Sipariş</Text>
                 <Text style={styles.optionDescription}>
-                  Add item from order receipt list
+                  Siparişten malzeme ekleme
                 </Text>
               </TouchableOpacity>
             </View>

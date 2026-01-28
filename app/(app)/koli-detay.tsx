@@ -191,7 +191,7 @@ export default function KoliDetayScreen() {
       <View style={styles.centerContainer}>
         <Stack.Screen options={{ title: 'Koli Details' }} />
         <ActivityIndicator size="large" color={colors.button.primary} />
-        <Text style={styles.loadingText}>Loading koli details...</Text>
+        <Text style={styles.loadingText}>Koli detayları yükleniyor...</Text>
       </View>
     );
   }
@@ -201,7 +201,7 @@ export default function KoliDetayScreen() {
       <View style={styles.centerContainer}>
         <Stack.Screen options={{ title: 'Koli Details' }} />
         <AlertCircle size={48} color={colors.border.error} />
-        <Text style={styles.errorTitle}>Error Loading Koli Details</Text>
+        <Text style={styles.errorTitle}>Koli detayı yükleme hatası</Text>
         <Text style={styles.errorText}>
           {koliDetailQuery.error instanceof Error
             ? koliDetailQuery.error.message
@@ -243,7 +243,7 @@ export default function KoliDetayScreen() {
         <View style={styles.itemInfo}>
           <Text style={styles.itemName}>{item.InventoryName}</Text>
           <View style={styles.quantityContainer}>
-            <Text style={styles.quantityLabel}>Quantity: </Text>
+            <Text style={styles.quantityLabel}>Miktar: </Text>
             <Text style={styles.quantityValue}>{item.Quantity}</Text>
           </View>
         </View>
@@ -257,7 +257,7 @@ export default function KoliDetayScreen() {
       <Stack.Screen options={{ title: `Koli #${id}` }} />
       {receiptNo ? (
         <View style={styles.receiptBanner}>
-          <Text style={styles.receiptBannerText}>Receipt: {receiptNo}</Text>
+          <Text style={styles.receiptBannerText}>Sipariş No: {receiptNo}</Text>
         </View>
       ) : null}
       <FlatList
@@ -268,7 +268,7 @@ export default function KoliDetayScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Package size={48} color={colors.text.secondary} />
-            <Text style={styles.emptyText}>No items found in this koli</Text>
+            <Text style={styles.emptyText}>Kolide henüz bir şey yok</Text>
           </View>
         }
       />
@@ -281,7 +281,7 @@ export default function KoliDetayScreen() {
           }}
         >
           <Package size={20} color="#000" />
-          <Text style={styles.buttonText}>Add by{"\n"}Item Barcode</Text>
+          <Text style={styles.buttonText}>Barkod ile{"\n"}Ekleme</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.actionButton}
@@ -291,7 +291,7 @@ export default function KoliDetayScreen() {
           }}
         >
           <Trash2 size={20} color="#000" />
-          <Text style={styles.buttonText}>Delete by{"\n"}Item Barcode</Text>
+          <Text style={styles.buttonText}>Barkod ile{"\n"}Silme</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.actionButton, createReceiptMutation.isPending && styles.disabledButton]}
@@ -303,7 +303,7 @@ export default function KoliDetayScreen() {
           ) : (
             <FileText size={20} color="#000" />
           )}
-          <Text style={styles.buttonText}>Create{"\n"}Receipt</Text>
+          <Text style={styles.buttonText}>İrsaliye{"\n"}Oluştur</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.actionButton, closeBoxMutation.isPending && styles.disabledButton]}
@@ -356,7 +356,7 @@ export default function KoliDetayScreen() {
                   setBarcodeMode(null);
                 }}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>İptal</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[
@@ -400,16 +400,16 @@ export default function KoliDetayScreen() {
             <View style={styles.receiptIconContainer}>
               <FileText size={48} color="#DC143C" />
             </View>
-            <Text style={styles.receiptModalTitle}>Create Receipt</Text>
+            <Text style={styles.receiptModalTitle}>İrsaliye Oluştur</Text>
             <Text style={styles.receiptModalSubtitle}>
-              Are you sure you want to create a receipt for this koli?
+              İrsaliye oluşturmak istiyor musunuz?
             </Text>
             <View style={styles.receiptModalButtons}>
               <TouchableOpacity 
                 style={styles.receiptCancelButton}
                 onPress={() => setShowReceiptConfirm(false)}
               >
-                <Text style={styles.receiptCancelText}>Cancel</Text>
+                <Text style={styles.receiptCancelText}>İptal</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.receiptConfirmButton, createReceiptMutation.isPending && styles.disabledButton]}
@@ -422,7 +422,7 @@ export default function KoliDetayScreen() {
                 {createReceiptMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.receiptConfirmText}>Create</Text>
+                  <Text style={styles.receiptConfirmText}>Oluştur</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -447,10 +447,10 @@ export default function KoliDetayScreen() {
             </View>
             <Text style={styles.receiptModalTitle}>Koli Kapatma</Text>
             <Text style={styles.receiptModalSubtitle}>
-              Enter the weights to close this box
+              Ağırlık giriniz
             </Text>
             <View style={styles.weightInputContainer}>
-              <Text style={styles.weightLabel}>Gross Weight</Text>
+              <Text style={styles.weightLabel}>Brüt Ağırlık</Text>
               <TextInput
                 style={styles.weightInput}
                 placeholder="0.00"
@@ -461,7 +461,7 @@ export default function KoliDetayScreen() {
               />
             </View>
             <View style={styles.weightInputContainer}>
-              <Text style={styles.weightLabel}>Net Weight</Text>
+              <Text style={styles.weightLabel}>Net Ağırlık</Text>
               <TextInput
                 style={styles.weightInput}
                 placeholder="0.00"
@@ -480,7 +480,7 @@ export default function KoliDetayScreen() {
                   setNetWeight('');
                 }}
               >
-                <Text style={styles.receiptCancelText}>Cancel</Text>
+                <Text style={styles.receiptCancelText}>İptal</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.receiptConfirmButton, closeBoxMutation.isPending && styles.disabledButton]}
@@ -496,7 +496,7 @@ export default function KoliDetayScreen() {
                 {closeBoxMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.receiptConfirmText}>Submit</Text>
+                  <Text style={styles.receiptConfirmText}>Devam</Text>
                 )}
               </TouchableOpacity>
             </View>
