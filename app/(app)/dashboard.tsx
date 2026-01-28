@@ -65,6 +65,30 @@ export default function DashboardScreen() {
               styles.card,
               pressed && styles.cardPressed,
             ]}
+            onPress={() => handleNavigation('/(app)/koli-listesi')}
+            testID="koli-listesi-card"
+          >
+            <LinearGradient
+              colors={['#B71C1C', '#8B0000']}
+              style={styles.cardGradient}
+            >
+              <View style={styles.cardIcon}>
+                <Boxes size={32} color="#fff" strokeWidth={2} />
+              </View>
+              <Text style={styles.cardTitle}>Koli Listesi</Text>
+              <Text style={styles.cardSubtitle}>View package list</Text>
+              <View style={styles.cardArrow}>
+                <FileText size={16} color="#fff" opacity={0.6} />
+              </View>
+            </LinearGradient>
+          </Pressable>
+
+          {/* Hidden menu items - kept for future use
+          <Pressable
+            style={({ pressed }) => [
+              styles.card,
+              pressed && styles.cardPressed,
+            ]}
             onPress={() => handleNavigation('/(app)/accounts')}
             testID="accounts-card"
           >
@@ -105,29 +129,7 @@ export default function DashboardScreen() {
               </View>
             </LinearGradient>
           </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.card,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() => handleNavigation('/(app)/koli-listesi')}
-            testID="koli-listesi-card"
-          >
-            <LinearGradient
-              colors={['#B71C1C', '#8B0000']}
-              style={styles.cardGradient}
-            >
-              <View style={styles.cardIcon}>
-                <Boxes size={32} color="#fff" strokeWidth={2} />
-              </View>
-              <Text style={styles.cardTitle}>Koli Listesi</Text>
-              <Text style={styles.cardSubtitle}>View package list</Text>
-              <View style={styles.cardArrow}>
-                <FileText size={16} color="#fff" opacity={0.6} />
-              </View>
-            </LinearGradient>
-          </Pressable>
+          */}
           </View>
         </View>
       </ScrollView>
