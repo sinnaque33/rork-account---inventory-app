@@ -139,7 +139,7 @@ export default function KoliListesiScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.button.primary} />
-        <Text style={styles.loadingText}>Loading koli listesi...</Text>
+        <Text style={styles.loadingText}>Koli listesi yükleniyor...</Text>
       </View>
     );
   }
@@ -148,7 +148,7 @@ export default function KoliListesiScreen() {
     return (
       <View style={styles.centerContainer}>
         <AlertCircle size={48} color={colors.border.error} />
-        <Text style={styles.errorTitle}>Error Loading Koli Listesi</Text>
+        <Text style={styles.errorTitle}>Hata Koli Listesi</Text>
         <Text style={styles.errorText}>
           {koliQuery.error instanceof Error
             ? koliQuery.error.message
