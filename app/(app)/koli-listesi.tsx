@@ -175,7 +175,7 @@ export default function KoliListesiScreen() {
         <View style={styles.itemInfo}>
           <Text style={styles.packageNo}>{item.PackageNo}</Text>
           {item.ReceiptNo ? (
-            <Text style={styles.receiptNo}>Receipt: {item.ReceiptNo}</Text>
+            <Text style={styles.receiptNo}>Sipariş No: {item.ReceiptNo}</Text>
           ) : null}
           {item.Explanation ? (
             <Text style={styles.explanation}>{item.Explanation}</Text>
@@ -250,7 +250,7 @@ export default function KoliListesiScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Enter Barcode</Text>
+            <Text style={styles.modalTitle}>Barkod</Text>
             <TextInput
               style={styles.barcodeInput}
               placeholder="Barcode"
@@ -270,7 +270,7 @@ export default function KoliListesiScreen() {
                   setBarcodeInput('');
                 }}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>İptal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalSearchButton}
@@ -280,7 +280,7 @@ export default function KoliListesiScreen() {
                 {barcodeSearchMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.modalSearchText}>Search</Text>
+                  <Text style={styles.modalSearchText}>Arama</Text>
                 )}
               </TouchableOpacity>
             </View>
