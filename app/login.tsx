@@ -85,8 +85,8 @@ export default function LoginScreen() {
                 style={styles.logo}
                 contentFit="contain"
               />
-              <Text style={styles.title}>Welcome Back</Text>
-              <Text style={styles.subtitle}>Sign in to your account</Text>
+              <Text style={styles.title}>Hoşgeldiniz</Text>
+              <Text style={styles.subtitle}>Hesap Girişi</Text>
               {loginMsg ? (
                 <Text style={styles.loginMsgText}>{loginMsg}</Text>
               ) : null}
@@ -94,7 +94,7 @@ export default function LoginScreen() {
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>User Code</Text>
+                <Text style={styles.label}>Kullanıcı</Text>
                 <TextInput
                   style={[styles.input, userCodeError ? styles.inputError : null]}
                   placeholder="Kullanıcı"
@@ -115,7 +115,7 @@ export default function LoginScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
+                <Text style={styles.label}>Şifre</Text>
                 <TextInput
                   style={[
                     styles.input,
