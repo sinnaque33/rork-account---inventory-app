@@ -97,7 +97,7 @@ export default function LoginScreen() {
                 <Text style={styles.label}>User Code</Text>
                 <TextInput
                   style={[styles.input, userCodeError ? styles.inputError : null]}
-                  placeholder="Enter your user code"
+                  placeholder="Kullanıcı"
                   placeholderTextColor={colors.input.placeholder}
                   value={userCode}
                   onChangeText={(text) => {
@@ -121,7 +121,7 @@ export default function LoginScreen() {
                     styles.input,
                     passwordError ? styles.inputError : null,
                   ]}
-                  placeholder="Enter your password"
+                  placeholder="Şifre"
                   placeholderTextColor={colors.input.placeholder}
                   value={password}
                   onChangeText={(text) => {
