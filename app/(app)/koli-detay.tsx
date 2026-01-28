@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Package, FileText, Lock } from 'lucide-react-native';
+import { AlertCircle, Package, FileText, Lock, Trash2 } from 'lucide-react-native';
 import {
   ActivityIndicator,
   FlatList,
@@ -51,7 +51,7 @@ export default function KoliDetayScreen() {
 
   const queryClient = useQueryClient();
   const [showBarcodeInput, setShowBarcodeInput] = useState(false);
-  const [, setBarcodeType] = useState<'item' | null>(null);
+  const [barcodeMode, setBarcodeMode] = useState<'add' | 'delete' | null>(null);
   const [barcodeValue, setBarcodeValue] = useState('');
   const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
   const [showCloseBoxModal, setShowCloseBoxModal] = useState(false);
@@ -138,12 +138,39 @@ export default function KoliDetayScreen() {
       Alert.alert('Result', data.msg || 'Operation completed');
       setShowBarcodeInput(false);
       setBarcodeValue('');
-      setBarcodeType(null);
+      setBarcodeMode(null);
       queryClient.invalidateQueries({ queryKey: ['koli-detay', id] });
     },
     onError: (error) => {
       console.error('KoliDetayScreen: Add item error', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to add item');
+    },
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: async (barcode: string) => {
+      if (!credentials || !id) {
+        throw new Error('No credentials or id available');
+      }
+      console.log('KoliDetayScreen: Deleting item by barcode', barcode, 'from box', id);
+      return api.koliListesi.deleteItemByBarcode(
+        credentials.userCode,
+        credentials.password,
+        parseInt(id, 10),
+        barcode
+      );
+    },
+    onSuccess: (data) => {
+      console.log('KoliDetayScreen: Delete item success', data);
+      Alert.alert('Result', data.msg || 'Operation completed');
+      setShowBarcodeInput(false);
+      setBarcodeValue('');
+      setBarcodeMode(null);
+      queryClient.invalidateQueries({ queryKey: ['koli-detay', id] });
+    },
+    onError: (error) => {
+      console.error('KoliDetayScreen: Delete item error', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete item');
     },
   });
 
@@ -249,12 +276,22 @@ export default function KoliDetayScreen() {
         <TouchableOpacity 
           style={styles.actionButton}
           onPress={() => {
-            setBarcodeType('item');
+            setBarcodeMode('add');
             setShowBarcodeInput(true);
           }}
         >
           <Package size={20} color="#000" />
           <Text style={styles.buttonText}>Add by{"\n"}Item Barcode</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => {
+            setBarcodeMode('delete');
+            setShowBarcodeInput(true);
+          }}
+        >
+          <Trash2 size={20} color="#000" />
+          <Text style={styles.buttonText}>Delete by{"\n"}Item Barcode</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.actionButton, createReceiptMutation.isPending && styles.disabledButton]}
@@ -289,13 +326,13 @@ export default function KoliDetayScreen() {
         onRequestClose={() => {
           setShowBarcodeInput(false);
           setBarcodeValue('');
-          setBarcodeType(null);
+          setBarcodeMode(null);
         }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              Item Barcode
+              {barcodeMode === 'delete' ? 'Delete Item' : 'Add Item'}
             </Text>
             <Text style={styles.modalSubtitle}>
               Enter or scan barcode
@@ -316,26 +353,35 @@ export default function KoliDetayScreen() {
                 onPress={() => {
                   setShowBarcodeInput(false);
                   setBarcodeValue('');
-                  setBarcodeType(null);
+                  setBarcodeMode(null);
                 }}
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.modalSubmitButton, addItemMutation.isPending && styles.disabledButton]}
+                style={[
+                  barcodeMode === 'delete' ? styles.modalDeleteButton : styles.modalSubmitButton,
+                  (addItemMutation.isPending || deleteItemMutation.isPending) && styles.disabledButton
+                ]}
                 onPress={() => {
                   if (barcodeValue.trim()) {
-                    addItemMutation.mutate(barcodeValue.trim());
+                    if (barcodeMode === 'delete') {
+                      deleteItemMutation.mutate(barcodeValue.trim());
+                    } else {
+                      addItemMutation.mutate(barcodeValue.trim());
+                    }
                   } else {
                     Alert.alert('Error', 'Please enter a barcode');
                   }
                 }}
-                disabled={addItemMutation.isPending}
+                disabled={addItemMutation.isPending || deleteItemMutation.isPending}
               >
-                {addItemMutation.isPending ? (
+                {(addItemMutation.isPending || deleteItemMutation.isPending) ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.modalSubmitText}>Submit</Text>
+                  <Text style={styles.modalSubmitText}>
+                    {barcodeMode === 'delete' ? 'Delete' : 'Submit'}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -664,6 +710,13 @@ const styles = StyleSheet.create({
   modalSubmitButton: {
     flex: 1,
     backgroundColor: colors.button.primary,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+  },
+  modalDeleteButton: {
+    flex: 1,
+    backgroundColor: '#e74c3c',
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',

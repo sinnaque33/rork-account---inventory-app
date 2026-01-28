@@ -625,6 +625,52 @@ export const api = {
       return data.data?.items || [];
     },
 
+    async deleteItemByBarcode(userName: string, password: string, boxId: number, barcode: string): Promise<{ success: string; msg: string }> {
+      console.log('API: Deleting item by barcode from box', boxId);
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      
+      const dataPayload = {
+        serviceType: 2,
+        boxId: boxId,
+        boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
+        inventoryBarcode: barcode,
+        quantity: -1,
+        orderConnection: 1,
+        orderShipmentControlType: 1
+      };
+      
+      const requestBody = {
+        data: JSON.stringify(dataPayload),
+        userName,
+        password,
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        licenseKey: "16016923",
+        logout: true
+      };
+      
+      console.log('API: DeleteItemByBarcode Request:', JSON.stringify(requestBody, null, 2));
+      
+      const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API: DeleteItemByBarcode Response:', JSON.stringify(data, null, 2));
+      
+      return { success: data.success, msg: data.msg };
+    },
+
     async closeBox(userName: string, password: string, boxId: number, grossWeight: string, netWeight: string): Promise<{ success: string; msg: string }> {
       console.log('API: Closing box', boxId, 'with weights', { grossWeight, netWeight });
       const apiBaseUrl = await getApiBaseUrl();
