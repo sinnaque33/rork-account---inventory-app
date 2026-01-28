@@ -159,7 +159,7 @@ export default function LoginScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Text style={styles.buttonText}>Sign In</Text>
+                    <Text style={styles.buttonText}>Giriş</Text>
                     <LogIn size={20} color="#fff" />
                   </>
                 )}

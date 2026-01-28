@@ -332,7 +332,7 @@ export default function KoliDetayScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              {barcodeMode === 'delete' ? 'Delete Item' : 'Add Item'}
+              {barcodeMode === 'delete' ? 'Ürün Silme' : 'Ürün Ekleme'}
             </Text>
             <Text style={styles.modalSubtitle}>
               Barkod
@@ -380,7 +380,7 @@ export default function KoliDetayScreen() {
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text style={styles.modalSubmitText}>
-                    {barcodeMode === 'delete' ? 'Delete' : 'Submit'}
+                    {barcodeMode === 'delete' ? 'Sil' : 'Ekle'}
                   </Text>
                 )}
               </TouchableOpacity>
