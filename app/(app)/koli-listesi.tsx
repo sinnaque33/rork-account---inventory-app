@@ -164,7 +164,7 @@ export default function KoliListesiScreen() {
       activeOpacity={0.7}
       onPress={() => {
         console.log('KoliListesiScreen: Item clicked with id', item.id);
-        router.push(`/(app)/koli-detay?id=${item.id}&receiptNo=${item.ReceiptNo || ''}` as any);
+        router.push(`/(app)/koli-detay?id=${item.id}&receiptNo=${item.ReceiptNo || ''}&sipExp=${encodeURIComponent(item.SipExp || '')}` as any);
       }}
       testID={`koli-item-${item.id}`}
     >
@@ -176,6 +176,9 @@ export default function KoliListesiScreen() {
           <Text style={styles.packageNo}>{item.PackageNo}</Text>
           {item.ReceiptNo ? (
             <Text style={styles.receiptNo}>Sipariş No: {item.ReceiptNo}</Text>
+          ) : null}
+          {item.SipExp ? (
+            <Text style={styles.sipExp}>{item.SipExp}</Text>
           ) : null}
           {item.Explanation ? (
             <Text style={styles.explanation}>{item.Explanation}</Text>
@@ -407,6 +410,12 @@ const styles = StyleSheet.create({
   receiptNo: {
     fontSize: 13,
     color: colors.button.primary,
+    fontWeight: '500' as const,
+    lineHeight: 18,
+  },
+  sipExp: {
+    fontSize: 13,
+    color: '#4CAF50',
     fontWeight: '500' as const,
     lineHeight: 18,
   },

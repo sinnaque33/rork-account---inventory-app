@@ -198,6 +198,7 @@ export interface KoliItem {
   PackageNo: string;
   Explanation: string;
   ReceiptNo?: string;
+  SipExp?: string;
 }
 
 export interface KoliDetailItem {

@@ -45,7 +45,7 @@ function byteArrayToBase64(byteArray: number[] | Uint8Array | string | null | un
 }
 
 export default function KoliDetayScreen() {
-  const { id, receiptNo } = useLocalSearchParams<{ id: string; receiptNo?: string }>();
+  const { id, receiptNo, sipExp } = useLocalSearchParams<{ id: string; receiptNo?: string; sipExp?: string }>();
   const { credentials } = useAuth();
   const router = useRouter();
 
@@ -255,9 +255,14 @@ export default function KoliDetayScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: `Koli #${id}` }} />
-      {receiptNo ? (
+      {(receiptNo || sipExp) ? (
         <View style={styles.receiptBanner}>
-          <Text style={styles.receiptBannerText}>Sipariş No: {receiptNo}</Text>
+          {receiptNo ? (
+            <Text style={styles.receiptBannerText}>Sipariş No: {receiptNo}</Text>
+          ) : null}
+          {sipExp ? (
+            <Text style={styles.sipExpBannerText}>{decodeURIComponent(sipExp)}</Text>
+          ) : null}
         </View>
       ) : null}
       <FlatList
@@ -527,6 +532,13 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: colors.button.primary,
     textAlign: 'center',
+  },
+  sipExpBannerText: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginTop: 4,
   },
   centerContainer: {
     flex: 1,
