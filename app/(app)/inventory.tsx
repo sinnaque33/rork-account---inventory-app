@@ -23,7 +23,7 @@ export default function InventoryScreen() {
   const ITEMS_PER_PAGE = 20 as const;
 
   const inventoryQuery = useQuery({
-    queryKey: ['inventory'],
+    queryKey: ['inventory', credentials],
     queryFn: async () => {
       console.log('InventoryScreen: Fetching inventory');
       if (!credentials) {
