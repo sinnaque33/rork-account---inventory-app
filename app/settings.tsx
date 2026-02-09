@@ -18,10 +18,11 @@ import { useApiConfig } from '@/contexts/ApiConfigContext';
 import colors from '@/constants/colors';
 
 export default function SettingsScreen() {
-  const { apiBaseUrl, companyCode, companyPassword, updateApiUrl, updateCompanyCode, updateCompanyPassword, resetToDefault, isLoading, isSaving, defaultUrl } = useApiConfig();
+  const { apiBaseUrl, companyCode, companyPassword, warehouseId, updateApiUrl, updateCompanyCode, updateCompanyPassword, updateWarehouseId, resetToDefault, isLoading, isSaving, defaultUrl } = useApiConfig();
   const [url, setUrl] = useState<string>('');
   const [code, setCode] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [whId, setWhId] = useState<string>('');
   const [error, setError] = useState<string>('');
   const router = useRouter();
 
@@ -29,7 +30,8 @@ export default function SettingsScreen() {
     setUrl(apiBaseUrl);
     setCode(companyCode);
     setPassword(companyPassword);
-  }, [apiBaseUrl, companyCode, companyPassword]);
+    setWhId(warehouseId);
+  }, [apiBaseUrl, companyCode, companyPassword, warehouseId]);
 
   const validateUrl = (text: string): boolean => {
     if (!text) {
@@ -53,6 +55,7 @@ export default function SettingsScreen() {
       await updateApiUrl(url.trim());
       await updateCompanyCode(code.trim());
       await updateCompanyPassword(password.trim());
+      await updateWarehouseId(whId.trim());
       Alert.alert(
         'Success',
         'Settings saved successfully',
@@ -77,6 +80,7 @@ export default function SettingsScreen() {
             setUrl(defaultUrl);
             setCode('');
             setPassword('');
+            setWhId('');
             Alert.alert('Success', 'Settings reset to default');
           },
         },
@@ -183,6 +187,22 @@ export default function SettingsScreen() {
                     secureTextEntry
                     editable={!isSaving}
                     testID="company-password-input"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Depo ID</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Depo ID (varsayılan: 3)"
+                    placeholderTextColor={colors.input.placeholder}
+                    value={whId}
+                    onChangeText={setWhId}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="numeric"
+                    editable={!isSaving}
+                    testID="warehouse-id-input"
                   />
                 </View>
 

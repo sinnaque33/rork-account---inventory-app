@@ -7,25 +7,29 @@ import { clearApiUrlCache } from '@/services/api';
 const STORAGE_KEY = 'api_base_url';
 const COMPANY_CODE_KEY = 'company_code';
 const COMPANY_PASSWORD_KEY = 'company_password';
+const WAREHOUSE_ID_KEY = 'warehouse_id';
 
 export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
   const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
   const [companyCode, setCompanyCode] = useState<string>('');
   const [companyPassword, setCompanyPassword] = useState<string>('');
+  const [warehouseId, setWarehouseId] = useState<string>('');
 
   const loadUrlQuery = useQuery({
     queryKey: ['api-config'],
     queryFn: async () => {
       console.log('ApiConfigContext: Loading API config from storage');
-      const [url, code, pwd] = await Promise.all([
+      const [url, code, pwd, whId] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY),
         AsyncStorage.getItem(COMPANY_CODE_KEY),
         AsyncStorage.getItem(COMPANY_PASSWORD_KEY),
+        AsyncStorage.getItem(WAREHOUSE_ID_KEY),
       ]);
       return {
         url: url || '',
         companyCode: code || '',
         companyPassword: pwd || '',
+        warehouseId: whId || '',
       };
     },
     retry: false,
@@ -37,11 +41,12 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       setApiBaseUrl(loadUrlQuery.data.url);
       setCompanyCode(loadUrlQuery.data.companyCode);
       setCompanyPassword(loadUrlQuery.data.companyPassword);
+      setWarehouseId(loadUrlQuery.data.warehouseId);
     }
   }, [loadUrlQuery.data]);
 
   const saveMutation = useMutation({
-    mutationFn: async (params: { url?: string; companyCode?: string; companyPassword?: string }) => {
+    mutationFn: async (params: { url?: string; companyCode?: string; companyPassword?: string; warehouseId?: string }) => {
       console.log('ApiConfigContext: Saving API config to storage', params);
       const promises: Promise<void>[] = [];
       
@@ -54,6 +59,9 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       if (params.companyPassword !== undefined) {
         promises.push(AsyncStorage.setItem(COMPANY_PASSWORD_KEY, params.companyPassword));
       }
+      if (params.warehouseId !== undefined) {
+        promises.push(AsyncStorage.setItem(WAREHOUSE_ID_KEY, params.warehouseId));
+      }
       
       await Promise.all(promises);
       clearApiUrlCache();
@@ -64,6 +72,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       if (params.url !== undefined) setApiBaseUrl(params.url);
       if (params.companyCode !== undefined) setCompanyCode(params.companyCode);
       if (params.companyPassword !== undefined) setCompanyPassword(params.companyPassword);
+      if (params.warehouseId !== undefined) setWarehouseId(params.warehouseId);
     },
   });
   const { mutateAsync: saveMutateAsync } = saveMutation;
@@ -80,25 +89,33 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     await saveMutateAsync({ companyPassword: password });
   }, [saveMutateAsync]);
 
+  const updateWarehouseId = useCallback(async (whId: string) => {
+    await saveMutateAsync({ warehouseId: whId });
+  }, [saveMutateAsync]);
+
   const resetToDefault = useCallback(async () => {
     await Promise.all([
       AsyncStorage.removeItem(STORAGE_KEY),
       AsyncStorage.removeItem(COMPANY_CODE_KEY),
       AsyncStorage.removeItem(COMPANY_PASSWORD_KEY),
+      AsyncStorage.removeItem(WAREHOUSE_ID_KEY),
     ]);
     clearApiUrlCache();
     setApiBaseUrl('');
     setCompanyCode('');
     setCompanyPassword('');
+    setWarehouseId('');
   }, []);
 
   return useMemo(() => ({
     apiBaseUrl,
     companyCode,
     companyPassword,
+    warehouseId,
     updateApiUrl,
     updateCompanyCode,
     updateCompanyPassword,
+    updateWarehouseId,
     resetToDefault,
     isLoading: loadUrlQuery.isLoading,
     isSaving: saveMutation.isPending,
@@ -107,9 +124,11 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     apiBaseUrl,
     companyCode,
     companyPassword,
+    warehouseId,
     updateApiUrl,
     updateCompanyCode,
     updateCompanyPassword,
+    updateWarehouseId,
     resetToDefault,
     loadUrlQuery.isLoading,
     saveMutation.isPending,

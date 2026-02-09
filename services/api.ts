@@ -5,10 +5,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const API_URL_STORAGE_KEY = 'api_base_url';
 const COMPANY_CODE_KEY = 'company_code';
 const COMPANY_PASSWORD_KEY = 'company_password';
+const WAREHOUSE_ID_KEY = 'warehouse_id';
 
 let cachedApiUrl: string | null = null;
 let cachedCompanyCode: string | null = null;
 let cachedCompanyPassword: string | null = null;
+let cachedWarehouseId: string | null = null;
 
 async function getApiBaseUrl(): Promise<string> {
   if (cachedApiUrl) {
@@ -52,10 +54,25 @@ async function getCompanyPassword(): Promise<string> {
   }
 }
 
+async function getWarehouseId(): Promise<string> {
+  if (cachedWarehouseId !== null) {
+    return cachedWarehouseId;
+  }
+  try {
+    const stored = await AsyncStorage.getItem(WAREHOUSE_ID_KEY);
+    cachedWarehouseId = stored || '3';
+    return cachedWarehouseId;
+  } catch (error) {
+    console.error('Failed to load warehouse id from storage:', error);
+    return '3';
+  }
+}
+
 export function clearApiUrlCache() {
   cachedApiUrl = null;
   cachedCompanyCode = null;
   cachedCompanyPassword = null;
+  cachedWarehouseId = null;
 }
 
 const tokenStorage = {
@@ -537,12 +554,13 @@ export const api = {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
+      const warehouseId = await getWarehouseId();
       
       const dataPayload = {
         serviceType: 100,
         boxId: boxId,
         inventoryReceiptType: 120,
-        inventoryReceiptWarehouseId: 3,
+        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
         orderConnection: 1,
         orderShipmentControlType: 2
       };
