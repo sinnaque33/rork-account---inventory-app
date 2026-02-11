@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { AlertCircle, Package, Search, Plus, ScanBarcode } from 'lucide-react-native';
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -83,14 +83,29 @@ export default function KoliListesiScreen() {
     barcodeSearchMutation.mutate(barcodeInput.trim());
   };
 
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const koliQuery = useInfiniteQuery({
-    queryKey: ['koli-listesi', credentials],
+    queryKey: ['koli-listesi', credentials, debouncedSearchQuery],
     queryFn: async ({ pageParam = 0 }) => {
-      console.log('KoliListesiScreen: Fetching koli listesi with offSet:', pageParam);
+      console.log('KoliListesiScreen: Fetching koli listesi with offSet:', pageParam, 'searchId:', debouncedSearchQuery);
       if (!credentials) {
         throw new Error('No credentials available');
       }
-      const items = await api.koliListesi.getList(credentials.userCode, credentials.password, pageParam, PAGE_LEN);
+      const items = await api.koliListesi.getList(
+        credentials.userCode, 
+        credentials.password, 
+        pageParam, 
+        PAGE_LEN, 
+        debouncedSearchQuery || undefined
+      );
       return items;
     },
     initialPageParam: 0,
@@ -117,25 +132,14 @@ export default function KoliListesiScreen() {
     setRefreshing(false);
   };
 
-  const filteredItems = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return allItems;
-    }
-
-    const query = searchQuery.toLowerCase();
-    return allItems.filter(
-      (item) =>
-        (item.PackageNo?.toLowerCase().includes(query)) ||
-        (item.Explanation?.toLowerCase().includes(query))
-    );
-  }, [allItems, searchQuery]);
+  const filteredItems = allItems;
 
   const loadMore = useCallback(() => {
-    if (koliQuery.hasNextPage && !koliQuery.isFetchingNextPage && !searchQuery.trim()) {
+    if (koliQuery.hasNextPage && !koliQuery.isFetchingNextPage) {
       console.log('KoliListesiScreen: Loading more items from server');
       koliQuery.fetchNextPage();
     }
-  }, [koliQuery.hasNextPage, koliQuery.isFetchingNextPage, searchQuery]);
+  }, [koliQuery.hasNextPage, koliQuery.isFetchingNextPage]);
 
   if (koliQuery.isLoading && allItems.length === 0 && !refreshing) {
     return (
@@ -198,7 +202,7 @@ export default function KoliListesiScreen() {
         </View>
       );
     }
-    if (!koliQuery.hasNextPage && allItems.length > 0 && !searchQuery.trim()) {
+    if (!koliQuery.hasNextPage && allItems.length > 0) {
       return (
         <View style={styles.footerLoader}>
           <Text style={styles.footerText}>Tüm koliler yüklendi</Text>

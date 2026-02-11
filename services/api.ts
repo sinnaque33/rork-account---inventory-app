@@ -370,11 +370,15 @@ export const api = {
   },
   
   koliListesi: {
-    async getList(userName: string, password: string, offSet: number = 0, pageLen: number = 7): Promise<KoliItem[]> {
-      console.log('API: Fetching koli listesi items with offSet:', offSet, 'pageLen:', pageLen);
+    async getList(userName: string, password: string, offSet: number = 0, pageLen: number = 7, searchId?: string): Promise<KoliItem[]> {
+      console.log('API: Fetching koli listesi items with offSet:', offSet, 'pageLen:', pageLen, 'searchId:', searchId);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
+      
+      const dataPayload = searchId && searchId.trim() 
+        ? `{ "name": "koliListesi", "id": "${searchId.trim()}" }`
+        : '{ "name": "koliListesi" }';
       
       const requestBody: Record<string, string | number | boolean> = {
         userName,
@@ -383,7 +387,7 @@ export const api = {
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
         logout: true,
-        data: '{ "name": "koliListesi"}',
+        data: dataPayload,
         offSet,
         pageLen
       };
