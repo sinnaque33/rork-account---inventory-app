@@ -370,20 +370,25 @@ export const api = {
   },
   
   koliListesi: {
-    async getList(userName: string, password: string): Promise<KoliItem[]> {
-      console.log('API: Fetching koli listesi items');
+    async getList(userName: string, password: string, offSet: number = 0, pageLen: number = 7): Promise<KoliItem[]> {
+      console.log('API: Fetching koli listesi items with offSet:', offSet, 'pageLen:', pageLen);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
       
-      const requestBody: Record<string, string> = {
+      const requestBody: Record<string, string | number | boolean> = {
         userName,
         password,
         licenseKey: "16016923",
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
-        data: '{ "name": "koliListesi"}'
+        logout: true,
+        data: '{ "name": "koliListesi"}',
+        offSet,
+        pageLen
       };
+      
+      console.log('API: koliListesi Request:', JSON.stringify(requestBody, null, 2));
       
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
         method: 'POST',
@@ -398,7 +403,7 @@ export const api = {
       }
       
       const data: RunJsonServiceResponse<{ items: KoliItem[] }> = await response.json();
-      console.log('API: Received koli listesi response', { success: data.success, itemsCount: data.data?.items?.length });
+      console.log('API: Received koli listesi response', { success: data.success, itemsCount: data.data?.items?.length, offSet, pageLen });
       
       if (data.success !== "true") {
         throw new Error(data.msg || 'Failed to fetch koli listesi');

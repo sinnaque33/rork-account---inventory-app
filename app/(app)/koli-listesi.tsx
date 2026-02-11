@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { AlertCircle, Package, Search, Plus, ScanBarcode } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +19,8 @@ import { api, KoliItem } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import colors from '@/constants/colors';
 
+const PAGE_LEN = 7 as const;
+
 export default function KoliListesiScreen() {
   const router = useRouter();
   const { credentials } = useAuth();
@@ -26,9 +28,6 @@ export default function KoliListesiScreen() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [barcodeModalVisible, setBarcodeModalVisible] = useState<boolean>(false);
   const [barcodeInput, setBarcodeInput] = useState<string>('');
-  const [page, setPage] = useState<number>(1);
-  const [allItems, setAllItems] = useState<KoliItem[]>([]);
-  const ITEMS_PER_PAGE = 20 as const;
 
   const barcodeSearchMutation = useMutation({
     mutationFn: async (barcode: string) => {
@@ -84,58 +83,61 @@ export default function KoliListesiScreen() {
     barcodeSearchMutation.mutate(barcodeInput.trim());
   };
 
-  const koliQuery = useQuery({
+  const koliQuery = useInfiniteQuery({
     queryKey: ['koli-listesi', credentials],
-    queryFn: async () => {
-      console.log('KoliListesiScreen: Fetching koli listesi');
+    queryFn: async ({ pageParam = 0 }) => {
+      console.log('KoliListesiScreen: Fetching koli listesi with offSet:', pageParam);
       if (!credentials) {
         throw new Error('No credentials available');
       }
-      const items = await api.koliListesi.getList(credentials.userCode, credentials.password);
-      setAllItems(items);
-      setPage(1);
+      const items = await api.koliListesi.getList(credentials.userCode, credentials.password, pageParam, PAGE_LEN);
       return items;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.length < PAGE_LEN) {
+        console.log('KoliListesiScreen: No more pages, last page had', lastPage.length, 'items');
+        return undefined;
+      }
+      const nextOffset = allPages.length * PAGE_LEN;
+      console.log('KoliListesiScreen: Next offset will be', nextOffset);
+      return nextOffset;
     },
     enabled: !!credentials,
   });
 
+  const allItems = useMemo(() => {
+    return koliQuery.data?.pages.flat() || [];
+  }, [koliQuery.data]);
+
   const onRefresh = async () => {
     console.log('KoliListesiScreen: Manual refresh triggered');
     setRefreshing(true);
-    const result = await koliQuery.refetch();
-    if (result.data) {
-      setAllItems(result.data);
-      setPage(1);
-    }
+    await koliQuery.refetch();
     setRefreshing(false);
   };
 
   const filteredItems = useMemo(() => {
-    const items = allItems || [];
     if (!searchQuery.trim()) {
-      return items;
+      return allItems;
     }
 
     const query = searchQuery.toLowerCase();
-    return items.filter(
+    return allItems.filter(
       (item) =>
         (item.PackageNo?.toLowerCase().includes(query)) ||
         (item.Explanation?.toLowerCase().includes(query))
     );
   }, [allItems, searchQuery]);
 
-  const displayedItems = useMemo(() => {
-    return filteredItems.slice(0, page * ITEMS_PER_PAGE);
-  }, [filteredItems, page]);
-
-  const loadMore = () => {
-    if (displayedItems.length < filteredItems.length) {
-      console.log('KoliListesiScreen: Loading more items');
-      setPage(prev => prev + 1);
+  const loadMore = useCallback(() => {
+    if (koliQuery.hasNextPage && !koliQuery.isFetchingNextPage && !searchQuery.trim()) {
+      console.log('KoliListesiScreen: Loading more items from server');
+      koliQuery.fetchNextPage();
     }
-  };
+  }, [koliQuery.hasNextPage, koliQuery.isFetchingNextPage, searchQuery]);
 
-  if ((koliQuery.isLoading || koliQuery.isFetching) && allItems.length === 0 && !refreshing) {
+  if (koliQuery.isLoading && allItems.length === 0 && !refreshing) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.button.primary} />
@@ -189,14 +191,21 @@ export default function KoliListesiScreen() {
   );
 
   const renderFooter = () => {
-    if (displayedItems.length >= filteredItems.length) {
-      return null;
+    if (koliQuery.isFetchingNextPage) {
+      return (
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color={colors.button.primary} />
+        </View>
+      );
     }
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={colors.button.primary} />
-      </View>
-    );
+    if (!koliQuery.hasNextPage && allItems.length > 0 && !searchQuery.trim()) {
+      return (
+        <View style={styles.footerLoader}>
+          <Text style={styles.footerText}>Tüm koliler yüklendi</Text>
+        </View>
+      );
+    }
+    return null;
   };
 
   return (
@@ -216,15 +225,15 @@ export default function KoliListesiScreen() {
       </View>
 
       <FlatList
-        data={displayedItems}
+        data={filteredItems}
         renderItem={renderItem}
-        keyExtractor={(item, index) => `${item.PackageNo}-${index}`}
+        keyExtractor={(item, index) => `${item.PackageNo}-${item.id}-${index}`}
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.button.primary]} />
         }
         onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={0.3}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -422,6 +431,10 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 20,
     alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+    color: colors.text.secondary,
   },
   fab: {
     position: 'absolute',
