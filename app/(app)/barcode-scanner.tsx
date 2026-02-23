@@ -29,6 +29,7 @@ export default function BarcodeScannerScreen() {
   const { credentials } = useAuth();
   const queryClient = useQueryClient();
   const inputRef = useRef<TextInput>(null);
+  const barcodeValueRef = useRef("");
 
   // Terminalden veya klavyeden girilen değer
   const [barcode, setBarcode] = useState("");
@@ -249,9 +250,10 @@ export default function BarcodeScannerScreen() {
   });
 
   const handleBarcodeSubmit = () => {
-    const cleanBarcode = barcode.trim();
-    if (!cleanBarcode || barcodeMutation.isPending) return;
-    barcodeMutation.mutate(cleanBarcode);
+    const finalBarcode = barcodeValueRef.current.trim();
+    if (!finalBarcode || barcodeMutation.isPending) return;
+
+    barcodeMutation.mutate(finalBarcode);
   };
 
   // Dinamik Başlık ve Alt Başlıklar
@@ -326,7 +328,10 @@ export default function BarcodeScannerScreen() {
             ref={inputRef}
             style={styles.barcodeInput}
             value={barcode}
-            onChangeText={setBarcode}
+            onChangeText={(text) => {
+              setBarcode(text);
+              barcodeValueRef.current = text;
+            }}
             onSubmitEditing={handleBarcodeSubmit}
             placeholder="Okutun veya yazın..."
             placeholderTextColor={colors.text.secondary}
