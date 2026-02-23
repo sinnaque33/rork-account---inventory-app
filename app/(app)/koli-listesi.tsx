@@ -1,6 +1,12 @@
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { AlertCircle, Package, Search, Plus, ScanBarcode } from 'lucide-react-native';
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  Package,
+  Search,
+  Plus,
+  ScanBarcode,
+} from "lucide-react-native";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,12 +18,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { api, KoliItem } from '@/services/api';
-import { useAuth } from '@/contexts/AuthContext';
-import colors from '@/constants/colors';
+} from "react-native";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
+import { api, KoliItem } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
+import colors from "@/constants/colors";
 
 const PAGE_LEN = 7 as const;
 
@@ -25,65 +31,86 @@ export default function KoliListesiScreen() {
   const router = useRouter();
   const { credentials } = useAuth();
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [barcodeModalVisible, setBarcodeModalVisible] = useState<boolean>(false);
-  const [barcodeInput, setBarcodeInput] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [barcodeModalVisible, setBarcodeModalVisible] =
+    useState<boolean>(false);
+  const [barcodeInput, setBarcodeInput] = useState<string>("");
 
   const barcodeSearchMutation = useMutation({
     mutationFn: async (barcode: string) => {
-      if (!credentials) throw new Error('No credentials available');
-      console.log('KoliListesiScreen: Searching koli by barcode', barcode);
-      
+      if (!credentials) throw new Error("No credentials available");
+      console.log("KoliListesiScreen: Searching koli by barcode", barcode);
+
       // First get the RecId from koliDetayWithBarcode
-      const barcodeResult = await api.koliListesi.getKoliDetailByBarcode(credentials.userCode, credentials.password, barcode);
-      console.log('KoliListesiScreen: koliDetayWithBarcode result:', barcodeResult);
-      
+      const barcodeResult = await api.koliListesi.getKoliDetailByBarcode(
+        credentials.userCode,
+        credentials.password,
+        barcode,
+      );
+      console.log(
+        "KoliListesiScreen: koliDetayWithBarcode result:",
+        barcodeResult,
+      );
+
       // Check for error 99
       if (barcodeResult.err === 99) {
         return { err: 99, msg: barcodeResult.msg, recId: 0 };
       }
-      
+
       if (!barcodeResult.recId) {
-        throw new Error('Koli not found for this barcode');
+        throw new Error("Koli not found for this barcode");
       }
-      
+
       // Now fetch the full koli detail using the RecId
-      console.log('KoliListesiScreen: Fetching koliDetay with RecId:', barcodeResult.recId);
-      const koliDetail = await api.koliListesi.getDetail(credentials.userCode, credentials.password, barcodeResult.recId);
-      console.log('KoliListesiScreen: koliDetay result:', koliDetail);
-      
+      console.log(
+        "KoliListesiScreen: Fetching koliDetay with RecId:",
+        barcodeResult.recId,
+      );
+      const koliDetail = await api.koliListesi.getDetail(
+        credentials.userCode,
+        credentials.password,
+        barcodeResult.recId,
+      );
+      console.log("KoliListesiScreen: koliDetay result:", koliDetail);
+
       return { recId: barcodeResult.recId, items: koliDetail };
     },
     onSuccess: (data) => {
-      console.log('KoliListesiScreen: Barcode search success', data);
+      console.log("KoliListesiScreen: Barcode search success", data);
       if (data.err === 99) {
-        console.log('KoliListesiScreen: Error 99 received, showing message:', data.msg);
-        Alert.alert('Error', data.msg || 'An error occurred');
+        console.log(
+          "KoliListesiScreen: Error 99 received, showing message:",
+          data.msg,
+        );
+        Alert.alert("Error", data.msg || "An error occurred");
         return;
       }
       setBarcodeModalVisible(false);
-      setBarcodeInput('');
+      setBarcodeInput("");
       if (data.recId) {
         router.push(`/(app)/koli-detay?id=${data.recId}` as any);
       } else {
-        Alert.alert('Error', 'Koli not found for this barcode');
+        Alert.alert("Error", "Koli not found for this barcode");
       }
     },
     onError: (error) => {
-      console.error('KoliListesiScreen: Barcode search error', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to find koli');
+      console.error("KoliListesiScreen: Barcode search error", error);
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to find koli",
+      );
     },
   });
 
   const handleBarcodeSubmit = () => {
     if (!barcodeInput.trim()) {
-      Alert.alert('Error', 'Please enter a barcode');
+      Alert.alert("Error", "Please enter a barcode");
       return;
     }
     barcodeSearchMutation.mutate(barcodeInput.trim());
   };
 
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,29 +120,38 @@ export default function KoliListesiScreen() {
   }, [searchQuery]);
 
   const koliQuery = useInfiniteQuery({
-    queryKey: ['koli-listesi', credentials, debouncedSearchQuery],
+    queryKey: ["koli-listesi", credentials, debouncedSearchQuery],
     queryFn: async ({ pageParam = 0 }) => {
-      console.log('KoliListesiScreen: Fetching koli listesi with offSet:', pageParam, 'searchId:', debouncedSearchQuery);
+      console.log(
+        "KoliListesiScreen: Fetching koli listesi with offSet:",
+        pageParam,
+        "searchId:",
+        debouncedSearchQuery,
+      );
       if (!credentials) {
-        throw new Error('No credentials available');
+        throw new Error("No credentials available");
       }
       const items = await api.koliListesi.getList(
-        credentials.userCode, 
-        credentials.password, 
-        pageParam, 
-        PAGE_LEN, 
-        debouncedSearchQuery || undefined
+        credentials.userCode,
+        credentials.password,
+        pageParam,
+        PAGE_LEN,
+        debouncedSearchQuery || undefined,
       );
       return items;
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < PAGE_LEN) {
-        console.log('KoliListesiScreen: No more pages, last page had', lastPage.length, 'items');
+        console.log(
+          "KoliListesiScreen: No more pages, last page had",
+          lastPage.length,
+          "items",
+        );
         return undefined;
       }
       const nextOffset = allPages.length * PAGE_LEN;
-      console.log('KoliListesiScreen: Next offset will be', nextOffset);
+      console.log("KoliListesiScreen: Next offset will be", nextOffset);
       return nextOffset;
     },
     enabled: !!credentials,
@@ -126,7 +162,7 @@ export default function KoliListesiScreen() {
   }, [koliQuery.data]);
 
   const onRefresh = async () => {
-    console.log('KoliListesiScreen: Manual refresh triggered');
+    console.log("KoliListesiScreen: Manual refresh triggered");
     setRefreshing(true);
     await koliQuery.refetch();
     setRefreshing(false);
@@ -136,7 +172,7 @@ export default function KoliListesiScreen() {
 
   const loadMore = useCallback(() => {
     if (koliQuery.hasNextPage && !koliQuery.isFetchingNextPage) {
-      console.log('KoliListesiScreen: Loading more items from server');
+      console.log("KoliListesiScreen: Loading more items from server");
       koliQuery.fetchNextPage();
     }
   }, [koliQuery.hasNextPage, koliQuery.isFetchingNextPage]);
@@ -158,7 +194,7 @@ export default function KoliListesiScreen() {
         <Text style={styles.errorText}>
           {koliQuery.error instanceof Error
             ? koliQuery.error.message
-            : 'An error occurred'}
+            : "An error occurred"}
         </Text>
       </View>
     );
@@ -169,8 +205,10 @@ export default function KoliListesiScreen() {
       style={styles.card}
       activeOpacity={0.7}
       onPress={() => {
-        console.log('KoliListesiScreen: Item clicked with id', item.id);
-        router.push(`/(app)/koli-detay?id=${item.id}&receiptNo=${item.ReceiptNo || ''}&sipExp=${encodeURIComponent(item.SipExp || '')}` as any);
+        console.log("KoliListesiScreen: Item clicked with id", item.id);
+        router.push(
+          `/(app)/koli-detay?id=${item.id}&receiptNo=${item.ReceiptNo || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
+        );
       }}
       testID={`koli-item-${item.id}`}
     >
@@ -234,7 +272,11 @@ export default function KoliListesiScreen() {
         keyExtractor={(item, index) => `${item.PackageNo}-${item.id}-${index}`}
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.button.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.button.primary]}
+          />
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.3}
@@ -243,7 +285,9 @@ export default function KoliListesiScreen() {
           <View style={styles.emptyContainer}>
             <Package size={48} color={colors.text.secondary} />
             <Text style={styles.emptyText}>
-              {searchQuery ? 'No items match your search' : 'No koli items found'}
+              {searchQuery
+                ? "No items match your search"
+                : "No koli items found"}
             </Text>
           </View>
         }
@@ -283,7 +327,7 @@ export default function KoliListesiScreen() {
                 style={styles.modalCancelButton}
                 onPress={() => {
                   setBarcodeModalVisible(false);
-                  setBarcodeInput('');
+                  setBarcodeInput("");
                 }}
               >
                 <Text style={styles.modalCancelText}>İptal</Text>
@@ -306,7 +350,7 @@ export default function KoliListesiScreen() {
 
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/(app)/create-koli')}
+        onPress={() => router.push("/(app)/create-koli")}
         activeOpacity={0.8}
         testID="create-koli-button"
       >
@@ -328,8 +372,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border.default,
   },
   searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.background.darker,
     borderRadius: 12,
     paddingHorizontal: 16,
@@ -346,8 +390,8 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.background.dark,
     gap: 12,
     padding: 24,
@@ -359,25 +403,25 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 18,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
     color: colors.text.primary,
     marginTop: 8,
   },
   errorText: {
     fontSize: 14,
     color: colors.text.secondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 48,
     gap: 12,
   },
   emptyText: {
     fontSize: 16,
     color: colors.text.secondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   card: {
     backgroundColor: colors.background.card,
@@ -385,7 +429,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -393,17 +437,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   iconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(220, 20, 60, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(220, 20, 60, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   itemInfo: {
     flex: 1,
@@ -411,7 +455,7 @@ const styles = StyleSheet.create({
   },
   packageNo: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
     color: colors.text.primary,
     lineHeight: 22,
   },
@@ -423,41 +467,41 @@ const styles = StyleSheet.create({
   receiptNo: {
     fontSize: 13,
     color: colors.button.primary,
-    fontWeight: '500' as const,
+    fontWeight: "500" as const,
     lineHeight: 18,
   },
   sipExp: {
     fontSize: 13,
-    color: '#4CAF50',
-    fontWeight: '500' as const,
+    color: "#4CAF50",
+    fontWeight: "500" as const,
     lineHeight: 18,
   },
   footerLoader: {
     paddingVertical: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   footerText: {
     fontSize: 14,
     color: colors.text.secondary,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.button.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   fabSecondary: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 88,
     width: 52,
@@ -466,36 +510,36 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderWidth: 2,
     borderColor: colors.button.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   modalContent: {
     backgroundColor: colors.background.card,
     borderRadius: 16,
     padding: 24,
-    width: '100%',
+    width: "100%",
     maxWidth: 340,
     borderWidth: 1,
     borderColor: colors.border.default,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
     color: colors.text.primary,
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   barcodeInput: {
     backgroundColor: colors.background.darker,
@@ -509,7 +553,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   modalCancelButton: {
@@ -517,11 +561,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: colors.background.darker,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalCancelText: {
     fontSize: 16,
-    fontWeight: '500' as const,
+    fontWeight: "500" as const,
     color: colors.text.secondary,
   },
   modalSearchButton: {
@@ -529,11 +573,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: colors.button.primary,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalSearchText: {
     fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#fff',
+    fontWeight: "600" as const,
+    color: "#fff",
   },
 });

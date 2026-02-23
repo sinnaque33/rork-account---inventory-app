@@ -1,333 +1,603 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
   Platform,
-  Alert,
-} from 'react-native';
-import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
-import { useRouter } from 'expo-router';
-import { useMutation } from '@tanstack/react-query';
-import { X, Flashlight, FlashlightOff } from 'lucide-react-native';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import colors from '@/constants/colors';
+  Animated,
+  Easing,
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  X,
+  ScanBarcode,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react-native";
+import { useAuth } from "@/contexts/AuthContext";
+import colors from "@/constants/colors";
+import { api } from "@/services/api";
 
 export default function BarcodeScannerScreen() {
   const router = useRouter();
   const { credentials } = useAuth();
-  const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned] = useState<boolean>(false);
-  const [torch, setTorch] = useState<boolean>(false);
+  const queryClient = useQueryClient();
+  const inputRef = useRef<TextInput>(null);
 
+  // Terminalden veya klavyeden girilen değer
+  const [barcode, setBarcode] = useState("");
+
+  // Hata Modalı State'leri
+  const [resultModalVisible, setResultModalVisible] = useState(false);
+  const [resultData, setResultData] = useState({
+    title: "",
+    message: "",
+    type: "success" as "success" | "error",
+  });
+
+  const params = useLocalSearchParams<{
+    mode?: string;
+    koliId?: string;
+    orderReceiptId?: string;
+    accountName?: string;
+    receiptNo?: string;
+  }>();
+
+  // --- Toast İçeriği ve Animasyonu ---
+  const [toastContent, setToastContent] = useState({
+    title: "",
+    message: "",
+    type: "success",
+  });
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTranslateY = useRef(new Animated.Value(50)).current;
+
+  const showSuccessToast = (
+    title: string,
+    message: string,
+    type: "success" | "error" = "success",
+  ) => {
+    setToastContent({ title, message, type });
+
+    Animated.parallel([
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(toastTranslateY, {
+        toValue: 0,
+        duration: 400,
+        easing: Easing.out(Easing.back(1.5)),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(toastOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(toastTranslateY, {
+          toValue: 50,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 1500);
+  };
+
+  // Sayfa açıldığında veya modal kapandığında inputa odaklan
+  useEffect(() => {
+    const focusInput = () => {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300);
+      return () => clearTimeout(timer);
+    };
+    focusInput();
+  }, [resultModalVisible]);
+
+  // --- API İŞLEMLERİ (MUTATION) ---
   const barcodeMutation = useMutation({
-    mutationFn: async (barcode: string) => {
-      if (!credentials) {
-        throw new Error('No credentials available');
+    mutationFn: async (scannedBarcode: string) => {
+      if (!credentials) throw new Error("No credentials available");
+
+      // DURUM 1: SİPARİŞTEN YENİ KOLİ OLUŞTURMA VE İLK ÜRÜNÜ EKLEME
+      if (params.mode === "create_from_order" && params.orderReceiptId) {
+        console.log(
+          `Siparişten (${params.orderReceiptId}) koli oluşturuluyor...`,
+        );
+
+        const koliResult = await api.koliListesi.createKoliFromOrderReceipt(
+          credentials.userCode,
+          credentials.password,
+          parseInt(params.orderReceiptId, 10),
+        );
+
+        if (!koliResult.resultBoxId) {
+          throw new Error("Koli oluşturulamadı veya ID alınamadı.");
+        }
+
+        const newKoliId = koliResult.resultBoxId;
+        console.log(
+          `Koli oluşturuldu (ID: ${newKoliId}), ürün ekleniyor: ${scannedBarcode}`,
+        );
+
+        const addItemResult = await api.koliListesi.addItemByBarcode(
+          credentials.userCode,
+          credentials.password,
+          newKoliId,
+          scannedBarcode,
+        );
+
+        return {
+          mode: "create_from_order",
+          resultBoxId: newKoliId,
+          addResult: addItemResult,
+        };
       }
-      console.log('BarcodeScannerScreen: Calling getKoliDetailByBarcode with barcode:', barcode);
-      
-      // First get the RecId from koliDetayWithBarcode
+
+      // DURUM 2: Mevcut Koliye Ürün Ekleme veya Silme Modu
+      if (params.mode && params.koliId) {
+        const koliIdNum = parseInt(params.koliId, 10);
+
+        if (params.mode === "add") {
+          return await api.koliListesi.addItemByBarcode(
+            credentials.userCode,
+            credentials.password,
+            koliIdNum,
+            scannedBarcode,
+          );
+        } else if (params.mode === "delete") {
+          return await api.koliListesi.deleteItemByBarcode(
+            credentials.userCode,
+            credentials.password,
+            koliIdNum,
+            scannedBarcode,
+          );
+        }
+      }
+
+      // DURUM 3: Varsayılan (Koli Arama) Modu
       const barcodeResult = await api.koliListesi.getKoliDetailByBarcode(
         credentials.userCode,
         credentials.password,
-        barcode
+        scannedBarcode,
       );
-      
-      console.log('BarcodeScannerScreen: koliDetayWithBarcode result:', barcodeResult);
-      
-      // Check for error 99
-      if (barcodeResult.err === 99) {
-        return { err: 99, msg: barcodeResult.msg, recId: 0 };
-      }
-      
-      if (!barcodeResult.recId) {
-        throw new Error('Koli not found for this barcode');
-      }
-      
-      // Now fetch the full koli detail using the RecId
-      console.log('BarcodeScannerScreen: Fetching koliDetay with RecId:', barcodeResult.recId);
-      const koliDetail = await api.koliListesi.getDetail(
-        credentials.userCode,
-        credentials.password,
-        barcodeResult.recId
-      );
-      
-      console.log('BarcodeScannerScreen: koliDetay result:', koliDetail);
-      
-      return { recId: barcodeResult.recId, items: koliDetail };
+      if (barcodeResult.err === 99)
+        return { err: 99, msg: barcodeResult.msg, mode: "search" };
+      if (!barcodeResult.recId)
+        throw new Error("Bu barkoda ait koli bulunamadı");
+
+      return { recId: barcodeResult.recId, mode: "search" };
     },
-    onSuccess: (data) => {
-      console.log('BarcodeScannerScreen: Received koli detail:', data);
-      if (data.err === 99) {
-        console.log('BarcodeScannerScreen: Error 99 received, showing message:', data.msg);
-        Alert.alert('Error', data.msg || 'An error occurred');
-        setScanned(false);
+    onSuccess: (data: any) => {
+      setBarcode("");
+      inputRef.current?.focus();
+
+      // --- Yeni Siparişten Koli Oluşturma Başarılıysa ---
+      if (data.mode === "create_from_order") {
+        queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+        router.replace({
+          pathname: "/(app)/koli-detay",
+          params: {
+            id: data.resultBoxId.toString(),
+            receiptNo: params.receiptNo,
+          },
+        } as any);
         return;
       }
-      if (data.recId) {
-        router.replace(`/(app)/koli-detay?id=${data.recId}` as any);
-      } else {
-        Alert.alert('Error', 'Koli not found for this barcode');
-        setScanned(false);
+
+      // --- Koli Arama Modu Başarılıysa ---
+      if (data.mode === "search") {
+        if (data.err === 99) {
+          setResultData({
+            title: "Bulunamadı",
+            message: data.msg,
+            type: "error",
+          });
+          setResultModalVisible(true);
+        } else if (data.recId) {
+          router.replace(`/(app)/koli-detay?id=${data.recId}` as any);
+          return;
+        }
+      }
+      // --- Ekleme / Silme Modu Başarılıysa ---
+      else {
+        const isError = data.err !== 0 && data.err !== undefined;
+
+        if (isError) {
+          setResultData({
+            title: "İşlem Başarısız",
+            message: data.msg || "Hata oluştu.",
+            type: "error",
+          });
+          setResultModalVisible(true);
+        } else {
+          if (params.koliId) {
+            queryClient.invalidateQueries({
+              queryKey: ["koli-detay", params.koliId],
+            });
+          }
+          const isAdd = params.mode === "add";
+          showSuccessToast(
+            "Başarılı",
+            isAdd ? "Ürün koliye eklendi" : "Ürün koliden silindi",
+            "success",
+          );
+        }
       }
     },
     onError: (error: Error) => {
-      console.error('BarcodeScannerScreen: Error fetching koli detail:', error);
-      Alert.alert('Error', error.message || 'Failed to fetch koli details');
-      setScanned(false);
+      setResultData({
+        title: "Sistem Hatası",
+        message: error.message,
+        type: "error",
+      });
+      setResultModalVisible(true);
+      setBarcode("");
     },
   });
 
-  const handleBarcodeScanned = (result: BarcodeScanningResult) => {
-    if (scanned || barcodeMutation.isPending) return;
-    
-    console.log('BarcodeScannerScreen: Barcode scanned:', result.data, 'Type:', result.type);
-    setScanned(true);
-    barcodeMutation.mutate(result.data);
+  const handleBarcodeSubmit = () => {
+    const cleanBarcode = barcode.trim();
+    if (!cleanBarcode || barcodeMutation.isPending) return;
+    barcodeMutation.mutate(cleanBarcode);
   };
 
-  if (!permission) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.button.primary} />
-        <Text style={styles.loadingText}>Loading camera...</Text>
-      </View>
-    );
-  }
+  // Dinamik Başlık ve Alt Başlıklar
+  const getTitles = () => {
+    if (params.mode === "create_from_order") {
+      return {
+        title: "Siparişten Koli Aç",
+        subtitle: `${params.accountName || "Cari Seçildi"} - İlk ürünü okutun`,
+      };
+    }
+    if (params.mode === "add") {
+      return {
+        title: "Ürün Ekle",
+        subtitle: `Koli #${params.koliId} içine ürün ekleniyor`,
+      };
+    }
+    if (params.mode === "delete") {
+      return {
+        title: "Ürün Sil",
+        subtitle: `Koli #${params.koliId} içinden ürün siliniyor`,
+      };
+    }
+    return { title: "Koli Ara", subtitle: "Koli bilgisini görmek için okutun" };
+  };
 
-  if (!permission.granted) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.permissionTitle}>Camera Permission Required</Text>
-        <Text style={styles.permissionText}>
-          We need camera access to scan barcodes
-        </Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Grant Permission</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (Platform.OS === 'web') {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.permissionTitle}>Barcode Scanner</Text>
-        <Text style={styles.permissionText}>
-          Barcode scanning works best on mobile devices. Please use the mobile app via QR code.
-        </Text>
-        <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
-          <Text style={styles.cancelButtonText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  const { title, subtitle } = getTitles();
 
   return (
-    <View style={styles.container}>
-      <CameraView
-        style={styles.camera}
-        facing="back"
-        enableTorch={torch}
-        barcodeScannerSettings={{
-          barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39', 'code93', 'upc_a', 'upc_e', 'codabar', 'itf14', 'datamatrix', 'aztec', 'pdf417'],
-        }}
-        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
-      />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      {/* HEADER */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.back()}
+        >
+          <X size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Barkod Okutun</Text>
+        <TouchableOpacity
+          style={[
+            styles.headerButton,
+            { backgroundColor: colors.button.primary },
+          ]}
+          onPress={() => router.replace("/(app)/dashboard")}
+        >
+          <CheckCircle size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
 
-      <View style={styles.overlay}>
-        <View style={styles.header}>
+      {/* İÇERİK (Kamarasız, İkonlu Tasarım) */}
+      <View style={styles.content}>
+        <View
+          style={[
+            styles.iconCircle,
+            params.mode === "delete" && { borderColor: "#e74c3c" },
+          ]}
+        >
+          <ScanBarcode
+            size={64}
+            color={params.mode === "delete" ? "#e74c3c" : colors.button.primary}
+          />
+        </View>
+
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+
+        <View style={styles.inputSection}>
+          <TextInput
+            ref={inputRef}
+            style={styles.barcodeInput}
+            value={barcode}
+            onChangeText={setBarcode}
+            onSubmitEditing={handleBarcodeSubmit}
+            placeholder="Okutun veya yazın..."
+            placeholderTextColor={colors.text.secondary}
+            autoFocus
+            blurOnSubmit={false} // Enter'a basınca focus gitmesin (Seri okuma için kritik)
+            showSoftInputOnFocus={true} // Klavyeyi aç
+            selectTextOnFocus={true}
+          />
+
           <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => router.back()}
-            testID="close-scanner-button"
+            style={[
+              styles.submitButton,
+              params.mode === "delete" && { backgroundColor: "#e74c3c" },
+              (!barcode.trim() || barcodeMutation.isPending) && {
+                opacity: 0.5,
+              },
+            ]}
+            onPress={handleBarcodeSubmit}
+            disabled={!barcode.trim() || barcodeMutation.isPending}
           >
-            <X size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Barkod</Text>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => setTorch(!torch)}
-            testID="torch-button"
-          >
-            {torch ? (
-              <FlashlightOff size={24} color="#fff" />
+            {barcodeMutation.isPending ? (
+              <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Flashlight size={24} color="#fff" />
+              <Text style={styles.submitButtonText}>Gönder</Text>
             )}
           </TouchableOpacity>
         </View>
+      </View>
 
-        <View style={styles.scanArea}>
-          <View style={styles.scanFrame}>
-            <View style={[styles.corner, styles.topLeft]} />
-            <View style={[styles.corner, styles.topRight]} />
-            <View style={[styles.corner, styles.bottomLeft]} />
-            <View style={[styles.corner, styles.bottomRight]} />
+      {/* SONUÇ (HATA) MODALI */}
+      <Modal
+        visible={resultModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setResultModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View
+              style={[
+                styles.resultIconContainer,
+                { backgroundColor: "rgba(244, 67, 54, 0.1)" },
+              ]}
+            >
+              <AlertTriangle size={48} color="#F44336" />
+            </View>
+            <Text style={styles.resultTitle}>{resultData.title}</Text>
+            <Text style={styles.resultMessage}>{resultData.message}</Text>
+            <TouchableOpacity
+              style={[
+                styles.resultButton,
+                { backgroundColor: colors.background.darker },
+              ]}
+              onPress={() => {
+                setResultModalVisible(false);
+                inputRef.current?.focus(); // Kapanınca okuyucuya dön
+              }}
+            >
+              <Text
+                style={[
+                  styles.resultButtonText,
+                  { color: colors.text.primary },
+                ]}
+              >
+                Tekrar Dene
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
+      </Modal>
 
-        <View style={styles.footer}>
-          {barcodeMutation.isPending ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#fff" />
-              <Text style={styles.footerText}>Koli aranıyor...</Text>
-            </View>
+      {/* BAŞARI BİLDİRİMİ (Seri Okuma Toast'u) */}
+      <Animated.View
+        style={[
+          styles.toastContainer,
+          {
+            opacity: toastOpacity,
+            transform: [{ translateY: toastTranslateY }],
+          },
+        ]}
+        pointerEvents="none"
+      >
+        <View
+          style={[
+            styles.toastContent,
+            toastContent.type === "error" && {
+              borderColor: "rgba(244, 67, 54, 0.5)",
+            },
+          ]}
+        >
+          {toastContent.type === "success" ? (
+            <CheckCircle
+              size={24}
+              color="#4CAF50"
+              fill="rgba(76, 175, 80, 0.1)"
+            />
           ) : (
-            <Text style={styles.footerText}>
-              Position the barcode within the frame
-            </Text>
+            <X size={24} color="#F44336" />
           )}
+
+          <View>
+            <Text style={styles.toastTitle}>{toastContent.title}</Text>
+            <Text style={styles.toastSubtitle}>{toastContent.message}</Text>
+          </View>
         </View>
-      </View>
-    </View>
+      </Animated.View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  camera: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
-  },
+  container: { flex: 1, backgroundColor: colors.background.dark },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.background.card,
   },
   headerButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: '#fff',
-  },
-  scanArea: {
+  headerTitle: { fontSize: 18, fontWeight: "600", color: colors.text.primary },
+  content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 30,
   },
-  scanFrame: {
-    width: 280,
-    height: 280,
-    position: 'relative',
+  iconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.background.card,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: colors.border.default,
   },
-  corner: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderColor: colors.button.primary,
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: colors.text.primary,
+    marginBottom: 8,
+    textAlign: "center",
   },
-  topLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderTopLeftRadius: 8,
-  },
-  topRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
-    borderTopRightRadius: 8,
-  },
-  bottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
-    borderBottomLeftRadius: 8,
-  },
-  bottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
-    borderBottomRightRadius: 8,
-  },
-  footer: {
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-  },
-  footerText: {
+  subtitle: {
     fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
+    color: colors.text.secondary,
+    textAlign: "center",
+    marginBottom: 40,
   },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  inputSection: { width: "100%", position: "relative" },
+  barcodeInput: {
+    width: "100%",
+    backgroundColor: colors.background.card,
+    borderRadius: 12,
+    padding: 18,
+    fontSize: 18,
+    color: colors.text.primary,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "100%",
+    maxWidth: 320,
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  resultIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    alignSelf: "center",
+  },
+  resultTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: colors.text.primary,
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  resultMessage: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  resultButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  resultButtonText: { fontSize: 16, fontWeight: "600" },
+  submitButton: {
+    marginTop: 16,
+    backgroundColor: colors.button.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  toastContainer: {
+    position: "absolute",
+    bottom: 40,
+    left: 20,
+    right: 20,
+    alignItems: "center",
+    zIndex: 999,
+  },
+  toastContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.background.card,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "rgba(76, 175, 80, 0.5)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
     gap: 12,
   },
-  centerContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.dark,
-    padding: 24,
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    marginTop: 8,
-  },
-  permissionTitle: {
-    fontSize: 20,
-    fontWeight: '600' as const,
+  toastTitle: {
+    fontSize: 15,
+    fontWeight: "700",
     color: colors.text.primary,
-    textAlign: 'center',
   },
-  permissionText: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  permissionButton: {
-    backgroundColor: colors.button.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  permissionButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#fff',
-  },
-  cancelButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-  },
-  cancelButtonText: {
-    fontSize: 16,
+  toastSubtitle: {
+    fontSize: 12,
     color: colors.text.secondary,
   },
 });

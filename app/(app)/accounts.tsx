@@ -1,11 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
-import { FlatList, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { api, CurrentAccount } from '@/services/api';
-import { AlertCircle, Building2 } from 'lucide-react-native';
-import { useState, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import colors from '@/constants/colors';
+import { useQuery } from "@tanstack/react-query";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+  ActivityIndicator,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { api, CurrentAccount } from "@/services/api";
+import { AlertCircle, Building2 } from "lucide-react-native";
+import { useState, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import colors from "@/constants/colors";
 
 export default function AccountsScreen() {
   const { user } = useAuth();
@@ -13,12 +19,12 @@ export default function AccountsScreen() {
   const insets = useSafeAreaInsets();
 
   const accountsQuery = useQuery({
-    queryKey: ['accounts', user?.userName, user?.password],
+    queryKey: ["accounts", user?.userName, user?.password],
     queryFn: async () => {
       if (!user?.userName || !user?.password) {
-        throw new Error('User credentials not available');
+        throw new Error("User credentials not available");
       }
-      console.log('AccountsScreen: Fetching accounts');
+      console.log("AccountsScreen: Fetching accounts");
       return api.accounts.getList(user.userName, user.password);
     },
     enabled: !!user?.userName && !!user?.password,
@@ -27,25 +33,28 @@ export default function AccountsScreen() {
   const { refetch } = accountsQuery;
 
   const onRefresh = useCallback(async () => {
-    console.log('AccountsScreen: Manual refresh triggered');
+    console.log("AccountsScreen: Manual refresh triggered");
     setRefreshing(true);
     await refetch();
     setRefreshing(false);
   }, [refetch]);
 
-  const renderItem = useCallback(({ item }: { item: CurrentAccount }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <Building2 size={24} color={colors.button.primary} />
-        </View>
-        <View style={styles.cardContent}>
-          <Text style={styles.accountName}>{item.CurrentAccountName}</Text>
-          <Text style={styles.accountCode}>{item.CurrentAccountCode}</Text>
+  const renderItem = useCallback(
+    ({ item }: { item: CurrentAccount }) => (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconContainer}>
+            <Building2 size={24} color={colors.button.primary} />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.accountName}>{item.CurrentAccountName}</Text>
+            <Text style={styles.accountCode}>{item.CurrentAccountCode}</Text>
+          </View>
         </View>
       </View>
-    </View>
-  ), []);
+    ),
+    [],
+  );
 
   const renderFooter = () => {
     if (!accountsQuery.isFetching || refreshing) return null;
@@ -74,7 +83,7 @@ export default function AccountsScreen() {
           <Text style={styles.errorText}>
             {accountsQuery.error instanceof Error
               ? accountsQuery.error.message
-              : 'An error occurred'}
+              : "An error occurred"}
           </Text>
         </View>
       );
@@ -124,8 +133,8 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 48,
     gap: 12,
     padding: 24,
@@ -137,14 +146,14 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 18,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
     color: colors.text.primary,
     marginTop: 8,
   },
   errorText: {
     fontSize: 14,
     color: colors.text.secondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyText: {
     fontSize: 16,
@@ -156,7 +165,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -164,17 +173,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   iconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(220, 20, 60, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(220, 20, 60, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   cardContent: {
     flex: 1,
@@ -182,7 +191,7 @@ const styles = StyleSheet.create({
   },
   accountName: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
     color: colors.text.primary,
     lineHeight: 22,
   },
@@ -193,6 +202,6 @@ const styles = StyleSheet.create({
   },
   footerLoader: {
     paddingVertical: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
 });
