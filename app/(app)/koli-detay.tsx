@@ -341,7 +341,7 @@ export default function KoliDetayScreen() {
             // Modal açmak yerine okuyucu sayfasına yönlendiriyoruz
             router.push({
               pathname: "/barcode-scanner",
-              params: { mode: "add", koliId: id }, // Koli ID'sini ve Ekleme modunu gönderiyoruz
+              params: { mode: "add", koliId: id, receiptNo: receiptNo }, // Koli ID'sini ve Ekleme modunu gönderiyoruz
             });
           }}
         >
@@ -353,7 +353,7 @@ export default function KoliDetayScreen() {
           onPress={() => {
             router.push({
               pathname: "/barcode-scanner",
-              params: { mode: "delete", koliId: id }, // Koli ID'sini ve Silme modunu gönderiyoruz
+              params: { mode: "delete", koliId: id, receiptNo: receiptNo }, // Koli ID'sini ve Silme modunu gönderiyoruz
             });
           }}
         >

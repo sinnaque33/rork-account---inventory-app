@@ -26,21 +26,6 @@ import { api } from "@/services/api";
 
 export default function BarcodeScannerScreen() {
   const router = useRouter();
-  const { credentials } = useAuth();
-  const queryClient = useQueryClient();
-  const inputRef = useRef<TextInput>(null);
-  const barcodeValueRef = useRef("");
-
-  const [barcode, setBarcode] = useState("");
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Hata Modalı State'leri
-  const [resultModalVisible, setResultModalVisible] = useState(false);
-  const [resultData, setResultData] = useState({
-    title: "",
-    message: "",
-    type: "success" as "success" | "error",
-  });
 
   const params = useLocalSearchParams<{
     mode?: string;
@@ -49,6 +34,25 @@ export default function BarcodeScannerScreen() {
     accountName?: string;
     receiptNo?: string;
   }>();
+
+  const { credentials } = useAuth();
+  const queryClient = useQueryClient();
+  const inputRef = useRef<TextInput>(null);
+  const barcodeValueRef = useRef("");
+
+  const [barcode, setBarcode] = useState("");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [displayBoxCode, setDisplayBoxCode] = useState<string | null>(
+    params.receiptNo || null,
+  );
+
+  // Hata Modalı State'leri
+  const [resultModalVisible, setResultModalVisible] = useState(false);
+  const [resultData, setResultData] = useState({
+    title: "",
+    message: "",
+    type: "success" as "success" | "error",
+  });
 
   // --- Toast İçeriği ve Animasyonu ---
   const [toastContent, setToastContent] = useState({
@@ -185,10 +189,14 @@ export default function BarcodeScannerScreen() {
       setBarcode("");
       inputRef.current?.focus();
 
-      // --- Ekleme / Silme / Yeni Koli Durumları İçin Ortak Mesaj Yönetimi ---
-      // API'den gelen detaylı açıklamayı alıyoruz (Loglardan teyit ettiğimiz alan)
+      // API'den gelen detaylı açıklamayı alıyoruz
       const explanation =
         data.addResult?.resultExplanation || data.resultExplanation || data.msg;
+
+      // --- Koli Kodunu Güncelleme
+      if (data.boxCode || data.addResult?.boxCode) {
+        setDisplayBoxCode(data.boxCode || data.addResult?.boxCode);
+      }
 
       // Yeni Siparişten Koli Oluşturma Durumu
       if (data.mode === "create_from_order") {
@@ -198,7 +206,7 @@ export default function BarcodeScannerScreen() {
           params: {
             id: data.resultBoxId.toString(),
             receiptNo: params.receiptNo,
-            initialSuccessMsg: explanation, // Detayı detay sayfasına taşıyabilirsin
+            initialSuccessMsg: explanation,
           },
         } as any);
         return;
@@ -209,6 +217,7 @@ export default function BarcodeScannerScreen() {
         const isError = data.err !== 0 && data.err !== undefined;
 
         if (isError) {
+          setSuccessMessage(null);
           setResultData({
             title: "İşlem Başarısız",
             message: explanation || "Hata oluştu.",
@@ -221,8 +230,6 @@ export default function BarcodeScannerScreen() {
               queryKey: ["koli-detay", params.koliId],
             });
           }
-
-          // Sinan Bey'in istediği yeşil mesajı set ediyoruz
           setSuccessMessage(explanation);
 
           // Toast gösterimi
@@ -232,9 +239,6 @@ export default function BarcodeScannerScreen() {
             isAdd ? "Ürün eklendi" : "Ürün silindi",
             "success",
           );
-
-          // 5 saniye sonra yeşil mesajı ekrandan kaldır
-          setTimeout(() => setSuccessMessage(null), 5000);
         }
       }
       // Koli Arama Durumu
@@ -265,7 +269,7 @@ export default function BarcodeScannerScreen() {
   const handleBarcodeSubmit = () => {
     const finalBarcode = barcodeValueRef.current.trim();
     if (!finalBarcode || barcodeMutation.isPending) return;
-
+    setSuccessMessage(null);
     barcodeMutation.mutate(finalBarcode);
   };
 
@@ -280,13 +284,13 @@ export default function BarcodeScannerScreen() {
     if (params.mode === "add") {
       return {
         title: "Ürün Ekle",
-        subtitle: `Koli #${params.koliId} içine ürün ekleniyor`,
+        subtitle: `Koli #${displayBoxCode || params.koliId} içine ürün ekleniyor`,
       };
     }
     if (params.mode === "delete") {
       return {
         title: "Ürün Sil",
-        subtitle: `Koli #${params.koliId} içinden ürün siliniyor`,
+        subtitle: `Koli #${displayBoxCode || params.koliId} içinden ürün siliniyor`,
       };
     }
     return { title: "Koli Ara", subtitle: "Koli bilgisini görmek için okutun" };

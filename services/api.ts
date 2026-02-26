@@ -527,6 +527,7 @@ export const api = {
       success: string;
       msg: string;
       err?: number;
+      boxCode?: string;
       resultExplanation?: string;
     }> {
       const apiBaseUrl = await getApiBaseUrl();
@@ -580,6 +581,7 @@ export const api = {
         success: resData.success,
         msg: resData.msg,
         err: resData.err,
+        boxCode: innerData?.resultBoxCode,
         resultExplanation: innerData?.resultExplanation || resData.msg,
       };
     },
