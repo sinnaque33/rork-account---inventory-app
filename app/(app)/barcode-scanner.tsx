@@ -31,8 +31,8 @@ export default function BarcodeScannerScreen() {
   const inputRef = useRef<TextInput>(null);
   const barcodeValueRef = useRef("");
 
-  // Terminalden veya klavyeden girilen değer
   const [barcode, setBarcode] = useState("");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Hata Modalı State'leri
   const [resultModalVisible, setResultModalVisible] = useState(false);
@@ -185,7 +185,12 @@ export default function BarcodeScannerScreen() {
       setBarcode("");
       inputRef.current?.focus();
 
-      // --- Yeni Siparişten Koli Oluşturma Başarılıysa ---
+      // --- Ekleme / Silme / Yeni Koli Durumları İçin Ortak Mesaj Yönetimi ---
+      // API'den gelen detaylı açıklamayı alıyoruz (Loglardan teyit ettiğimiz alan)
+      const explanation =
+        data.addResult?.resultExplanation || data.resultExplanation || data.msg;
+
+      // Yeni Siparişten Koli Oluşturma Durumu
       if (data.mode === "create_from_order") {
         queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
         router.replace({
@@ -193,33 +198,20 @@ export default function BarcodeScannerScreen() {
           params: {
             id: data.resultBoxId.toString(),
             receiptNo: params.receiptNo,
+            initialSuccessMsg: explanation, // Detayı detay sayfasına taşıyabilirsin
           },
         } as any);
         return;
       }
 
-      // --- Koli Arama Modu Başarılıysa ---
-      if (data.mode === "search") {
-        if (data.err === 99) {
-          setResultData({
-            title: "Bulunamadı",
-            message: data.msg,
-            type: "error",
-          });
-          setResultModalVisible(true);
-        } else if (data.recId) {
-          router.replace(`/(app)/koli-detay?id=${data.recId}` as any);
-          return;
-        }
-      }
-      // --- Ekleme / Silme Modu Başarılıysa ---
-      else {
+      // Seri Okuma (Ekleme/Silme) Durumu
+      if (data.mode !== "search") {
         const isError = data.err !== 0 && data.err !== undefined;
 
         if (isError) {
           setResultData({
             title: "İşlem Başarısız",
-            message: data.msg || "Hata oluştu.",
+            message: explanation || "Hata oluştu.",
             type: "error",
           });
           setResultModalVisible(true);
@@ -229,12 +221,33 @@ export default function BarcodeScannerScreen() {
               queryKey: ["koli-detay", params.koliId],
             });
           }
+
+          // Sinan Bey'in istediği yeşil mesajı set ediyoruz
+          setSuccessMessage(explanation);
+
+          // Toast gösterimi
           const isAdd = params.mode === "add";
           showSuccessToast(
             "Başarılı",
-            isAdd ? "Ürün koliye eklendi" : "Ürün koliden silindi",
+            isAdd ? "Ürün eklendi" : "Ürün silindi",
             "success",
           );
+
+          // 5 saniye sonra yeşil mesajı ekrandan kaldır
+          setTimeout(() => setSuccessMessage(null), 5000);
+        }
+      }
+      // Koli Arama Durumu
+      else {
+        if (data.err === 99) {
+          setResultData({
+            title: "Bulunamadı",
+            message: data.msg,
+            type: "error",
+          });
+          setResultModalVisible(true);
+        } else if (data.recId) {
+          router.replace(`/(app)/koli-detay?id=${data.recId}` as any);
         }
       }
     },
@@ -340,6 +353,12 @@ export default function BarcodeScannerScreen() {
             showSoftInputOnFocus={true} // Klavyeyi aç
             selectTextOnFocus={true}
           />
+          {successMessage && (
+            <View style={styles.resultExplanationBox}>
+              <CheckCircle size={18} color="#2E7D32" />
+              <Text style={styles.resultExplanationText}>{successMessage}</Text>
+            </View>
+          )}
 
           <TouchableOpacity
             style={[
@@ -604,5 +623,22 @@ const styles = StyleSheet.create({
   toastSubtitle: {
     fontSize: 12,
     color: colors.text.secondary,
+  },
+  resultExplanationBox: {
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
+    padding: 12,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "rgba(76, 175, 80, 0.3)",
+    gap: 10,
+  },
+  resultExplanationText: {
+    color: "#2E7D32",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
   },
 });

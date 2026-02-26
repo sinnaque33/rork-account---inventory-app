@@ -113,8 +113,8 @@ export default function OrderReceiptsScreen() {
     return items.filter(
       (item) =>
         item.ReceiptNo?.toLowerCase().includes(query) ||
-        item.CurrentAccountName?.toLowerCase().includes(query) ||
-        item.RecId?.toString().includes(query),
+        item.CurrentAccountName?.toLowerCase().includes(query)
+        // item.RecId?.toString().includes(query),
     );
   }, [orderReceiptsQuery.data, searchQuery]);
 
@@ -158,7 +158,7 @@ export default function OrderReceiptsScreen() {
         <View style={styles.itemInfo}>
           <Text style={styles.receiptNo}>{item.ReceiptNo}</Text>
           <Text style={styles.accountName}>{item.CurrentAccountName}</Text>
-          <Text style={styles.recId}>ID: {item.RecId}</Text>
+          {/* <Text style={styles.recId}>ID: {item.RecId}</Text> */}
         </View>
       </View>
     </TouchableOpacity>

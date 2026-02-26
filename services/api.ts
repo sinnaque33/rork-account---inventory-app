@@ -517,75 +517,70 @@ export const api = {
       return data.data?.items || [];
     },
 
-    async addItemByBarcode(
+   async addItemByBarcode(
       userName: string,
       password: string,
       boxId: number,
       barcode: string,
       orderReceiptId?: number,
-    ): Promise<{ success: string; msg: string; err?: number }> {
-      console.log(
-        "API: Adding item by barcode to box",
-        boxId,
-        "OrderID:",
-        orderReceiptId,
-      );
-
+    ): Promise<{
+      success: string;
+      msg: string;
+      err?: number;
+      resultExplanation?: string;
+    }> {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
-      // TypeScript hatasını önlemek için objeyi oluştururken alanı dahil ediyoruz
-      const dataPayload = {
+      const dataPayload: any = {
         serviceType: 11,
         boxId: boxId,
         boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
         inventoryBarcode: barcode,
         quantity: 1,
         orderConnection: 1,
-        orderShipmentControlType: 1,
-        // Eğer orderReceiptId varsa gönderiyoruz, yoksa 0 (veya API'niz ne bekliyorsa) gönderiyoruz
+        orderShipmentControlType: 3,
         orderReceiptId: orderReceiptId || 0,
       };
 
-      const requestBody = {
-        data: JSON.stringify(dataPayload),
-        userName,
-        password,
-        companyCode: companyCode || "",
-        companyPassword: companyPassword || "",
-        licenseKey: "16016923",
-        logout: true,
-      };
-
-      console.log(
-        "API: AddItemByBarcode Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
-
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: JSON.stringify(dataPayload),
+          userName,
+          password,
+          companyCode: companyCode || "",
+          companyPassword: companyPassword || "",
+          licenseKey: "16016923",
+          logout: true,
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+      const resData = await response.json();
+
+      // --- PARSE İŞLEMİ ---
+      let innerData: any = {};
+      try {
+        innerData = typeof resData.data === "string" ? JSON.parse(resData.data) : resData.data;
+      } catch (e) {
+        console.log("API: Data parse edilemedi");
       }
 
-      const data = await response.json();
-      console.log(
-        "API: AddItemByBarcode Response:",
-        JSON.stringify(data, null, 2),
-      );
+      console.log("-----------------------------------------");
+      console.log("📦 KOLİ İŞLEM DETAYI");
+      console.log(`Hedef BoxId (Param): ${boxId}`);
+      console.log(`Dönen BoxCode (ERP): ${innerData?.resultBoxCode || "Yok"}`);
+      console.log(`Okutulan Barkod: ${barcode}`);
+      console.log(`ERP Mesajı: ${resData.msg}`);
+      console.log("-----------------------------------------");
 
-      // Hem success durumunu hem de ERP'den gelen hata kodunu (err) döndürüyoruz
       return {
-        success: data.success,
-        msg: data.msg,
-        err: data.err,
+        success: resData.success,
+        msg: resData.msg,
+        err: resData.err,
+        resultExplanation: innerData?.resultExplanation || resData.msg,
       };
     },
 
@@ -607,7 +602,7 @@ export const api = {
         orderReceiptId: orderReceiptId,
         boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
         orderConnection: 1,
-        orderShipmentControlType: 2,
+        orderShipmentControlType: 3,
       };
 
       const requestBody = {
@@ -681,7 +676,7 @@ export const api = {
         inventoryReceiptType: 120,
         inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
         orderConnection: 1,
-        orderShipmentControlType: 2,
+        orderShipmentControlType: 3,
       };
 
       const requestBody = {
@@ -798,7 +793,7 @@ export const api = {
         inventoryBarcode: barcode,
         quantity: -1,
         orderConnection: 1,
-        orderShipmentControlType: 1,
+        orderShipmentControlType: 3,
       };
 
       const requestBody = {
@@ -861,7 +856,7 @@ export const api = {
           { name: "Status", value: "2" },
         ],
         orderConnection: 1,
-        orderShipmentControlType: 1,
+        orderShipmentControlType: 3,
       };
 
       const requestBody = {
