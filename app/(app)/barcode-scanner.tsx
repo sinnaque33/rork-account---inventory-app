@@ -23,10 +23,35 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
 import { api } from "@/services/api";
+import { Audio } from "expo-av";
+import { Vibration } from "react-native";
+import { useApiConfig } from "@/contexts/ApiConfigContext";
+import { SOUND_FILES } from "@/constants/sounds";
 
 export default function BarcodeScannerScreen() {
   const router = useRouter();
+  const { errorSound } = useApiConfig();
+  const playErrorSignal = async () => {
+    try {
+      // Her zaman titret
+      Vibration.vibrate(500);
 
+      // Ayar "vibration" değilse ve ses dosyası varsa çal
+      if (errorSound !== "vibration" && SOUND_FILES[errorSound]) {
+        const { sound } = await Audio.Sound.createAsync(
+          SOUND_FILES[errorSound],
+          { shouldPlay: true }
+        );
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            sound.unloadAsync();
+          }
+        });
+      }
+    } catch (e) {
+      console.log("Ses çalma hatası:", e);
+    }
+  };
   const params = useLocalSearchParams<{
     mode?: string;
     koliId?: string;
@@ -217,6 +242,7 @@ export default function BarcodeScannerScreen() {
         const isError = data.err !== 0 && data.err !== undefined;
 
         if (isError) {
+          playErrorSignal();
           setSuccessMessage(null);
           setResultData({
             title: "İşlem Başarısız",
@@ -256,6 +282,7 @@ export default function BarcodeScannerScreen() {
       }
     },
     onError: (error: Error) => {
+      playErrorSignal();
       setResultData({
         title: "Sistem Hatası",
         message: error.message,
