@@ -1,8 +1,8 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, useRouter } from 'expo-router';
-import { Settings, RefreshCw, Save, CheckCircle } from 'lucide-react-native';
-import { useState, useEffect, useRef } from 'react';
-import { Audio, InterruptionModeAndroid } from 'expo-av';
+import { LinearGradient } from "expo-linear-gradient";
+import { Stack, useRouter } from "expo-router";
+import { Settings, RefreshCw, Save, CheckCircle } from "lucide-react-native";
+import { useState, useEffect, useRef } from "react";
+import { Audio, InterruptionModeAndroid } from "expo-av";
 import {
   ActivityIndicator,
   Alert,
@@ -17,35 +17,37 @@ import {
   Animated,
   Easing,
   Vibration,
-} from 'react-native';
-import { useApiConfig } from '@/contexts/ApiConfigContext';
-import colors from '@/constants/colors';
-import { SOUND_OPTIONS } from '@/constants/sounds';
+} from "react-native";
+import { useApiConfig } from "@/contexts/ApiConfigContext";
+import colors from "@/constants/colors";
+import { SOUND_OPTIONS } from "@/constants/sounds";
 
 export default function SettingsScreen() {
-  const { 
-    apiBaseUrl, 
-    companyCode, 
-    companyPassword, 
-    warehouseId, 
-    errorSound, 
-    updateApiUrl, 
-    updateCompanyCode, 
-    updateCompanyPassword, 
-    updateWarehouseId, 
-    updateErrorSound, 
-    resetToDefault, 
-    isLoading, 
-    isSaving, 
-    defaultUrl 
+  const {
+    apiBaseUrl,
+    companyCode,
+    companyPassword,
+    warehouseId,
+    errorSound,
+    updateApiUrl,
+    updateCompanyCode,
+    updateCompanyPassword,
+    updateWarehouseId,
+    updateErrorSound,
+    resetToDefault,
+    isLoading,
+    isSaving,
+    defaultUrl,
   } = useApiConfig();
-  
-  const [url, setUrl] = useState<string>('');
-  const [code, setCode] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [whId, setWhId] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [selectedSound, setSelectedSound] = useState<string>(errorSound || 'error_1');
+
+  const [url, setUrl] = useState<string>("");
+  const [code, setCode] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [whId, setWhId] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [selectedSound, setSelectedSound] = useState<string>(
+    errorSound || "error_1",
+  );
   const router = useRouter();
 
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -99,14 +101,14 @@ export default function SettingsScreen() {
 
   const validateUrl = (text: string): boolean => {
     if (!text) {
-      setError('URL is required');
+      setError("URL is required");
       return false;
     }
-    if (!text.startsWith('http://') && !text.startsWith('https://')) {
-      setError('URL must start with http:// or https://');
+    if (!text.startsWith("http://") && !text.startsWith("https://")) {
+      setError("URL must start with http:// or https://");
       return false;
     }
-    setError('');
+    setError("");
     return true;
   };
 
@@ -147,33 +149,33 @@ export default function SettingsScreen() {
       await updateCompanyPassword(password.trim());
       await updateWarehouseId(whId.trim());
       await updateErrorSound(selectedSound);
-      
+
       showSuccessToast();
     } catch {
-      Alert.alert('Error', 'Failed to save settings');
+      Alert.alert("Error", "Failed to save settings");
     }
   };
 
   const handleReset = () => {
     Alert.alert(
-      'Reset to Default',
-      'Are you sure you want to reset all settings to default?',
+      "Reset to Default",
+      "Are you sure you want to reset all settings to default?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Reset',
-          style: 'destructive',
+          text: "Reset",
+          style: "destructive",
           onPress: async () => {
             await resetToDefault();
             setUrl(defaultUrl);
-            setCode('');
-            setPassword('');
-            setWhId('');
-            setSelectedSound('error_1');
-            Alert.alert('Success', 'Settings reset to default');
+            setCode("");
+            setPassword("");
+            setWhId("");
+            setSelectedSound("error_1");
+            Alert.alert("Success", "Settings reset to default");
           },
         },
-      ]
+      ],
     );
   };
 
@@ -187,28 +189,28 @@ export default function SettingsScreen() {
 
   return (
     <>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           headerShown: true,
-          title: 'API Settings',
+          title: "API Settings",
           headerStyle: {
             backgroundColor: colors.background.darker,
           },
           headerTintColor: colors.text.primary,
           headerTitleStyle: {
-            fontWeight: '600' as const,
+            fontWeight: "600" as const,
           },
-        }} 
+        }}
       />
       <LinearGradient
         colors={[colors.background.darker, colors.background.dark]}
         style={styles.container}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
-          <ScrollView 
+          <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
@@ -219,9 +221,7 @@ export default function SettingsScreen() {
                   <Settings size={40} color="#fff" strokeWidth={2} />
                 </View>
                 <Text style={styles.title}>API Ayarları</Text>
-                <Text style={styles.subtitle}>
-                  API Ayarlarını yapınız
-                </Text>
+                <Text style={styles.subtitle}>API Ayarlarını yapınız</Text>
               </View>
 
               <View style={styles.form}>
@@ -243,9 +243,7 @@ export default function SettingsScreen() {
                     testID="api-url-input"
                     multiline
                   />
-                  {error ? (
-                    <Text style={styles.errorText}>{error}</Text>
-                  ) : null}
+                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -295,6 +293,24 @@ export default function SettingsScreen() {
                   />
                 </View>
 
+
+            {/* <View style={styles.inputGroup}>
+              <Text style={styles.label}>Depo ID / Kodu</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Depo Kodunu giriniz"
+                placeholderTextColor={colors.input.placeholder}
+                value={whId}
+                onChangeText={setWhId}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                keyboardType="default"
+                editable={!isSaving}
+                testID="warehouse-id-input"
+              />
+            </View> */}
+
+
                 {/* Yeni Eklenen Ses Seçim Grubu */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Hata Uyarı Tipi</Text>
@@ -304,7 +320,8 @@ export default function SettingsScreen() {
                         key={option.id}
                         style={[
                           styles.soundOption,
-                          selectedSound === option.id && styles.soundOptionSelected,
+                          selectedSound === option.id &&
+                            styles.soundOptionSelected,
                         ]}
                         onPress={() => {
                           setSelectedSound(option.id);
@@ -314,7 +331,8 @@ export default function SettingsScreen() {
                         <Text
                           style={[
                             styles.soundOptionText,
-                            selectedSound === option.id && styles.soundOptionTextSelected,
+                            selectedSound === option.id &&
+                              styles.soundOptionTextSelected,
                           ]}
                         >
                           {option.name}
@@ -366,7 +384,8 @@ export default function SettingsScreen() {
               <View style={styles.helpBox}>
                 <Text style={styles.helpTitle}>Yardım</Text>
                 <Text style={styles.helpText}>
-                  API URL bilgisi tüm servisler için kullanılır. Doğruluğundan emin olunuz.
+                  API URL bilgisi tüm servisler için kullanılır. Doğruluğundan
+                  emin olunuz.
                 </Text>
               </View>
             </View>
@@ -400,8 +419,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: colors.background.darker,
   },
   keyboardView: {
@@ -419,7 +438,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 32,
   },
   iconContainer: {
@@ -427,20 +446,20 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     backgroundColor: colors.button.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
     color: colors.text.primary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
     color: colors.text.secondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   form: {
     gap: 20,
@@ -450,7 +469,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
     color: colors.text.primary,
     marginBottom: 4,
   },
@@ -461,8 +480,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.input.text,
     borderWidth: 1,
-    borderColor: 'transparent',
-    textAlignVertical: 'top',
+    borderColor: "transparent",
+    textAlignVertical: "top",
   },
   inputError: {
     borderColor: colors.border.error,
@@ -478,9 +497,9 @@ const styles = StyleSheet.create({
   button: {
     borderRadius: 12,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
   },
   primaryButton: {
@@ -500,19 +519,19 @@ const styles = StyleSheet.create({
   buttonText: {
     color: colors.text.primary,
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
   },
   helpBox: {
     marginTop: 24,
     padding: 16,
-    backgroundColor: 'rgba(220, 20, 60, 0.1)',
+    backgroundColor: "rgba(220, 20, 60, 0.1)",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(220, 20, 60, 0.3)',
+    borderColor: "rgba(220, 20, 60, 0.3)",
   },
   helpTitle: {
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
     color: colors.button.primary,
     marginBottom: 8,
   },
@@ -523,35 +542,35 @@ const styles = StyleSheet.create({
   },
   // Yeni eklenen stiller
   toastContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 50,
     left: 20,
     right: 20,
-    alignItems: 'center',
+    alignItems: "center",
     zIndex: 99,
   },
   toastContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.background.card,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.4)',
+    borderColor: "rgba(76, 175, 80, 0.4)",
     elevation: 5,
     gap: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
   toastText: {
     color: colors.text.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   soundSelectorContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
     marginTop: 5,
   },
@@ -563,8 +582,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.input.background,
     borderWidth: 1,
     borderColor: colors.border.default,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   soundOptionSelected: {
     backgroundColor: colors.button.primary,
@@ -573,10 +592,10 @@ const styles = StyleSheet.create({
   soundOptionText: {
     color: colors.text.secondary,
     fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   soundOptionTextSelected: {
-    color: '#fff',
+    color: "#fff",
   },
 });

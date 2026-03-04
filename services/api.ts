@@ -517,7 +517,7 @@ export const api = {
       return data.data?.items || [];
     },
 
-   async addItemByBarcode(
+    async addItemByBarcode(
       userName: string,
       password: string,
       boxId: number,
@@ -564,7 +564,10 @@ export const api = {
       // --- PARSE İŞLEMİ ---
       let innerData: any = {};
       try {
-        innerData = typeof resData.data === "string" ? JSON.parse(resData.data) : resData.data;
+        innerData =
+          typeof resData.data === "string"
+            ? JSON.parse(resData.data)
+            : resData.data;
       } catch (e) {
         console.log("API: Data parse edilemedi");
       }
@@ -834,6 +837,59 @@ export const api = {
       return { success: data.success, msg: data.msg };
     },
 
+    async openBox(
+      userName: string,
+      password: string,
+      boxId: number,
+    ): Promise<{ success: string; msg: string }> {
+      console.log("API: Opening box", boxId);
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+
+      const dataPayload = {
+        serviceType: 2,
+        boxId: boxId,
+        boxFieldsValue: [
+          { name: "Status", value: "0" }, // Sadece statüyü 0 olarak gönderiyoruz
+        ],
+        orderConnection: 1,
+        orderShipmentControlType: 3,
+      };
+
+      const requestBody = {
+        data: JSON.stringify(dataPayload),
+        userName,
+        password,
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        licenseKey: "16016923",
+        logout: true,
+      };
+
+      // YENİ EKLENEN LOG: İstek atılmadan önce ne gönderildiğini konsola yazdırır
+      console.log(
+        "API: OpenBox Request:",
+        JSON.stringify(requestBody, null, 2),
+      );
+
+      const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("API: OpenBox Response:", JSON.stringify(data, null, 2));
+
+      return { success: data.success, msg: data.msg };
+    },
     async closeBox(
       userName: string,
       password: string,
@@ -841,10 +897,12 @@ export const api = {
       grossWeight: string,
       netWeight: string,
     ): Promise<{ success: string; msg: string }> {
+      // 1. Fonksiyonun tetiklendiğini ve aldığı parametreleri gösteren log
       console.log("API: Closing box", boxId, "with weights", {
         grossWeight,
         netWeight,
       });
+
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
@@ -871,6 +929,7 @@ export const api = {
         logout: true,
       };
 
+      // 2. İstek (Request) atılmadan önceki JSON verisini gösteren log
       console.log(
         "API: CloseBox Request:",
         JSON.stringify(requestBody, null, 2),
@@ -889,6 +948,8 @@ export const api = {
       }
 
       const data = await response.json();
+
+      // 3. API'den dönen cevabı (Response) gösteren log
       console.log("API: CloseBox Response:", JSON.stringify(data, null, 2));
 
       return { success: data.success, msg: data.msg };

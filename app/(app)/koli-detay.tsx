@@ -4,7 +4,9 @@ import {
   Package,
   FileText,
   Lock,
+  Unlock,
   Trash2,
+  CheckCircle,
 } from "lucide-react-native";
 import {
   ActivityIndicator,
@@ -17,11 +19,15 @@ import {
   Modal,
   Alert,
   Image,
+  Animated,
+  Easing,
+  Keyboard
 } from "react-native";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { api, KoliDetailItem } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+
 import colors from "@/constants/colors";
 
 function byteArrayToBase64(
@@ -60,16 +66,63 @@ export default function KoliDetayScreen() {
     receiptNo?: string;
     sipExp?: string;
   }>();
+
   const { credentials } = useAuth();
   const router = useRouter();
 
   const queryClient = useQueryClient();
-  const [barcodeMode, setBarcodeMode] = useState<"add" | "delete" | null>(null);
-  const [barcodeValue, setBarcodeValue] = useState("");
   const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
   const [showCloseBoxModal, setShowCloseBoxModal] = useState(false);
   const [grossWeight, setGrossWeight] = useState("");
   const [netWeight, setNetWeight] = useState("");
+  const [weightError, setWeightError] = useState<string | null>(null);
+  const [showOpenBoxConfirm, setShowOpenBoxConfirm] = useState(false);
+
+  // --- Toast İçeriği ve Animasyonu ---
+  const [toastContent, setToastContent] = useState({
+    title: "",
+    message: "",
+    type: "success" as "success" | "error",
+  });
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTranslateY = useRef(new Animated.Value(50)).current;
+
+  const showToast = (
+    title: string,
+    message: string,
+    type: "success" | "error" = "success",
+  ) => {
+    setToastContent({ title, message, type });
+
+    Animated.parallel([
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(toastTranslateY, {
+        toValue: 0,
+        duration: 400,
+        easing: Easing.out(Easing.back(1.5)),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(toastOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(toastTranslateY, {
+          toValue: 50,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 2000);
+  };
 
   const closeBoxMutation = useMutation({
     mutationFn: async ({
@@ -96,7 +149,7 @@ export default function KoliDetayScreen() {
     },
     onSuccess: (data) => {
       console.log("KoliDetayScreen: Close box success", data);
-      Alert.alert("Result", data.msg || "Operation completed");
+      showToast("Başarılı", data.msg || "Koli başarıyla açıldı", "success");
       setShowCloseBoxModal(false);
       setGrossWeight("");
       setNetWeight("");
@@ -108,6 +161,33 @@ export default function KoliDetayScreen() {
       Alert.alert(
         "Error",
         error instanceof Error ? error.message : "Failed to close box",
+      );
+    },
+  });
+
+  const openBoxMutation = useMutation({
+    mutationFn: async () => {
+      if (!credentials || !id) {
+        throw new Error("No credentials or id available");
+      }
+      return api.koliListesi.openBox(
+        credentials.userCode,
+        credentials.password,
+        parseInt(id, 10),
+      );
+    },
+    onSuccess: (data) => {
+      console.log("KoliDetayScreen: Open box success", data);
+      showToast("Başarılı", data.msg || "Koli başarıyla açıldı", "success");
+      setShowOpenBoxConfirm(false);
+      queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
+      queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+    },
+    onError: (error) => {
+      console.error("KoliDetayScreen: Open box error", error);
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to open box",
       );
     },
   });
@@ -148,73 +228,7 @@ export default function KoliDetayScreen() {
     },
   });
 
-  const addItemMutation = useMutation({
-    mutationFn: async (barcode: string) => {
-      if (!credentials || !id) {
-        throw new Error("No credentials or id available");
-      }
-      console.log(
-        "KoliDetayScreen: Adding item by barcode",
-        barcode,
-        "to box",
-        id,
-      );
-      return api.koliListesi.addItemByBarcode(
-        credentials.userCode,
-        credentials.password,
-        parseInt(id, 10),
-        barcode,
-      );
-    },
-    onSuccess: (data) => {
-      console.log("KoliDetayScreen: Add item success", data);
-      Alert.alert("Result", data.msg || "Operation completed");
-      setBarcodeValue("");
-      setBarcodeMode(null);
-      queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
-    },
-    onError: (error) => {
-      console.error("KoliDetayScreen: Add item error", error);
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to add item",
-      );
-    },
-  });
 
-  const deleteItemMutation = useMutation({
-    mutationFn: async (barcode: string) => {
-      if (!credentials || !id) {
-        throw new Error("No credentials or id available");
-      }
-      console.log(
-        "KoliDetayScreen: Deleting item by barcode",
-        barcode,
-        "from box",
-        id,
-      );
-      return api.koliListesi.deleteItemByBarcode(
-        credentials.userCode,
-        credentials.password,
-        parseInt(id, 10),
-        barcode,
-      );
-    },
-    onSuccess: (data) => {
-      console.log("KoliDetayScreen: Delete item success", data);
-      Alert.alert("Result", data.msg || "Operation completed");
-      setBarcodeValue("");
-      setBarcodeMode(null);
-      queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
-    },
-    onError: (error) => {
-      console.error("KoliDetayScreen: Delete item error", error);
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to delete item",
-      );
-    },
-  });
 
   const koliDetailQuery = useQuery({
     queryKey: ["koli-detay", id, credentials],
@@ -305,7 +319,7 @@ export default function KoliDetayScreen() {
     );
   };
 
-  return (
+return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: `Koli #${id}` }} />
       {receiptNo || sipExp ? (
@@ -322,6 +336,7 @@ export default function KoliDetayScreen() {
           ) : null}
         </View>
       ) : null}
+      
       <FlatList
         data={items}
         renderItem={renderItem}
@@ -334,31 +349,32 @@ export default function KoliDetayScreen() {
           </View>
         }
       />
+      
+      {/* ----------------- ALT BUTONLAR ----------------- */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => {
-            // Modal açmak yerine okuyucu sayfasına yönlendiriyoruz
             router.push({
               pathname: "/barcode-scanner",
-              params: { mode: "add", koliId: id, receiptNo: receiptNo }, // Koli ID'sini ve Ekleme modunu gönderiyoruz
+              params: { mode: "add", koliId: id, receiptNo: receiptNo },
             });
           }}
         >
           <Package size={20} color="#000" />
-          <Text style={styles.buttonText}>Barkod ile{"\n"}Ekleme</Text>
+          <Text style={styles.buttonText}>Barkodla{"\n"}Ekleme</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => {
             router.push({
               pathname: "/barcode-scanner",
-              params: { mode: "delete", koliId: id, receiptNo: receiptNo }, // Koli ID'sini ve Silme modunu gönderiyoruz
+              params: { mode: "delete", koliId: id, receiptNo: receiptNo },
             });
           }}
         >
           <Trash2 size={20} color="#000" />
-          <Text style={styles.buttonText}>Barkod ile{"\n"}Silme</Text>
+          <Text style={styles.buttonText}>Barkodla{"\n"}Silme</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[
@@ -375,6 +391,23 @@ export default function KoliDetayScreen() {
           )}
           <Text style={styles.buttonText}>İrsaliye{"\n"}Oluştur</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            openBoxMutation.isPending && styles.disabledButton,
+          ]}
+          onPress={() => setShowOpenBoxConfirm(true)}
+          disabled={openBoxMutation.isPending}
+        >
+          {openBoxMutation.isPending ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <Unlock size={20} color="#000" />
+          )}
+          <Text style={styles.buttonText}>Koli{"\n"}Açma</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[
             styles.actionButton,
@@ -391,6 +424,8 @@ export default function KoliDetayScreen() {
           <Text style={styles.buttonText}>Koli{"\n"}Kapatma</Text>
         </TouchableOpacity>
       </View>
+
+      {/* ----------------- İRSALİYE OLUŞTURMA MODALI ----------------- */}
       <Modal
         visible={showReceiptConfirm}
         transparent
@@ -435,6 +470,7 @@ export default function KoliDetayScreen() {
         </View>
       </Modal>
 
+      {/* ----------------- KOLİ KAPATMA (AĞIRLIK) MODALI ----------------- */}
       <Modal
         visible={showCloseBoxModal}
         transparent
@@ -443,6 +479,7 @@ export default function KoliDetayScreen() {
           setShowCloseBoxModal(false);
           setGrossWeight("");
           setNetWeight("");
+          setWeightError(null);
         }}
       >
         <View style={styles.receiptModalOverlay}>
@@ -452,6 +489,7 @@ export default function KoliDetayScreen() {
             </View>
             <Text style={styles.receiptModalTitle}>Koli Kapatma</Text>
             <Text style={styles.receiptModalSubtitle}>Ağırlık giriniz</Text>
+            
             <View style={styles.weightInputContainer}>
               <Text style={styles.weightLabel}>Brüt Ağırlık</Text>
               <TextInput
@@ -459,10 +497,14 @@ export default function KoliDetayScreen() {
                 placeholder="0.00"
                 placeholderTextColor={colors.text.secondary}
                 value={grossWeight}
-                onChangeText={setGrossWeight}
+                onChangeText={(text) => {
+                  setGrossWeight(text);
+                  if (weightError) setWeightError(null);
+                }}
                 keyboardType="decimal-pad"
               />
             </View>
+            
             <View style={styles.weightInputContainer}>
               <Text style={styles.weightLabel}>Net Ağırlık</Text>
               <TextInput
@@ -470,31 +512,50 @@ export default function KoliDetayScreen() {
                 placeholder="0.00"
                 placeholderTextColor={colors.text.secondary}
                 value={netWeight}
-                onChangeText={setNetWeight}
+                onChangeText={(text) => {
+                  setNetWeight(text);
+                  if (weightError) setWeightError(null);
+                }}
                 keyboardType="decimal-pad"
               />
             </View>
+
+            {/* EKSİK AĞIRLIK UYARISI (KUTU İÇİNDE) */}
+            {weightError && (
+              <View style={styles.errorBox}>
+                <AlertCircle size={16} color="#F44336" />
+                <Text style={styles.weightErrorMessage}>{weightError}</Text>
+              </View>
+            )}
+
             <View style={styles.receiptModalButtons}>
               <TouchableOpacity
                 style={styles.receiptCancelButton}
                 onPress={() => {
+                  Keyboard.dismiss();
                   setShowCloseBoxModal(false);
                   setGrossWeight("");
                   setNetWeight("");
+                  setWeightError(null);
                 }}
               >
                 <Text style={styles.receiptCancelText}>İptal</Text>
               </TouchableOpacity>
+              
               <TouchableOpacity
                 style={[
                   styles.receiptConfirmButton,
                   closeBoxMutation.isPending && styles.disabledButton,
                 ]}
                 onPress={() => {
+                  Keyboard.dismiss();
+                  
                   if (!grossWeight.trim() || !netWeight.trim()) {
-                    Alert.alert("Error", "Please enter both weights");
+                    setWeightError("Lütfen her iki ağırlığı da giriniz.");
                     return;
                   }
+                  
+                  setWeightError(null);
                   closeBoxMutation.mutate({
                     grossWeight: grossWeight.trim(),
                     netWeight: netWeight.trim(),
@@ -512,6 +573,92 @@ export default function KoliDetayScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ----------------- KOLİ AÇMA ONAY MODALI ----------------- */}
+      <Modal
+        visible={showOpenBoxConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowOpenBoxConfirm(false)}
+      >
+        <View style={styles.receiptModalOverlay}>
+          <View style={styles.receiptModalContent}>
+            <View
+              style={[
+                styles.receiptIconContainer,
+                { backgroundColor: "rgba(76, 175, 80, 0.15)" },
+              ]}
+            >
+              <Unlock size={48} color="#4CAF50" />
+            </View>
+            <Text style={styles.receiptModalTitle}>Koli Açma</Text>
+            <Text style={styles.receiptModalSubtitle}>
+              Koliyi açmak istiyor musunuz?
+            </Text>
+            <View style={styles.receiptModalButtons}>
+              <TouchableOpacity
+                style={styles.receiptCancelButton}
+                onPress={() => setShowOpenBoxConfirm(false)}
+              >
+                <Text style={styles.receiptCancelText}>İptal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.receiptConfirmButton,
+                  { backgroundColor: "#4CAF50" },
+                  openBoxMutation.isPending && styles.disabledButton,
+                ]}
+                onPress={() => openBoxMutation.mutate()}
+                disabled={openBoxMutation.isPending}
+              >
+                {openBoxMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.receiptConfirmText}>Devam</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Animated.View
+        style={[
+          styles.toastContainer,
+          {
+            opacity: toastOpacity,
+            transform: [{ translateY: toastTranslateY }],
+          },
+        ]}
+        pointerEvents="none"
+      >
+        <View
+          style={[
+            styles.toastContent,
+            toastContent.type === "error" && {
+              borderColor: "rgba(244, 67, 54, 0.5)",
+            },
+          ]}
+        >
+          {toastContent.type === "success" ? (
+            <CheckCircle
+              size={24}
+              color="#4CAF50"
+              fill="rgba(76, 175, 80, 0.1)"
+            />
+          ) : (
+            <AlertCircle
+              size={24}
+              color="#F44336"
+              fill="rgba(244, 67, 54, 0.1)"
+            />
+          )}
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toastTitle}>{toastContent.title}</Text>
+            <Text style={styles.toastSubtitle}>{toastContent.message}</Text>
+          </View>
+        </View>
+      </Animated.View>
     </View>
   );
 }
@@ -661,7 +808,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.default,
   },
-
   buttonText: {
     fontSize: 10,
     fontWeight: "600" as const,
@@ -845,5 +991,60 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#444",
     width: "100%",
+  },
+
+
+ toastContainer: {
+    position: "absolute",
+    bottom: 120,
+    left: 20,
+    right: 20,
+    alignItems: "center",
+    zIndex: 999,
+  },
+  toastContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.background.card,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "rgba(76, 175, 80, 0.5)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+    gap: 12,
+  },
+  toastTitle: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: colors.text.primary,
+  },
+  toastSubtitle: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    flexWrap: "wrap",
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(244, 67, 54, 0.1)",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(244, 67, 54, 0.3)",
+    gap: 8,
+    width: "100%",
+  },
+  weightErrorMessage: {
+    color: "#F44336",
+    fontSize: 13,
+    fontWeight: "600" as const,
+    flex: 1,
   },
 });
