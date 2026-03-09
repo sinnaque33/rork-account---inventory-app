@@ -21,7 +21,7 @@ import {
   Image,
   Animated,
   Easing,
-  Keyboard
+  Keyboard,
 } from "react-native";
 import { useState, useRef } from "react";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
@@ -61,8 +61,9 @@ function byteArrayToBase64(
 }
 
 export default function KoliDetayScreen() {
-  const { id, receiptNo, sipExp } = useLocalSearchParams<{
+  const { id, packageNo, receiptNo, sipExp } = useLocalSearchParams<{
     id: string;
+    packageNo?: string;
     receiptNo?: string;
     sipExp?: string;
   }>();
@@ -228,8 +229,6 @@ export default function KoliDetayScreen() {
     },
   });
 
-
-
   const koliDetailQuery = useQuery({
     queryKey: ["koli-detay", id, credentials],
     queryFn: async () => {
@@ -319,9 +318,9 @@ export default function KoliDetayScreen() {
     );
   };
 
-return (
+  return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: `Koli #${id}` }} />
+      <Stack.Screen options={{ title: packageNo ? `Koli No: ${packageNo}` : `Koli Detay` }} />
       {receiptNo || sipExp ? (
         <View style={styles.receiptBanner}>
           {receiptNo ? (
@@ -336,7 +335,6 @@ return (
           ) : null}
         </View>
       ) : null}
-      
       <FlatList
         data={items}
         renderItem={renderItem}
@@ -349,7 +347,6 @@ return (
           </View>
         }
       />
-      
       {/* ----------------- ALT BUTONLAR ----------------- */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
@@ -424,7 +421,6 @@ return (
           <Text style={styles.buttonText}>Koli{"\n"}Kapatma</Text>
         </TouchableOpacity>
       </View>
-
       {/* ----------------- İRSALİYE OLUŞTURMA MODALI ----------------- */}
       <Modal
         visible={showReceiptConfirm}
@@ -469,7 +465,6 @@ return (
           </View>
         </View>
       </Modal>
-
       {/* ----------------- KOLİ KAPATMA (AĞIRLIK) MODALI ----------------- */}
       <Modal
         visible={showCloseBoxModal}
@@ -489,7 +484,7 @@ return (
             </View>
             <Text style={styles.receiptModalTitle}>Koli Kapatma</Text>
             <Text style={styles.receiptModalSubtitle}>Ağırlık giriniz</Text>
-            
+
             <View style={styles.weightInputContainer}>
               <Text style={styles.weightLabel}>Brüt Ağırlık</Text>
               <TextInput
@@ -504,7 +499,7 @@ return (
                 keyboardType="decimal-pad"
               />
             </View>
-            
+
             <View style={styles.weightInputContainer}>
               <Text style={styles.weightLabel}>Net Ağırlık</Text>
               <TextInput
@@ -541,7 +536,7 @@ return (
               >
                 <Text style={styles.receiptCancelText}>İptal</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[
                   styles.receiptConfirmButton,
@@ -549,12 +544,12 @@ return (
                 ]}
                 onPress={() => {
                   Keyboard.dismiss();
-                  
+
                   if (!grossWeight.trim() || !netWeight.trim()) {
                     setWeightError("Lütfen her iki ağırlığı da giriniz.");
                     return;
                   }
-                  
+
                   setWeightError(null);
                   closeBoxMutation.mutate({
                     grossWeight: grossWeight.trim(),
@@ -573,7 +568,6 @@ return (
           </View>
         </View>
       </Modal>
-
       {/* ----------------- KOLİ AÇMA ONAY MODALI ----------------- */}
       <Modal
         visible={showOpenBoxConfirm}
@@ -993,8 +987,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 
-
- toastContainer: {
+  toastContainer: {
     position: "absolute",
     bottom: 120,
     left: 20,

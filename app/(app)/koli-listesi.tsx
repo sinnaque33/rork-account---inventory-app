@@ -138,6 +138,12 @@ export default function KoliListesiScreen() {
         PAGE_LEN,
         debouncedSearchQuery || undefined,
       );
+
+      if (items && items.length > 0) {
+        console.log("\n📦 --- API'DEN GELEN ÖRNEK BİR KOLİ OBJESİ ---");
+        console.log(JSON.stringify(items[0], null, 2));
+        console.log("------------------------------------------------\n");
+      }
       return items;
     },
     initialPageParam: 0,
@@ -207,7 +213,7 @@ export default function KoliListesiScreen() {
       onPress={() => {
         console.log("KoliListesiScreen: Item clicked with id", item.id);
         router.push(
-          `/(app)/koli-detay?id=${item.id}&receiptNo=${item.ReceiptNo || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
+          `/(app)/koli-detay?id=${item.id}&packageNo=${item.PackageNo || ""}&receiptNo=${item.ReceiptNo || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
         );
       }}
       testID={`koli-item-${item.id}`}
