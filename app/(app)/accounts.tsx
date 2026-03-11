@@ -12,6 +12,7 @@ import { AlertCircle, Building2 } from "lucide-react-native";
 import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
+import { Stack } from "expo-router";
 
 export default function AccountsScreen() {
   const { user } = useAuth();

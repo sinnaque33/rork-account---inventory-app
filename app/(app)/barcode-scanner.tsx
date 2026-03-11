@@ -40,7 +40,7 @@ export default function BarcodeScannerScreen() {
       if (errorSound !== "vibration" && SOUND_FILES[errorSound]) {
         const { sound } = await Audio.Sound.createAsync(
           SOUND_FILES[errorSound],
-          { shouldPlay: true }
+          { shouldPlay: true },
         );
         sound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
@@ -214,13 +214,17 @@ export default function BarcodeScannerScreen() {
       setBarcode("");
       inputRef.current?.focus();
 
-      // API'den gelen detaylı açıklamayı alıyoruz
       const explanation =
         data.addResult?.resultExplanation || data.resultExplanation || data.msg;
 
-      // --- Koli Kodunu Güncelleme
-      if (data.boxCode || data.addResult?.boxCode) {
-        setDisplayBoxCode(data.boxCode || data.addResult?.boxCode);
+      // Koli kodunu yakala
+      const extractedBoxCode =
+        data.boxCode ||
+        data.addResult?.boxCode ||
+        (data.resultBoxId ? String(data.resultBoxId) : null);
+
+      if (extractedBoxCode) {
+        setDisplayBoxCode(extractedBoxCode);
       }
 
       // Yeni Siparişten Koli Oluşturma Durumu
@@ -230,6 +234,7 @@ export default function BarcodeScannerScreen() {
           pathname: "/(app)/koli-detay",
           params: {
             id: data.resultBoxId.toString(),
+            boxCode: extractedBoxCode,
             receiptNo: params.receiptNo,
             initialSuccessMsg: explanation,
           },
@@ -303,9 +308,13 @@ export default function BarcodeScannerScreen() {
   // Dinamik Başlık ve Alt Başlıklar
   const getTitles = () => {
     if (params.mode === "create_from_order") {
+      const acc = params.accountName || "Cari Seçildi";
+      const rec = params.receiptNo ? `(Fiş: ${params.receiptNo})` : "";
+
       return {
         title: "Siparişten Koli Aç",
-        subtitle: `${params.accountName || "Cari Seçildi"} - İlk ürünü okutun`,
+        subtitle: `${acc} - ${rec}
+        İlk ürünü okutun`,
       };
     }
     if (params.mode === "add") {

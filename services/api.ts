@@ -472,7 +472,7 @@ export const api = {
       return data.data?.items || [];
     },
 
-    async getDetail(
+   async getDetail(
       userName: string,
       password: string,
       id: number,
@@ -505,12 +505,19 @@ export const api = {
 
       const data: RunJsonServiceResponse<{ items: KoliDetailItem[] }> =
         await response.json();
+      
+      // EKLENEN LOG: Gelen datayı formatlı bir şekilde konsola basar
+      console.log(
+        "📦 API DEBUG - Gelen Koli Detay Datası:\n", 
+        JSON.stringify(data.data?.items, null, 2)
+      );
+
       console.log("API: Received koli detail response", {
         success: data.success,
         itemsCount: data.data?.items?.length,
       });
 
-      if (data.success !== "true") {
+      if (data.success !== "true" && data.success !== true as any) {
         throw new Error(data.msg || "Failed to fetch koli detail");
       }
 

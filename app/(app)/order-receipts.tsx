@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, FileText, Search } from "lucide-react-native";
+import { AlertCircle, FileText, Search, ChevronRight } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -52,7 +52,7 @@ export default function OrderReceiptsScreen() {
     },
     onSuccess: (data) => {
       console.log("OrderReceiptsScreen: Koli created successfully", data);
-      Alert.alert("Result", data.msg || "Operation completed");
+      Alert.alert("Sonuç", data.msg || "İşlem tamamlandı");
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
 
       if (data.resultBoxId) {
@@ -72,8 +72,8 @@ export default function OrderReceiptsScreen() {
     onError: (error) => {
       console.error("OrderReceiptsScreen: Failed to create koli", error);
       Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to create koli",
+        "Hata",
+        error instanceof Error ? error.message : "Koli oluşturulamadı",
       );
     },
   });
@@ -88,10 +88,10 @@ export default function OrderReceiptsScreen() {
     router.push({
       pathname: "/(app)/barcode-scanner",
       params: {
-        mode: "create_from_order", // Yeni bir mod tanımlıyoruz
+        mode: "create_from_order",
         orderReceiptId: item.RecId.toString(),
-        accountName: item.CurrentAccountName, // Görsel amaçlı
-        receiptNo: item.ReceiptNo, // Görsel amaçlı
+        accountName: item.CurrentAccountName,
+        receiptNo: item.ReceiptNo,
       },
     });
   };
@@ -114,14 +114,13 @@ export default function OrderReceiptsScreen() {
       (item) =>
         item.ReceiptNo?.toLowerCase().includes(query) ||
         item.CurrentAccountName?.toLowerCase().includes(query)
-        // item.RecId?.toString().includes(query),
     );
   }, [orderReceiptsQuery.data, searchQuery]);
 
   if (orderReceiptsQuery.isLoading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: "Order Receipts" }} />
+        <Stack.Screen options={{ title: "Sipariş Seçimi" }} />
         <ActivityIndicator size="large" color={colors.button.primary} />
         <Text style={styles.loadingText}>Siparişler yükleniyor...</Text>
       </View>
@@ -131,13 +130,13 @@ export default function OrderReceiptsScreen() {
   if (orderReceiptsQuery.isError) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: "Order Receipts" }} />
+        <Stack.Screen options={{ title: "Sipariş Seçimi" }} />
         <AlertCircle size={48} color={colors.border.error} />
-        <Text style={styles.errorTitle}>Sipariş Yükleme hatası</Text>
+        <Text style={styles.errorTitle}>Yükleme Hatası</Text>
         <Text style={styles.errorText}>
           {orderReceiptsQuery.error instanceof Error
             ? orderReceiptsQuery.error.message
-            : "An error occurred"}
+            : "Siparişler alınırken bir hata oluştu"}
         </Text>
       </View>
     );
@@ -153,26 +152,28 @@ export default function OrderReceiptsScreen() {
     >
       <View style={styles.cardHeader}>
         <View style={styles.iconContainer}>
-          <FileText size={24} color={colors.button.primary} />
+          <FileText size={22} color={colors.button.primary} />
         </View>
         <View style={styles.itemInfo}>
-          <Text style={styles.receiptNo}>{item.ReceiptNo}</Text>
-          <Text style={styles.accountName}>{item.CurrentAccountName}</Text>
-          {/* <Text style={styles.recId}>ID: {item.RecId}</Text> */}
+          <Text style={styles.receiptNo}>Fiş: {item.ReceiptNo}</Text>
+          <Text style={styles.accountName} numberOfLines={2}>
+            {item.CurrentAccountName}
+          </Text>
         </View>
+        <ChevronRight size={20} color={colors.text.secondary} />
       </View>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: "Order Receipts" }} />
+      <Stack.Screen options={{ title: "Sipariş Seçimi" }} />
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Search size={20} color={colors.text.secondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search receipts"
+            placeholder="Sipariş No veya Cari Ara..."
             placeholderTextColor={colors.text.secondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -184,7 +185,7 @@ export default function OrderReceiptsScreen() {
       {createKoliMutation.isPending && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.button.primary} />
-          <Text style={styles.loadingOverlayText}>Koli oluşturuluyor...</Text>
+          <Text style={styles.loadingOverlayText}>Hazırlanıyor...</Text>
         </View>
       )}
 
@@ -205,11 +206,12 @@ export default function OrderReceiptsScreen() {
             <FileText size={48} color={colors.text.secondary} />
             <Text style={styles.emptyText}>
               {searchQuery
-                ? "No receipts match your search"
-                : "No order receipts found"}
+                ? "Aramanıza uygun sipariş bulunamadı"
+                : "Henüz bir sipariş fişi yok"}
             </Text>
           </View>
         }
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -237,11 +239,13 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: 12,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: "Segoe UI",
     color: colors.text.primary,
   },
   content: {
     padding: 16,
+    paddingBottom: 32,
   },
   centerContainer: {
     flex: 1,
@@ -252,55 +256,59 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
     marginTop: 8,
   },
   errorTitle: {
     fontSize: 18,
-    fontWeight: "600" as const,
+    fontFamily: "Segoe UI",
+    fontWeight: "700" as const,
     color: colors.text.primary,
     marginTop: 8,
   },
   errorText: {
     fontSize: 14,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
     textAlign: "center",
   },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 48,
-    gap: 12,
+    paddingVertical: 64,
+    gap: 16,
   },
   emptyText: {
     fontSize: 16,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
     textAlign: "center",
   },
   card: {
     backgroundColor: colors.background.card,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    elevation: 2,
+    elevation: 3,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
     borderWidth: 1,
     borderColor: colors.border.default,
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(220, 20, 60, 0.1)",
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "rgba(33, 150, 243, 0.1)", // Modern mavi transparan arkaplan
     alignItems: "center",
     justifyContent: "center",
   },
@@ -309,18 +317,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   receiptNo: {
-    fontSize: 16,
-    fontWeight: "600" as const,
+    fontSize: 15,
+    fontFamily: "Segoe UI",
+    fontWeight: "700" as const,
     color: colors.text.primary,
-    lineHeight: 22,
-  },
-  accountName: {
-    fontSize: 14,
-    color: colors.text.secondary,
     lineHeight: 20,
   },
-  recId: {
-    fontSize: 12,
+  accountName: {
+    fontSize: 13,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
     lineHeight: 18,
   },
@@ -330,14 +335,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
   },
   loadingOverlayText: {
     fontSize: 16,
-    color: colors.text.primary,
+    fontFamily: "Segoe UI",
+    fontWeight: "600" as const,
+    color: "#fff",
     marginTop: 12,
   },
 });

@@ -35,12 +35,10 @@ function byteArrayToBase64(
 ): string | null {
   if (!byteArray) return null;
 
-  // If it's already a string (base64), return it
   if (typeof byteArray === "string") {
     return byteArray.trim().length > 0 ? byteArray : null;
   }
 
-  // If it's an array or Uint8Array, convert to base64
   if (Array.isArray(byteArray) || byteArray instanceof Uint8Array) {
     try {
       const bytes = Array.isArray(byteArray)
@@ -61,11 +59,12 @@ function byteArrayToBase64(
 }
 
 export default function KoliDetayScreen() {
-  const { id, packageNo, receiptNo, sipExp } = useLocalSearchParams<{
+  const { id, packageNo, receiptNo, sipExp, boxCode } = useLocalSearchParams<{
     id: string;
     packageNo?: string;
     receiptNo?: string;
     sipExp?: string;
+    boxCode?: string;
   }>();
 
   const { credentials } = useAuth();
@@ -136,10 +135,6 @@ export default function KoliDetayScreen() {
       if (!credentials || !id) {
         throw new Error("No credentials or id available");
       }
-      console.log("KoliDetayScreen: Closing box", id, "with weights", {
-        grossWeight,
-        netWeight,
-      });
       return api.koliListesi.closeBox(
         credentials.userCode,
         credentials.password,
@@ -149,8 +144,7 @@ export default function KoliDetayScreen() {
       );
     },
     onSuccess: (data) => {
-      console.log("KoliDetayScreen: Close box success", data);
-      showToast("Başarılı", data.msg || "Koli başarıyla açıldı", "success");
+      showToast("Başarılı", data.msg || "Koli başarıyla kapatıldı", "success");
       setShowCloseBoxModal(false);
       setGrossWeight("");
       setNetWeight("");
@@ -158,9 +152,8 @@ export default function KoliDetayScreen() {
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
     },
     onError: (error) => {
-      console.error("KoliDetayScreen: Close box error", error);
       Alert.alert(
-        "Error",
+        "Hata",
         error instanceof Error ? error.message : "Failed to close box",
       );
     },
@@ -178,16 +171,14 @@ export default function KoliDetayScreen() {
       );
     },
     onSuccess: (data) => {
-      console.log("KoliDetayScreen: Open box success", data);
       showToast("Başarılı", data.msg || "Koli başarıyla açıldı", "success");
       setShowOpenBoxConfirm(false);
       queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
     },
     onError: (error) => {
-      console.error("KoliDetayScreen: Open box error", error);
       Alert.alert(
-        "Error",
+        "Hata",
         error instanceof Error ? error.message : "Failed to open box",
       );
     },
@@ -198,7 +189,6 @@ export default function KoliDetayScreen() {
       if (!credentials || !id) {
         throw new Error("No credentials or id available");
       }
-      console.log("KoliDetayScreen: Creating receipt for box", id);
       return api.koliListesi.createReceipt(
         credentials.userCode,
         credentials.password,
@@ -206,10 +196,9 @@ export default function KoliDetayScreen() {
       );
     },
     onSuccess: (data) => {
-      console.log("KoliDetayScreen: Create receipt success", data);
-      Alert.alert("Result", data.msg || "Operation completed", [
+      Alert.alert("Sonuç", data.msg || "Operation completed", [
         {
-          text: "OK",
+          text: "Tamam",
           onPress: () => {
             if (data.resultBoxId) {
               router.replace(`/koli-detay?id=${data.resultBoxId}`);
@@ -221,9 +210,8 @@ export default function KoliDetayScreen() {
       ]);
     },
     onError: (error) => {
-      console.error("KoliDetayScreen: Create receipt error", error);
       Alert.alert(
-        "Error",
+        "Hata",
         error instanceof Error ? error.message : "Failed to create receipt",
       );
     },
@@ -232,7 +220,6 @@ export default function KoliDetayScreen() {
   const koliDetailQuery = useQuery({
     queryKey: ["koli-detay", id, credentials],
     queryFn: async () => {
-      console.log("KoliDetayScreen: Fetching koli detail for id", id);
       if (!credentials || !id) {
         throw new Error("No credentials or id available");
       }
@@ -245,10 +232,16 @@ export default function KoliDetayScreen() {
     enabled: !!credentials && !!id,
   });
 
+  const getDisplayValue = (item: any, key: string): string => {
+    const val = item[key];
+    if (val === null || val === undefined || val === "") return "";
+    return String(val);
+  };
+
   if (koliDetailQuery.isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: "Koli Details" }} />
+        <Stack.Screen options={{ title: "Koli Detay" }} />
         <ActivityIndicator size="large" color={colors.button.primary} />
         <Text style={styles.loadingText}>Koli detayları yükleniyor...</Text>
       </View>
@@ -258,7 +251,7 @@ export default function KoliDetayScreen() {
   if (koliDetailQuery.isError) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: "Koli Details" }} />
+        <Stack.Screen options={{ title: "Koli Detay" }} />
         <AlertCircle size={48} color={colors.border.error} />
         <Text style={styles.errorTitle}>Koli detayı yükleme hatası</Text>
         <Text style={styles.errorText}>
@@ -272,19 +265,35 @@ export default function KoliDetayScreen() {
 
   const items = koliDetailQuery.data || [];
 
-  const renderItem = ({ item }: { item: KoliDetailItem }) => {
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
     const base64Thumbnail = byteArrayToBase64(
       item.Thumbnail as unknown as number[] | Uint8Array | string | null,
     );
     const hasValidThumbnail = !!base64Thumbnail;
 
-    console.log("KoliDetayScreen: Item thumbnail check", {
-      itemName: item.InventoryName,
-      hasThumbnail: !!item.Thumbnail,
-      thumbnailType: typeof item.Thumbnail,
-      isArray: Array.isArray(item.Thumbnail),
-      hasValidThumbnail,
-    });
+    const keys = Object.keys(item);
+
+    const h1Key = keys.find((key) => key.startsWith("h1_"));
+    const itemTitle = h1Key
+      ? getDisplayValue(item, h1Key)
+      : item.InventoryName || `Kalem #${index + 1}`;
+
+    const h2Key = keys.find((key) => key.startsWith("h2_"));
+    let quantityLabel = "Miktar";
+    let quantityValue = String(item.Quantity || "");
+
+    if (h2Key) {
+      quantityLabel = h2Key.replace("h2_", "");
+      const rawQuantity = item[h2Key];
+      quantityValue =
+        rawQuantity && !isNaN(Number(rawQuantity))
+          ? Number(rawQuantity).toFixed(2)
+          : String(rawQuantity || "");
+    }
+
+    const dynamicFields = keys
+      .filter((key) => key.startsWith("sh_"))
+      .slice(0, 6);
 
     return (
       <View style={styles.card}>
@@ -294,24 +303,41 @@ export default function KoliDetayScreen() {
               source={{ uri: `data:image/png;base64,${base64Thumbnail}` }}
               style={styles.thumbnailImage}
               resizeMode="cover"
-              onError={(e) =>
-                console.log(
-                  "KoliDetayScreen: Image load error",
-                  e.nativeEvent.error,
-                )
-              }
             />
           ) : (
             <View style={styles.iconContainer}>
               <Package size={24} color={colors.button.primary} />
             </View>
           )}
+
           <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.InventoryName}</Text>
+            <Text style={styles.itemName} numberOfLines={3}>
+              {itemTitle}
+            </Text>
+
             <View style={styles.quantityContainer}>
-              <Text style={styles.quantityLabel}>Miktar: </Text>
-              <Text style={styles.quantityValue}>{item.Quantity}</Text>
+              <Text style={styles.quantityLabel}>{quantityLabel}: </Text>
+              <Text style={styles.quantityValue}>{quantityValue}</Text>
             </View>
+
+            {dynamicFields.length > 0 && (
+              <View style={styles.dynamicFieldsContainer}>
+                {dynamicFields.map((key) => {
+                  const val = getDisplayValue(item, key);
+                  if (!val) return null;
+                  return (
+                    <View key={key} style={styles.dynamicFieldRow}>
+                      <Text style={styles.fieldLabel}>
+                        {key.replace("sh_", "")}:
+                      </Text>
+                      <Text style={styles.fieldValue} numberOfLines={1}>
+                        {val}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -320,7 +346,15 @@ export default function KoliDetayScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: packageNo ? `Koli No: ${packageNo}` : `Koli Detay` }} />
+      <Stack.Screen
+        options={{
+          title: packageNo
+            ? `Koli No: ${packageNo}`
+            : boxCode
+              ? `Koli No: ${boxCode}`
+              : `Koli Detay`,
+        }}
+      />
       {receiptNo || sipExp ? (
         <View style={styles.receiptBanner}>
           {receiptNo ? (
@@ -347,7 +381,7 @@ export default function KoliDetayScreen() {
           </View>
         }
       />
-      {/* ----------------- ALT BUTONLAR ----------------- */}
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.actionButton}
@@ -421,7 +455,7 @@ export default function KoliDetayScreen() {
           <Text style={styles.buttonText}>Koli{"\n"}Kapatma</Text>
         </TouchableOpacity>
       </View>
-      {/* ----------------- İRSALİYE OLUŞTURMA MODALI ----------------- */}
+
       <Modal
         visible={showReceiptConfirm}
         transparent
@@ -465,7 +499,7 @@ export default function KoliDetayScreen() {
           </View>
         </View>
       </Modal>
-      {/* ----------------- KOLİ KAPATMA (AĞIRLIK) MODALI ----------------- */}
+
       <Modal
         visible={showCloseBoxModal}
         transparent
@@ -515,7 +549,6 @@ export default function KoliDetayScreen() {
               />
             </View>
 
-            {/* EKSİK AĞIRLIK UYARISI (KUTU İÇİNDE) */}
             {weightError && (
               <View style={styles.errorBox}>
                 <AlertCircle size={16} color="#F44336" />
@@ -568,7 +601,7 @@ export default function KoliDetayScreen() {
           </View>
         </View>
       </Modal>
-      {/* ----------------- KOLİ AÇMA ONAY MODALI ----------------- */}
+
       <Modal
         visible={showOpenBoxConfirm}
         transparent
@@ -615,6 +648,7 @@ export default function KoliDetayScreen() {
           </View>
         </View>
       </Modal>
+
       <Animated.View
         style={[
           styles.toastContainer,
@@ -674,12 +708,14 @@ const styles = StyleSheet.create({
   },
   receiptBannerText: {
     fontSize: 14,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: colors.button.primary,
     textAlign: "center",
   },
   sipExpBannerText: {
     fontSize: 13,
+    fontFamily: "Segoe UI",
     fontWeight: "500" as const,
     color: "#4CAF50",
     textAlign: "center",
@@ -695,17 +731,20 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
     marginTop: 8,
   },
   errorTitle: {
     fontSize: 18,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: colors.text.primary,
     marginTop: 8,
   },
   errorText: {
     fontSize: 14,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
     textAlign: "center",
   },
@@ -717,6 +756,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
     textAlign: "center",
   },
@@ -735,7 +775,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 12,
   },
   iconContainer: {
@@ -754,28 +794,57 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
-    gap: 8,
+    gap: 4,
   },
   itemName: {
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: colors.text.primary,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   quantityContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 2,
   },
   quantityLabel: {
-    fontSize: 14,
+    fontSize: 13,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   quantityValue: {
-    fontSize: 14,
+    fontSize: 13,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: colors.button.primary,
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+  dynamicFieldsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 6,
+    gap: 4,
+  },
+  dynamicFieldRow: {
+    width: "48%",
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontFamily: "Segoe UI",
+    fontWeight: "700",
+    color: colors.text.secondary,
+    marginRight: 4,
+  },
+  fieldValue: {
+    fontSize: 11,
+    fontFamily: "Segoe UI",
+    color: colors.text.primary,
+    flexShrink: 1,
   },
   buttonContainer: {
     flexDirection: "row",
@@ -804,6 +873,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 10,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: "#000",
     textAlign: "center",
@@ -826,12 +896,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
+    fontFamily: "Segoe UI",
     fontWeight: "700" as const,
     color: colors.text.primary,
     textAlign: "center",
   },
   modalSubtitle: {
     fontSize: 14,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
     textAlign: "center",
   },
@@ -840,6 +912,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
+    fontFamily: "Segoe UI",
     color: colors.text.primary,
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -860,6 +933,7 @@ const styles = StyleSheet.create({
   },
   modalCancelText: {
     fontSize: 16,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: colors.text.primary,
   },
@@ -879,6 +953,7 @@ const styles = StyleSheet.create({
   },
   modalSubmitText: {
     fontSize: 16,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: "#fff",
   },
@@ -913,6 +988,7 @@ const styles = StyleSheet.create({
   },
   receiptModalTitle: {
     fontSize: 22,
+    fontFamily: "Segoe UI",
     fontWeight: "700" as const,
     color: "#fff",
     textAlign: "center",
@@ -920,6 +996,7 @@ const styles = StyleSheet.create({
   },
   receiptModalSubtitle: {
     fontSize: 15,
+    fontFamily: "Segoe UI",
     color: "#aaa",
     textAlign: "center",
     marginBottom: 24,
@@ -941,6 +1018,7 @@ const styles = StyleSheet.create({
   },
   receiptCancelText: {
     fontSize: 16,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: "#fff",
   },
@@ -953,6 +1031,7 @@ const styles = StyleSheet.create({
   },
   receiptConfirmText: {
     fontSize: 16,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: "#fff",
   },
@@ -972,6 +1051,7 @@ const styles = StyleSheet.create({
   },
   weightLabel: {
     fontSize: 14,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     color: "#aaa",
     marginBottom: 8,
@@ -981,6 +1061,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
+    fontFamily: "Segoe UI",
     color: "#fff",
     borderWidth: 1,
     borderColor: "#444",
@@ -1013,11 +1094,13 @@ const styles = StyleSheet.create({
   },
   toastTitle: {
     fontSize: 15,
+    fontFamily: "Segoe UI",
     fontWeight: "700" as const,
     color: colors.text.primary,
   },
   toastSubtitle: {
     fontSize: 13,
+    fontFamily: "Segoe UI",
     color: colors.text.secondary,
     flexWrap: "wrap",
   },
@@ -1037,6 +1120,7 @@ const styles = StyleSheet.create({
   weightErrorMessage: {
     color: "#F44336",
     fontSize: 13,
+    fontFamily: "Segoe UI",
     fontWeight: "600" as const,
     flex: 1,
   },
