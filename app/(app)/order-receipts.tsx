@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "rgba(33, 150, 243, 0.1)", // Modern mavi transparan arkaplan
+    backgroundColor: "rgba(33, 150, 243, 0.1)",
     alignItems: "center",
     justifyContent: "center",
   },

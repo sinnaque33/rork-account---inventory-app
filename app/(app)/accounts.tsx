@@ -143,6 +143,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: colors.text.secondary,
+    fontFamily: "Segoe UI",
     marginTop: 12,
   },
   errorTitle: {
