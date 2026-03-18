@@ -7,6 +7,8 @@ import {
   Unlock,
   Trash2,
   CheckCircle,
+  Plus,
+  ScanBarcode,
 } from "lucide-react-native";
 import {
   ActivityIndicator,
@@ -22,8 +24,11 @@ import {
   Animated,
   Easing,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Vibration,
 } from "react-native";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { api, KoliDetailItem } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -78,6 +83,19 @@ export default function KoliDetayScreen() {
   const [weightError, setWeightError] = useState<string | null>(null);
   const [showOpenBoxConfirm, setShowOpenBoxConfirm] = useState(false);
 
+  // --- BARKOD OKUMA STATE'LERİ ---
+  const [scanMode, setScanMode] = useState<"add" | "delete">("add");
+  const [barcode, setBarcode] = useState("");
+  const inputRef = useRef<TextInput>(null);
+
+  // --- BİLDİRİM VE HATA MODAL STATE'LERİ ---
+  const [resultModalVisible, setResultModalVisible] = useState(false);
+  const [resultData, setResultData] = useState({
+    title: "",
+    message: "",
+    type: "error",
+  });
+
   // --- Toast İçeriği ve Animasyonu ---
   const [toastContent, setToastContent] = useState({
     title: "",
@@ -86,6 +104,17 @@ export default function KoliDetayScreen() {
   });
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(50)).current;
+
+  // Sayfa açıldığında veya modal kapandığında inputa odaklan
+  useEffect(() => {
+    const focusInput = () => {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300);
+      return () => clearTimeout(timer);
+    };
+    focusInput();
+  }, [resultModalVisible]);
 
   const showToast = (
     title: string,
@@ -122,6 +151,75 @@ export default function KoliDetayScreen() {
         }),
       ]).start();
     }, 2000);
+  };
+
+  // --- BARKOD OKUMA (MUTATION) ---
+  const barcodeMutation = useMutation({
+    mutationFn: async (scannedBarcode: string) => {
+      if (!credentials || !id)
+        throw new Error("Oturum veya Koli bilgisi eksik.");
+
+      const koliIdNum = parseInt(id, 10);
+
+      // Kullanıcının seçimine göre GERÇEK Ekle veya Sil API'sine gidiyoruz
+      if (scanMode === "add") {
+        return await api.koliListesi.addItemByBarcode(
+          credentials.userCode,
+          credentials.password,
+          koliIdNum,
+          scannedBarcode,
+        );
+      } else {
+        return await api.koliListesi.deleteItemByBarcode(
+          credentials.userCode,
+          credentials.password,
+          koliIdNum,
+          scannedBarcode,
+        );
+      }
+    },
+    onSuccess: (data: any) => {
+      setBarcode("");
+      inputRef.current?.focus();
+
+      // Api'den dönen data yapısına göre hata kontrolü
+      const explanation = data.resultExplanation || data.msg || "";
+      const isError = data.err !== 0 && data.err !== undefined;
+
+      if (isError) {
+        Vibration.vibrate(500);
+        setResultData({
+          title: "İşlem Başarısız",
+          message: explanation || "Hata oluştu.",
+          type: "error",
+        });
+        setResultModalVisible(true);
+      } else {
+        // BAŞARILI: Listeyi yenile ve kullanıcıya bildir
+        queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
+        showToast(
+          "Başarılı",
+          scanMode === "add" ? "Ürün eklendi" : "Ürün silindi",
+          "success",
+        );
+      }
+    },
+    onError: (err: Error) => {
+      Vibration.vibrate(500);
+      setBarcode("");
+      setResultData({
+        title: "Sistem Hatası",
+        message: err.message,
+        type: "error",
+      });
+      setResultModalVisible(true);
+    },
+  });
+
+  const handleBarcodeSubmit = () => {
+    const finalBarcode = barcode.trim();
+    if (!finalBarcode || barcodeMutation.isPending) return;
+    barcodeMutation.mutate(finalBarcode);
   };
 
   const closeBoxMutation = useMutation({
@@ -324,14 +422,21 @@ export default function KoliDetayScreen() {
               <View style={styles.dynamicFieldsContainer}>
                 {dynamicFields.map((key) => {
                   const val = getDisplayValue(item, key);
-                  if (!val) return null;
+                  const displayVal = val ? val : " ";
+
                   return (
                     <View key={key} style={styles.dynamicFieldRow}>
                       <Text style={styles.fieldLabel}>
                         {key.replace("sh_", "")}:
                       </Text>
-                      <Text style={styles.fieldValue} numberOfLines={1}>
-                        {val}
+                      <Text
+                        style={[
+                          styles.fieldValue,
+                          { color: colors.status.success, fontWeight: "700" },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {displayVal}
                       </Text>
                     </View>
                   );
@@ -345,7 +450,10 @@ export default function KoliDetayScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.container}
+    >
       <Stack.Screen
         options={{
           title: packageNo
@@ -369,6 +477,93 @@ export default function KoliDetayScreen() {
           ) : null}
         </View>
       ) : null}
+
+      {/* --- YENİ EKLENEN BARKOD OKUMA ALANI --- */}
+      <View style={styles.topSection}>
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.toggleBtn,
+              scanMode === "add" && styles.toggleBtnActiveAdd,
+            ]}
+            onPress={() => {
+              setScanMode("add");
+              inputRef.current?.focus();
+            }}
+            activeOpacity={0.8}
+          >
+            <Plus
+              size={18}
+              color={scanMode === "add" ? "#fff" : colors.text.secondary}
+            />
+            <Text
+              style={[
+                styles.toggleText,
+                scanMode === "add" && { color: "#fff" },
+              ]}
+            >
+              Malzeme Ekle
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.toggleBtn,
+              scanMode === "delete" && styles.toggleBtnActiveDelete,
+            ]}
+            onPress={() => {
+              setScanMode("delete");
+              inputRef.current?.focus();
+            }}
+            activeOpacity={0.8}
+          >
+            <Trash2
+              size={18}
+              color={scanMode === "delete" ? "#fff" : colors.text.secondary}
+            />
+            <Text
+              style={[
+                styles.toggleText,
+                scanMode === "delete" && { color: "#fff" },
+              ]}
+            >
+              Malzeme Sil
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View
+          style={[
+            styles.barcodeInputWrapper,
+            scanMode === "delete" && { borderColor: "rgba(244, 67, 54, 0.5)" },
+          ]}
+        >
+          <ScanBarcode
+            size={22}
+            color={scanMode === "delete" ? "#F44336" : colors.button.primary}
+          />
+          <TextInput
+            ref={inputRef}
+            style={styles.barcodeInputTop}
+            value={barcode}
+            onChangeText={setBarcode}
+            onSubmitEditing={handleBarcodeSubmit}
+            placeholder={
+              scanMode === "add"
+                ? "Eklenecek barkodu okutun..."
+                : "Silinecek barkodu okutun..."
+            }
+            placeholderTextColor={colors.text.secondary}
+            autoFocus
+            blurOnSubmit={false}
+          />
+          {barcodeMutation.isPending && (
+            <ActivityIndicator size="small" color={colors.button.primary} />
+          )}
+        </View>
+      </View>
+      {/* -------------------------------------- */}
+
       <FlatList
         data={items}
         renderItem={renderItem}
@@ -382,31 +577,8 @@ export default function KoliDetayScreen() {
         }
       />
 
+      {/* ALT BUTONLAR (Sadece İrsaliye, Açma ve Kapatma kaldı) */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => {
-            router.push({
-              pathname: "/barcode-scanner",
-              params: { mode: "add", koliId: id, receiptNo: receiptNo },
-            });
-          }}
-        >
-          <Package size={20} color="#000" />
-          <Text style={styles.buttonText}>Barkodla{"\n"}Ekleme</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => {
-            router.push({
-              pathname: "/barcode-scanner",
-              params: { mode: "delete", koliId: id, receiptNo: receiptNo },
-            });
-          }}
-        >
-          <Trash2 size={20} color="#000" />
-          <Text style={styles.buttonText}>Barkodla{"\n"}Silme</Text>
-        </TouchableOpacity>
         <TouchableOpacity
           style={[
             styles.actionButton,
@@ -455,6 +627,38 @@ export default function KoliDetayScreen() {
           <Text style={styles.buttonText}>Koli{"\n"}Kapatma</Text>
         </TouchableOpacity>
       </View>
+
+      {/* --- MODALLAR --- */}
+      <Modal
+        visible={resultModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setResultModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.resultModalContent}>
+            <View
+              style={[
+                styles.resultIconContainer,
+                { backgroundColor: "rgba(244, 67, 54, 0.1)" },
+              ]}
+            >
+              <AlertCircle size={48} color="#F44336" />
+            </View>
+            <Text style={styles.resultTitle}>{resultData.title}</Text>
+            <Text style={styles.resultMessage}>{resultData.message}</Text>
+            <TouchableOpacity
+              style={styles.resultCancelButton}
+              onPress={() => {
+                setResultModalVisible(false);
+                inputRef.current?.focus();
+              }}
+            >
+              <Text style={styles.resultCancelText}>Tamam</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showReceiptConfirm}
@@ -687,7 +891,7 @@ export default function KoliDetayScreen() {
           </View>
         </View>
       </Animated.View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -695,6 +899,68 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.dark,
+  },
+  topSection: {
+    backgroundColor: colors.background.card,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
+    gap: 12,
+  },
+  toggleContainer: {
+    flexDirection: "row",
+    backgroundColor: colors.background.darker,
+    borderRadius: 10,
+    padding: 4,
+  },
+  toggleBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  toggleBtnActiveAdd: {
+    backgroundColor: colors.button.primary,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  toggleBtnActiveDelete: {
+    backgroundColor: "#E53935",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  toggleText: {
+    fontSize: 14,
+    fontFamily: "Segoe UI",
+    fontWeight: "600",
+    color: colors.text.secondary,
+  },
+  barcodeInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.background.darker,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 50,
+    gap: 12,
+  },
+  barcodeInputTop: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: "Segoe UI",
+    fontWeight: "600",
+    color: colors.text.primary,
   },
   content: {
     padding: 16,
@@ -817,8 +1083,8 @@ const styles = StyleSheet.create({
   quantityValue: {
     fontSize: 13,
     fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    color: colors.button.primary,
+    fontWeight: "700" as const,
+    color: colors.status.success,
     lineHeight: 18,
   },
   dynamicFieldsContainer: {
@@ -872,12 +1138,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
   },
   buttonText: {
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
+    fontWeight: "700" as const,
     color: "#000",
     textAlign: "center",
-    lineHeight: 14,
+    lineHeight: 16,
   },
   modalOverlay: {
     flex: 1,
@@ -886,76 +1152,55 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 24,
   },
-  modalContent: {
+  resultModalContent: {
     backgroundColor: colors.background.card,
     borderRadius: 16,
     padding: 24,
     width: "100%",
-    maxWidth: 400,
-    gap: 16,
+    maxWidth: 340,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border.default,
   },
-  modalTitle: {
-    fontSize: 20,
+  resultIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  resultTitle: {
+    fontSize: 18,
     fontFamily: "Segoe UI",
-    fontWeight: "700" as const,
+    fontWeight: "700",
     color: colors.text.primary,
     textAlign: "center",
+    marginBottom: 8,
   },
-  modalSubtitle: {
+  resultMessage: {
     fontSize: 14,
     fontFamily: "Segoe UI",
     color: colors.text.secondary,
     textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
   },
-  barcodeInput: {
-    backgroundColor: colors.background.dark,
+  resultCancelButton: {
+    backgroundColor: colors.background.darker,
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    color: colors.text.primary,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-  modalCancelButton: {
-    flex: 1,
-    backgroundColor: colors.background.dark,
-    borderRadius: 12,
-    padding: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
     alignItems: "center",
     borderWidth: 1,
     borderColor: colors.border.default,
+    width: "100%",
   },
-  modalCancelText: {
-    fontSize: 16,
+  resultCancelText: {
+    fontSize: 15,
     fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
+    fontWeight: "600",
     color: colors.text.primary,
-  },
-  modalSubmitButton: {
-    flex: 1,
-    backgroundColor: colors.button.primary,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: "center",
-  },
-  modalDeleteButton: {
-    flex: 1,
-    backgroundColor: "#e74c3c",
-    borderRadius: 12,
-    padding: 14,
-    alignItems: "center",
-  },
-  modalSubmitText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    color: "#fff",
   },
   disabledButton: {
     opacity: 0.6,
@@ -1067,7 +1312,6 @@ const styles = StyleSheet.create({
     borderColor: "#444",
     width: "100%",
   },
-
   toastContainer: {
     position: "absolute",
     bottom: 120,

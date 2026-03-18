@@ -18,7 +18,6 @@ export default function DashboardScreen() {
   };
 
   const handleLogout = async () => {
-    console.log('DashboardScreen: Logout pressed');
     if (Platform.OS !== 'web') {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
@@ -82,54 +81,6 @@ export default function DashboardScreen() {
               </View>
             </LinearGradient>
           </Pressable>
-
-          {/* Hidden menu items - kept for future use
-          <Pressable
-            style={({ pressed }) => [
-              styles.card,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() => handleNavigation('/(app)/accounts')}
-            testID="accounts-card"
-          >
-            <LinearGradient
-              colors={[colors.button.primary, '#B71C1C']}
-              style={styles.cardGradient}
-            >
-              <View style={styles.cardIcon}>
-                <BookUser size={32} color="#fff" strokeWidth={2} />
-              </View>
-              <Text style={styles.cardTitle}>Current Account</Text>
-              <Text style={styles.cardSubtitle}>View all accounts</Text>
-              <View style={styles.cardArrow}>
-                <FileText size={16} color="#fff" opacity={0.6} />
-              </View>
-            </LinearGradient>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.card,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() => handleNavigation('/(app)/inventory')}
-            testID="inventory-card"
-          >
-            <LinearGradient
-              colors={['#DC143C', '#8B0000']}
-              style={styles.cardGradient}
-            >
-              <View style={styles.cardIcon}>
-                <Package size={32} color="#fff" strokeWidth={2} />
-              </View>
-              <Text style={styles.cardTitle}>Inventory</Text>
-              <Text style={styles.cardSubtitle}>Manage stock items</Text>
-              <View style={styles.cardArrow}>
-                <FileText size={16} color="#fff" opacity={0.6} />
-              </View>
-            </LinearGradient>
-          </Pressable>
-          */}
           </View>
         </View>
       </ScrollView>

@@ -17,7 +17,7 @@ export default function AppLayout() {
       <Stack.Screen
         name="dashboard"
         options={{
-          title: 'Dashboard',
+          title: 'Ana Sayfa',
           headerBackVisible: false,
         }}
       />
