@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, FileText, Search, ChevronRight } from "lucide-react-native";
+import {
+  AlertCircle,
+  FileText,
+  Search,
+  ChevronRight,
+} from "lucide-react-native";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -39,45 +44,6 @@ export default function OrderReceiptsScreen() {
     enabled: !!credentials,
   });
 
-  const createKoliMutation = useMutation({
-    mutationFn: async (orderReceiptId: number) => {
-      if (!credentials) {
-        throw new Error("No credentials available");
-      }
-      return api.koliListesi.createKoliFromOrderReceipt(
-        credentials.userCode,
-        credentials.password,
-        orderReceiptId,
-      );
-    },
-    onSuccess: (data) => {
-      console.log("OrderReceiptsScreen: Koli created successfully", data);
-      Alert.alert("Sonuç", data.msg || "İşlem tamamlandı");
-      queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
-
-      if (data.resultBoxId) {
-        console.log(
-          "OrderReceiptsScreen: Navigating to koli detail with resultBoxId:",
-          data.resultBoxId,
-        );
-        router.replace({
-          pathname: "/(app)/koli-detay",
-          params: { id: data.resultBoxId.toString() },
-        });
-      } else {
-        console.log("OrderReceiptsScreen: No resultBoxId returned, going back");
-        router.back();
-      }
-    },
-    onError: (error) => {
-      console.error("OrderReceiptsScreen: Failed to create koli", error);
-      Alert.alert(
-        "Hata",
-        error instanceof Error ? error.message : "Koli oluşturulamadı",
-      );
-    },
-  });
-
   const handleReceiptSelect = (item: OrderReceipt) => {
     console.log(
       "OrderReceiptsScreen: Sipariş seçildi, okuyucuya gidiliyor",
@@ -113,7 +79,7 @@ export default function OrderReceiptsScreen() {
     return items.filter(
       (item) =>
         item.ReceiptNo?.toLowerCase().includes(query) ||
-        item.CurrentAccountName?.toLowerCase().includes(query)
+        item.CurrentAccountName?.toLowerCase().includes(query),
     );
   }, [orderReceiptsQuery.data, searchQuery]);
 
@@ -147,7 +113,6 @@ export default function OrderReceiptsScreen() {
       style={styles.card}
       activeOpacity={0.7}
       onPress={() => handleReceiptSelect(item)}
-      disabled={createKoliMutation.isPending}
       testID={`order-receipt-${item.RecId}`}
     >
       <View style={styles.cardHeader}>
@@ -182,12 +147,7 @@ export default function OrderReceiptsScreen() {
         </View>
       </View>
 
-      {createKoliMutation.isPending && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.button.primary} />
-          <Text style={styles.loadingOverlayText}>Hazırlanıyor...</Text>
-        </View>
-      )}
+  
 
       <FlatList
         data={filteredItems}

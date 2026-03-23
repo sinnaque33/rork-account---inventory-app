@@ -9,6 +9,7 @@ const COMPANY_CODE_KEY = "company_code";
 const COMPANY_PASSWORD_KEY = "company_password";
 const WAREHOUSE_ID_KEY = "warehouse_id";
 const ERROR_SOUND_KEY = "error_sound";
+const USE_EXISTING_BOX_KEY = "use_existing_box";
 
 export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
   const [apiBaseUrl, setApiBaseUrl] = useState<string>("");
@@ -16,17 +17,19 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
   const [companyPassword, setCompanyPassword] = useState<string>("");
   const [warehouseId, setWarehouseId] = useState<string>("");
   const [errorSound, setErrorSound] = useState<string>("error_1");
+  const [useExistingBox, setUseExistingBox] = useState<boolean>(false);
 
   const loadUrlQuery = useQuery({
     queryKey: ["api-config"],
     queryFn: async () => {
       console.log("ApiConfigContext: Loading API config from storage");
-      const [url, code, pwd, whId, eSound] = await Promise.all([
+      const [url, code, pwd, whId, eSound, existingBox] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY),
         AsyncStorage.getItem(COMPANY_CODE_KEY),
         AsyncStorage.getItem(COMPANY_PASSWORD_KEY),
         AsyncStorage.getItem(WAREHOUSE_ID_KEY),
         AsyncStorage.getItem(ERROR_SOUND_KEY),
+        AsyncStorage.getItem(USE_EXISTING_BOX_KEY),
       ]);
       return {
         url: url || "",
@@ -34,6 +37,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
         companyPassword: pwd || "",
         warehouseId: whId || "",
         errorSound: eSound || "error_1",
+        useExistingBox: existingBox === "true",
       };
     },
     retry: false,
@@ -47,6 +51,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       setCompanyPassword(loadUrlQuery.data.companyPassword);
       setWarehouseId(loadUrlQuery.data.warehouseId);
       setErrorSound(loadUrlQuery.data.errorSound);
+      setUseExistingBox(loadUrlQuery.data.useExistingBox);
     }
   }, [loadUrlQuery.data]);
 
@@ -57,6 +62,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       companyPassword?: string;
       warehouseId?: string;
       errorSound?: string;
+      useExistingBox?: boolean;
     }) => {
       console.log("ApiConfigContext: Saving API config to storage", params);
       const promises: Promise<void>[] = [];
@@ -84,6 +90,11 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
           AsyncStorage.setItem(ERROR_SOUND_KEY, params.errorSound)
         );
       }
+      if (params.useExistingBox !== undefined) {
+        promises.push(
+          AsyncStorage.setItem(USE_EXISTING_BOX_KEY, String(params.useExistingBox))
+        );
+      }
       await Promise.all(promises);
       clearApiUrlCache();
       return params;
@@ -96,6 +107,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
         setCompanyPassword(params.companyPassword);
       if (params.warehouseId !== undefined) setWarehouseId(params.warehouseId);
       if (params.errorSound !== undefined) setErrorSound(params.errorSound);
+      if (params.useExistingBox !== undefined) setUseExistingBox(params.useExistingBox);
     },
   });
   const { mutateAsync: saveMutateAsync } = saveMutation;
@@ -131,6 +143,10 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     await saveMutateAsync({ errorSound: sound });
   }, [saveMutateAsync]);
 
+  const updateUseExistingBox = useCallback(async (value: boolean) => {
+    await saveMutateAsync({ useExistingBox: value });
+  }, [saveMutateAsync]);
+
   const resetToDefault = useCallback(async () => {
     await Promise.all([
       AsyncStorage.removeItem(STORAGE_KEY),
@@ -138,6 +154,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       AsyncStorage.removeItem(COMPANY_PASSWORD_KEY),
       AsyncStorage.removeItem(WAREHOUSE_ID_KEY),
       AsyncStorage.removeItem(ERROR_SOUND_KEY),
+      AsyncStorage.removeItem(USE_EXISTING_BOX_KEY),
     ]);
     clearApiUrlCache();
     setApiBaseUrl("");
@@ -145,6 +162,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     setCompanyPassword("");
     setWarehouseId("");
     setErrorSound('error_1');
+    setUseExistingBox(false);
   }, []);
 
   return useMemo(
@@ -154,6 +172,8 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       companyPassword,
       warehouseId,
       errorSound,
+      useExistingBox,
+      updateUseExistingBox,
       updateApiUrl,
       updateCompanyCode,
       updateCompanyPassword,
@@ -170,6 +190,8 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       companyPassword,
       warehouseId,
       errorSound,
+      useExistingBox,
+      updateUseExistingBox,
       updateApiUrl,
       updateCompanyCode,
       updateCompanyPassword,

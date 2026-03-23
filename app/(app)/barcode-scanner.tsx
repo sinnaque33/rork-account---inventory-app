@@ -30,7 +30,7 @@ import { SOUND_FILES } from "@/constants/sounds";
 
 export default function BarcodeScannerScreen() {
   const router = useRouter();
-  const { errorSound } = useApiConfig();
+  const { errorSound, useExistingBox } = useApiConfig();
   const playErrorSignal = async () => {
     try {
       // Her zaman titret
@@ -151,6 +151,8 @@ export default function BarcodeScannerScreen() {
           credentials.userCode,
           credentials.password,
           parseInt(params.orderReceiptId, 10),
+          scannedBarcode,
+          useExistingBox,
         );
 
         if (!koliResult.resultBoxId) {
@@ -274,15 +276,17 @@ export default function BarcodeScannerScreen() {
       }
       // Koli Arama Durumu
       else {
-        if (data.err === 99) {
+        if (data.err === 99 || data.err === 1) {
+          playErrorSignal();
           setResultData({
-            title: "Bulunamadı",
-            message: data.msg,
+            title: "Koli Bulunamadı",
+            message:
+              data.msg || "Okutulan barkoda ait koli sistemde bulunmuyor.",
             type: "error",
           });
           setResultModalVisible(true);
         } else if (data.recId) {
-          router.replace(`/(app)/koli-detay?id=${data.recId}` as any);
+          router.push(`/(app)/koli-detay?id=${data.recId}` as any);
         }
       }
     },

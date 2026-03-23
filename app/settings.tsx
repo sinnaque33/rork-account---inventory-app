@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
-import { Settings, RefreshCw, Save, CheckCircle } from "lucide-react-native";
+import { Settings, RefreshCw, Save, CheckCircle, CheckSquare, Square } from "lucide-react-native";
 import { useState, useEffect, useRef } from "react";
 import { Audio, InterruptionModeAndroid } from "expo-av";
 import {
@@ -29,11 +29,13 @@ export default function SettingsScreen() {
     companyPassword,
     warehouseId,
     errorSound,
+    useExistingBox,
     updateApiUrl,
     updateCompanyCode,
     updateCompanyPassword,
     updateWarehouseId,
     updateErrorSound,
+    updateUseExistingBox,
     resetToDefault,
     isLoading,
     isSaving,
@@ -45,9 +47,8 @@ export default function SettingsScreen() {
   const [password, setPassword] = useState<string>("");
   const [whId, setWhId] = useState<string>("");
   const [error, setError] = useState<string>("");
-  const [selectedSound, setSelectedSound] = useState<string>(
-    errorSound || "error_1",
-  );
+  const [selectedSound, setSelectedSound] = useState<string>(errorSound || "error_1");
+  const [existingBoxMode, setExistingBoxMode] = useState<boolean>(useExistingBox || false);
   const router = useRouter();
 
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -68,10 +69,11 @@ export default function SettingsScreen() {
     setCode(companyCode);
     setPassword(companyPassword);
     setWhId(warehouseId);
+    setExistingBoxMode(useExistingBox || false);
     if (errorSound) {
       setSelectedSound(errorSound);
     }
-  }, [apiBaseUrl, companyCode, companyPassword, warehouseId, errorSound]);
+  }, [apiBaseUrl, companyCode, companyPassword, warehouseId, errorSound, useExistingBox]);
 
   const playErrorSound = async (soundFile: any) => {
     try {
@@ -149,6 +151,7 @@ export default function SettingsScreen() {
       await updateCompanyPassword(password.trim());
       await updateWarehouseId(whId.trim());
       await updateErrorSound(selectedSound);
+      await updateUseExistingBox(existingBoxMode);
 
       showSuccessToast();
     } catch {
@@ -172,6 +175,7 @@ export default function SettingsScreen() {
             setPassword("");
             setWhId("");
             setSelectedSound("error_1");
+            setExistingBoxMode(false);
             Alert.alert("Success", "Settings reset to default");
           },
         },
@@ -292,26 +296,6 @@ export default function SettingsScreen() {
                     testID="warehouse-id-input"
                   />
                 </View>
-
-
-            {/* <View style={styles.inputGroup}>
-              <Text style={styles.label}>Depo ID / Kodu</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Depo Kodunu giriniz"
-                placeholderTextColor={colors.input.placeholder}
-                value={whId}
-                onChangeText={setWhId}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                keyboardType="default"
-                editable={!isSaving}
-                testID="warehouse-id-input"
-              />
-            </View> */}
-
-
-                {/* Yeni Eklenen Ses Seçim Grubu */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Hata Uyarı Tipi</Text>
                   <View style={styles.soundSelectorContainer}>
@@ -340,6 +324,26 @@ export default function SettingsScreen() {
                       </Pressable>
                     ))}
                   </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Koli Oluşturma Modu</Text>
+                  <Pressable
+                    style={styles.checkboxContainer}
+                    onPress={() => setExistingBoxMode(!existingBoxMode)}
+                  >
+                    {existingBoxMode ? (
+                      <CheckSquare size={24} color={colors.button.primary} />
+                    ) : (
+                      <Square size={24} color={colors.text.secondary} />
+                    )}
+                    <View style={styles.checkboxTextContainer}>
+                      <Text style={styles.checkboxTitle}>Mevcut Açık Koliye Ekle</Text>
+                      <Text style={styles.checkboxSubtitle}>
+                        Aynı siparişin açık kolisi varsa yeni açmak yerine ona ekler.
+                      </Text>
+                    </View>
+                  </Pressable>
                 </View>
 
                 <View style={styles.buttonGroup}>
@@ -597,5 +601,30 @@ const styles = StyleSheet.create({
   },
   soundOptionTextSelected: {
     color: "#fff",
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(33, 150, 243, 0.05)",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(33, 150, 243, 0.2)",
+    gap: 12,
+    marginTop: 4,
+  },
+  checkboxTextContainer: {
+    flex: 1,
+  },
+  checkboxTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  checkboxSubtitle: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    lineHeight: 16,
   },
 });

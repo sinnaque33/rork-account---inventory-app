@@ -1,4 +1,4 @@
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   Package,
@@ -9,9 +9,7 @@ import {
 import { useMemo, useState, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
-  Modal,
   RefreshControl,
   StyleSheet,
   Text,
@@ -19,7 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { api, KoliItem } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,84 +29,6 @@ export default function KoliListesiScreen() {
   const { credentials } = useAuth();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [barcodeModalVisible, setBarcodeModalVisible] =
-    useState<boolean>(false);
-  const [barcodeInput, setBarcodeInput] = useState<string>("");
-
-  const barcodeSearchMutation = useMutation({
-    mutationFn: async (barcode: string) => {
-      if (!credentials) throw new Error("No credentials available");
-      console.log("KoliListesiScreen: Searching koli by barcode", barcode);
-
-      // First get the RecId from koliDetayWithBarcode
-      const barcodeResult = await api.koliListesi.getKoliDetailByBarcode(
-        credentials.userCode,
-        credentials.password,
-        barcode,
-      );
-      console.log(
-        "KoliListesiScreen: koliDetayWithBarcode result:",
-        barcodeResult,
-      );
-
-      // Check for error 99
-      if (barcodeResult.err === 99) {
-        return { err: 99, msg: barcodeResult.msg, recId: 0 };
-      }
-
-      if (!barcodeResult.recId) {
-        throw new Error("Koli not found for this barcode");
-      }
-
-      // Now fetch the full koli detail using the RecId
-      console.log(
-        "KoliListesiScreen: Fetching koliDetay with RecId:",
-        barcodeResult.recId,
-      );
-      const koliDetail = await api.koliListesi.getDetail(
-        credentials.userCode,
-        credentials.password,
-        barcodeResult.recId,
-      );
-      console.log("KoliListesiScreen: koliDetay result:", koliDetail);
-
-      return { recId: barcodeResult.recId, items: koliDetail };
-    },
-    onSuccess: (data) => {
-      console.log("KoliListesiScreen: Barcode search success", data);
-      if (data.err === 99) {
-        console.log(
-          "KoliListesiScreen: Error 99 received, showing message:",
-          data.msg,
-        );
-        Alert.alert("Error", data.msg || "An error occurred");
-        return;
-      }
-      setBarcodeModalVisible(false);
-      setBarcodeInput("");
-      if (data.recId) {
-        router.push(`/(app)/koli-detay?id=${data.recId}` as any);
-      } else {
-        Alert.alert("Error", "Koli not found for this barcode");
-      }
-    },
-    onError: (error) => {
-      console.error("KoliListesiScreen: Barcode search error", error);
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to find koli",
-      );
-    },
-  });
-
-  const handleBarcodeSubmit = () => {
-    if (!barcodeInput.trim()) {
-      Alert.alert("Error", "Please enter a barcode");
-      return;
-    }
-    barcodeSearchMutation.mutate(barcodeInput.trim());
-  };
-
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
 
   useEffect(() => {
@@ -263,7 +182,7 @@ export default function KoliListesiScreen() {
           <Search size={20} color={colors.text.secondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search packages"
+            placeholder="Koli Ara..."
             placeholderTextColor={colors.text.secondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -292,8 +211,8 @@ export default function KoliListesiScreen() {
             <Package size={48} color={colors.text.secondary} />
             <Text style={styles.emptyText}>
               {searchQuery
-                ? "No items match your search"
-                : "No koli items found"}
+                ? "Aramanızla eşleşen koli bulunamadı"
+                : "Koli bulunamadı"}
             </Text>
           </View>
         }
@@ -301,58 +220,18 @@ export default function KoliListesiScreen() {
 
       <TouchableOpacity
         style={styles.fabSecondary}
-        onPress={() => setBarcodeModalVisible(true)}
+        onPress={() => {
+          // Ortak barkod okuma ekranını arama modunda açıyoruz
+          router.push({
+            pathname: "/(app)/barcode-scanner",
+            params: { mode: "search" }, 
+          });
+        }}
         activeOpacity={0.8}
         testID="barcode-scanner-button"
       >
         <ScanBarcode size={26} color="#fff" />
       </TouchableOpacity>
-
-      <Modal
-        visible={barcodeModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setBarcodeModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Barkod</Text>
-            <TextInput
-              style={styles.barcodeInput}
-              placeholder="Barcode"
-              placeholderTextColor={colors.text.secondary}
-              value={barcodeInput}
-              onChangeText={setBarcodeInput}
-              autoFocus
-              onSubmitEditing={handleBarcodeSubmit}
-              returnKeyType="search"
-              testID="barcode-input"
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => {
-                  setBarcodeModalVisible(false);
-                  setBarcodeInput("");
-                }}
-              >
-                <Text style={styles.modalCancelText}>İptal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalSearchButton}
-                onPress={handleBarcodeSubmit}
-                disabled={barcodeSearchMutation.isPending}
-              >
-                {barcodeSearchMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.modalSearchText}>Arama</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       <TouchableOpacity
         style={styles.fab}
@@ -523,67 +402,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  modalContent: {
-    backgroundColor: colors.background.card,
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    maxWidth: 340,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600" as const,
-    color: colors.text.primary,
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  barcodeInput: {
-    backgroundColor: colors.background.darker,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: colors.text.primary,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  modalCancelButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: colors.background.darker,
-    alignItems: "center",
-  },
-  modalCancelText: {
-    fontSize: 16,
-    fontWeight: "500" as const,
-    color: colors.text.secondary,
-  },
-  modalSearchButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: colors.button.primary,
-    alignItems: "center",
-  },
-  modalSearchText: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#fff",
   },
 });

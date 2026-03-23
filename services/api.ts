@@ -600,6 +600,8 @@ export const api = {
       userName: string,
       password: string,
       orderReceiptId: number,
+      barcode: string,
+      useExistingBox: boolean = false
     ): Promise<{ success: string; msg: string; resultBoxId?: number }> {
       console.log("API: Creating koli from order receipt", orderReceiptId);
       const apiBaseUrl = await getApiBaseUrl();
@@ -607,11 +609,12 @@ export const api = {
       const companyPassword = await getCompanyPassword();
 
       const dataPayload = {
-        serviceType: 1,
+        serviceType: useExistingBox ? 101 : 1,
         boxType: 2,
         boxId: 0,
         boxCode: "",
         orderReceiptId: orderReceiptId,
+        inventoryBarcode: barcode,
         boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
         orderConnection: 1,
         orderShipmentControlType: 3,
