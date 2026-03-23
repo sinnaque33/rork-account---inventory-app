@@ -1,4 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Audio } from "expo-av";
+import { useApiConfig } from "@/contexts/ApiConfigContext";
+import { SOUND_FILES } from "@/constants/sounds";
 import {
   AlertCircle,
   Package,
@@ -71,6 +74,28 @@ export default function KoliDetayScreen() {
     sipExp?: string;
     boxCode?: string;
   }>();
+
+  const { errorSound } = useApiConfig();
+
+
+  const playErrorSignal = async () => {
+    try {
+      Vibration.vibrate(500);
+      if (errorSound !== "vibration" && SOUND_FILES[errorSound]) {
+        const { sound } = await Audio.Sound.createAsync(
+          SOUND_FILES[errorSound],
+          { shouldPlay: true }
+        );
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            sound.unloadAsync();
+          }
+        });
+      }
+    } catch (e) {
+      console.log("Ses çalma hatası:", e);
+    }
+  };
 
   const { credentials } = useAuth();
   const router = useRouter();
@@ -189,7 +214,7 @@ export default function KoliDetayScreen() {
       const isError = data.err !== 0 && data.err !== undefined;
 
       if (isError) {
-        Vibration.vibrate(500);
+        playErrorSignal();
         setResultData({
           title: "İşlem Başarısız",
           message: explanation || "Hata oluştu.",
@@ -207,7 +232,7 @@ export default function KoliDetayScreen() {
       }
     },
     onError: (err: Error) => {
-      Vibration.vibrate(500);
+      playErrorSignal();
       setBarcode("");
       barcodeValueRef.current = "";
       setResultData({
