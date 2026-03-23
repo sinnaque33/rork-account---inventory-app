@@ -383,8 +383,11 @@ export default function KoliDetayScreen() {
     if (h2Key) {
       quantityLabel = h2Key.replace("h2_", "");
       const rawQuantity = item[h2Key];
+
+      const isBarcodeOrSerial = /barkod|seri|kod|no/i.test(quantityLabel);
+
       quantityValue =
-        rawQuantity && !isNaN(Number(rawQuantity))
+        rawQuantity && !isNaN(Number(rawQuantity)) && !isBarcodeOrSerial
           ? Number(rawQuantity).toFixed(2)
           : String(rawQuantity || "");
     }
