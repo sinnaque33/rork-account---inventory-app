@@ -87,6 +87,7 @@ export default function KoliDetayScreen() {
   const [scanMode, setScanMode] = useState<"add" | "delete">("add");
   const [barcode, setBarcode] = useState("");
   const inputRef = useRef<TextInput>(null);
+  const barcodeValueRef = useRef("");
 
   // --- BİLDİRİM VE HATA MODAL STATE'LERİ ---
   const [resultModalVisible, setResultModalVisible] = useState(false);
@@ -180,6 +181,7 @@ export default function KoliDetayScreen() {
     },
     onSuccess: (data: any) => {
       setBarcode("");
+      barcodeValueRef.current = "";
       inputRef.current?.focus();
 
       // Api'den dönen data yapısına göre hata kontrolü
@@ -207,6 +209,7 @@ export default function KoliDetayScreen() {
     onError: (err: Error) => {
       Vibration.vibrate(500);
       setBarcode("");
+      barcodeValueRef.current = "";
       setResultData({
         title: "Sistem Hatası",
         message: err.message,
@@ -217,7 +220,7 @@ export default function KoliDetayScreen() {
   });
 
   const handleBarcodeSubmit = () => {
-    const finalBarcode = barcode.trim();
+    const finalBarcode = barcodeValueRef.current.trim();
     if (!finalBarcode || barcodeMutation.isPending) return;
     barcodeMutation.mutate(finalBarcode);
   };
@@ -384,10 +387,14 @@ export default function KoliDetayScreen() {
       quantityLabel = h2Key.replace("h2_", "");
       const rawQuantity = item[h2Key];
 
-      const isBarcodeOrSerial = /barkod|seri|kod|no/i.test(quantityLabel);
+      const isBarcodeOrSerial = /barkod|seri|kod|no|ean/i.test(quantityLabel);
+      const isVeryLargeNumber = String(rawQuantity).trim().length >= 8;
 
       quantityValue =
-        rawQuantity && !isNaN(Number(rawQuantity)) && !isBarcodeOrSerial
+        rawQuantity &&
+        !isNaN(Number(rawQuantity)) &&
+        !isBarcodeOrSerial &&
+        !isVeryLargeNumber
           ? Number(rawQuantity).toFixed(2)
           : String(rawQuantity || "");
     }
@@ -549,7 +556,10 @@ export default function KoliDetayScreen() {
             ref={inputRef}
             style={styles.barcodeInputTop}
             value={barcode}
-            onChangeText={setBarcode}
+            onChangeText={(text) => {
+              setBarcode(text);
+              barcodeValueRef.current = text;
+            }}
             onSubmitEditing={handleBarcodeSubmit}
             placeholder={
               scanMode === "add"
