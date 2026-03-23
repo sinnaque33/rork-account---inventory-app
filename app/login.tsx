@@ -1,8 +1,8 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, useRouter } from 'expo-router';
-import { LogIn, Settings } from 'lucide-react-native';
-import { useState } from 'react';
-import { Image } from 'expo-image';
+import { LinearGradient } from "expo-linear-gradient";
+import { Stack, useRouter } from "expo-router";
+import { LogIn, Settings } from "lucide-react-native";
+import { useState } from "react";
+import { Image } from "expo-image";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,47 +12,43 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native';
-import { useAuth } from '@/contexts/AuthContext';
-import colors from '@/constants/colors';
+} from "react-native";
+import { useAuth } from "@/contexts/AuthContext";
+import colors from "@/constants/colors";
 
 export default function LoginScreen() {
   const { login, loginError, loginMsg, isLoggingIn } = useAuth();
   const router = useRouter();
-  const [userCode, setUserCode] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [userCodeError, setUserCodeError] = useState<string>('');
-  const [passwordError, setPasswordError] = useState<string>('');
+  const [userCode, setUserCode] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [userCodeError, setUserCodeError] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<string>("");
 
   const validateUserCode = (text: string): boolean => {
     if (!text) {
-      setUserCodeError('User code is required');
+      setUserCodeError("User code is required");
       return false;
     }
-    setUserCodeError('');
+    setUserCodeError("");
     return true;
   };
 
   const validatePassword = (text: string): boolean => {
     if (!text) {
-      setPasswordError('Password is required');
+      setPasswordError("Password is required");
       return false;
     }
-    if (text.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
-      return false;
-    }
-    setPasswordError('');
+    setPasswordError("");
     return true;
   };
 
   const handleLogin = async () => {
-    console.log('LoginScreen: Login button pressed');
+    console.log("LoginScreen: Login button pressed");
     const isUserCodeValid = validateUserCode(userCode);
     const isPasswordValid = validatePassword(password);
 
     if (!isUserCodeValid || !isPasswordValid) {
-      console.log('LoginScreen: Validation failed');
+      console.log("LoginScreen: Validation failed");
       return;
     }
 
@@ -67,13 +63,13 @@ export default function LoginScreen() {
         style={styles.container}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
           <View style={styles.content}>
             <Pressable
               style={styles.settingsButton}
-              onPress={() => router.push('/settings' as any)}
+              onPress={() => router.push("/settings" as any)}
               testID="settings-button"
             >
               <Settings size={24} color="#fff" />
@@ -81,7 +77,9 @@ export default function LoginScreen() {
 
             <View style={styles.header}>
               <Image
-                source={{ uri: 'https://cdn.rork.app/user-content/46e4cfe3-6f33-48fb-ac89-c7b0e1a6ce6e.png' }}
+                source={{
+                  uri: "https://cdn.rork.app/user-content/46e4cfe3-6f33-48fb-ac89-c7b0e1a6ce6e.png",
+                }}
                 style={styles.logo}
                 contentFit="contain"
               />
@@ -96,7 +94,10 @@ export default function LoginScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Kullanıcı</Text>
                 <TextInput
-                  style={[styles.input, userCodeError ? styles.inputError : null]}
+                  style={[
+                    styles.input,
+                    userCodeError ? styles.inputError : null,
+                  ]}
                   placeholder="Kullanıcı"
                   placeholderTextColor={colors.input.placeholder}
                   value={userCode}
@@ -166,9 +167,7 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            <Text style={styles.footer}>
-              Secure business authentication
-            </Text>
+            <Text style={styles.footer}>Secure business authentication</Text>
           </View>
         </KeyboardAvoidingView>
       </LinearGradient>
@@ -185,23 +184,23 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: 24,
   },
   settingsButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 48,
     right: 24,
     width: 48,
     height: 48,
     borderRadius: 24,
     backgroundColor: colors.button.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 10,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 48,
   },
   logo: {
@@ -211,7 +210,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
     color: colors.text.primary,
     marginBottom: 8,
   },
@@ -224,7 +223,7 @@ const styles = StyleSheet.create({
     color: colors.error.text,
     fontSize: 14,
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   form: {
     gap: 24,
@@ -234,7 +233,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
     color: colors.text.primary,
     marginBottom: 4,
   },
@@ -245,7 +244,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.input.text,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   inputError: {
     borderColor: colors.border.error,
@@ -265,9 +264,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.button.primary,
     borderRadius: 12,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     marginTop: 8,
   },
@@ -280,10 +279,10 @@ const styles = StyleSheet.create({
   buttonText: {
     color: colors.text.primary,
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
   },
   footer: {
-    textAlign: 'center',
+    textAlign: "center",
     color: colors.text.muted,
     fontSize: 12,
     marginTop: 32,
