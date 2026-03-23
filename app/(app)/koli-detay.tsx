@@ -77,14 +77,13 @@ export default function KoliDetayScreen() {
 
   const { errorSound } = useApiConfig();
 
-
   const playErrorSignal = async () => {
     try {
       Vibration.vibrate(500);
       if (errorSound !== "vibration" && SOUND_FILES[errorSound]) {
         const { sound } = await Audio.Sound.createAsync(
           SOUND_FILES[errorSound],
-          { shouldPlay: true }
+          { shouldPlay: true },
         );
         sound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
@@ -113,6 +112,7 @@ export default function KoliDetayScreen() {
   const [barcode, setBarcode] = useState("");
   const inputRef = useRef<TextInput>(null);
   const barcodeValueRef = useRef("");
+  const isProcessingRef = useRef(false);
 
   // --- BİLDİRİM VE HATA MODAL STATE'LERİ ---
   const [resultModalVisible, setResultModalVisible] = useState(false);
@@ -242,11 +242,15 @@ export default function KoliDetayScreen() {
       });
       setResultModalVisible(true);
     },
+    onSettled: () => {
+      isProcessingRef.current = false;
+    }
   });
 
   const handleBarcodeSubmit = () => {
     const finalBarcode = barcodeValueRef.current.trim();
-    if (!finalBarcode || barcodeMutation.isPending) return;
+    if (!finalBarcode || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     barcodeMutation.mutate(finalBarcode);
   };
 
