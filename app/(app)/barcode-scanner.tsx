@@ -144,9 +144,10 @@ export default function BarcodeScannerScreen() {
       // DURUM 1: SİPARİŞTEN YENİ KOLİ OLUŞTURMA VE İLK ÜRÜNÜ EKLEME
       if (params.mode === "create_from_order" && params.orderReceiptId) {
         console.log(
-          `Siparişten (${params.orderReceiptId}) koli oluşturuluyor...`,
+          `Siparişten (${params.orderReceiptId}) koli oluşturuluyor ve ürün ekleniyor...`,
         );
 
+        // Backend tek seferde hem koliyi açıyor hem de gönderdiğimiz barkodu içine atıyor
         const koliResult = await api.koliListesi.createKoliFromOrderReceipt(
           credentials.userCode,
           credentials.password,
@@ -155,26 +156,31 @@ export default function BarcodeScannerScreen() {
           useExistingBox,
         );
 
+        const isError = String(koliResult.success) !== "true" || (koliResult.err !== undefined && koliResult.err !== 0);
+
+        if (isError) {
+          throw new Error(koliResult.msg || "ERP işlem sırasında hata döndürdü.");
+        }
+
         if (!koliResult.resultBoxId) {
-          throw new Error("Koli oluşturulamadı veya ID alınamadı.");
+          throw new Error("Koli oluşturulamadı veya ürün eklenemedi.");
+        }
+
+        // Eğer backend tarafında koli açılırken VEYA barkod eklenirken hata olursa
+        // catch bloğuna düşecek ya da koliResult.resultBoxId boş dönecektir.
+        if (!koliResult.resultBoxId) {
+          throw new Error(koliResult.msg || "Koli oluşturulamadı veya ürün eklenemedi.");
         }
 
         const newKoliId = koliResult.resultBoxId;
         console.log(
-          `Koli oluşturuldu (ID: ${newKoliId}), ürün ekleniyor: ${scannedBarcode}`,
-        );
-
-        const addItemResult = await api.koliListesi.addItemByBarcode(
-          credentials.userCode,
-          credentials.password,
-          newKoliId,
-          scannedBarcode,
+          `İşlem başarılı! Koli (ID: ${newKoliId}) oluşturuldu ve barkod eklendi.`,
         );
 
         return {
           mode: "create_from_order",
           resultBoxId: newKoliId,
-          addResult: addItemResult,
+          resultExplanation: koliResult.msg, // Başarı/Hata mesajını direkt döndürüyoruz
         };
       }
 
@@ -210,7 +216,7 @@ export default function BarcodeScannerScreen() {
       if (!barcodeResult.recId)
         throw new Error("Bu barkoda ait koli bulunamadı");
 
-      return { recId: barcodeResult.recId, mode: "search" };
+      return { recId: barcodeResult.recId, mode: "search", scannedBarcode };
     },
     onSuccess: (data: any) => {
       setBarcode("");
@@ -286,7 +292,7 @@ export default function BarcodeScannerScreen() {
           });
           setResultModalVisible(true);
         } else if (data.recId) {
-          router.push(`/(app)/koli-detay?id=${data.recId}` as any);
+          router.push(`/(app)/koli-detay?id=${data.recId}&packageNo=${encodeURIComponent(data.scannedBarcode)}` as any);
         }
       }
     },

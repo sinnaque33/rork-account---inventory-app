@@ -601,8 +601,13 @@ export const api = {
       password: string,
       orderReceiptId: number,
       barcode: string,
-      useExistingBox: boolean = false
-    ): Promise<{ success: string; msg: string; resultBoxId?: number }> {
+      useExistingBox: boolean = false,
+    ): Promise<{
+      success: string;
+      msg: string;
+      resultBoxId?: number;
+      err?: number;
+    }> {
       console.log("API: Creating koli from order receipt", orderReceiptId);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
@@ -671,7 +676,12 @@ export const api = {
 
       console.log("API: CreateKoliFromOrderReceipt resultBoxId:", resultBoxId);
 
-      return { success: data.success, msg: data.msg, resultBoxId };
+      return {
+        success: data.success,
+        msg: data.msg,
+        resultBoxId,
+        err: data.err,
+      };
     },
 
     async createReceipt(
