@@ -33,10 +33,7 @@ export default function BarcodeScannerScreen() {
   const { errorSound, useExistingBox } = useApiConfig();
   const playErrorSignal = async () => {
     try {
-      // Her zaman titret
       Vibration.vibrate(500);
-
-      // Ayar "vibration" değilse ve ses dosyası varsa çal
       if (errorSound !== "vibration" && SOUND_FILES[errorSound]) {
         const { sound } = await Audio.Sound.createAsync(
           SOUND_FILES[errorSound],
@@ -156,20 +153,24 @@ export default function BarcodeScannerScreen() {
           useExistingBox,
         );
 
-        const isError = String(koliResult.success) !== "true" || (koliResult.err !== undefined && koliResult.err !== 0);
+        const isError =
+          String(koliResult.success) !== "true" ||
+          (koliResult.err !== undefined && koliResult.err !== 0);
 
         if (isError) {
-          throw new Error(koliResult.msg || "ERP işlem sırasında hata döndürdü.");
+          throw new Error(
+            koliResult.msg || "ERP işlem sırasında hata döndürdü.",
+          );
         }
 
         if (!koliResult.resultBoxId) {
           throw new Error("Koli oluşturulamadı veya ürün eklenemedi.");
         }
 
-        // Eğer backend tarafında koli açılırken VEYA barkod eklenirken hata olursa
-        // catch bloğuna düşecek ya da koliResult.resultBoxId boş dönecektir.
         if (!koliResult.resultBoxId) {
-          throw new Error(koliResult.msg || "Koli oluşturulamadı veya ürün eklenemedi.");
+          throw new Error(
+            koliResult.msg || "Koli oluşturulamadı veya ürün eklenemedi.",
+          );
         }
 
         const newKoliId = koliResult.resultBoxId;
@@ -180,6 +181,7 @@ export default function BarcodeScannerScreen() {
         return {
           mode: "create_from_order",
           resultBoxId: newKoliId,
+          resultBoxCode: (koliResult as any).resultBoxCode,
           resultExplanation: koliResult.msg, // Başarı/Hata mesajını direkt döndürüyoruz
         };
       }
@@ -227,6 +229,7 @@ export default function BarcodeScannerScreen() {
 
       // Koli kodunu yakala
       const extractedBoxCode =
+        data.resultBoxCode ||
         data.boxCode ||
         data.addResult?.boxCode ||
         (data.resultBoxId ? String(data.resultBoxId) : null);
@@ -242,6 +245,7 @@ export default function BarcodeScannerScreen() {
           pathname: "/(app)/koli-detay",
           params: {
             id: data.resultBoxId.toString(),
+            packageNo: extractedBoxCode,
             boxCode: extractedBoxCode,
             receiptNo: params.receiptNo,
             initialSuccessMsg: explanation,
@@ -292,7 +296,9 @@ export default function BarcodeScannerScreen() {
           });
           setResultModalVisible(true);
         } else if (data.recId) {
-          router.push(`/(app)/koli-detay?id=${data.recId}&packageNo=${encodeURIComponent(data.scannedBarcode)}` as any);
+          router.push(
+            `/(app)/koli-detay?id=${data.recId}&packageNo=${encodeURIComponent(data.scannedBarcode)}` as any,
+          );
         }
       }
     },
