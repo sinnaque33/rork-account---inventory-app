@@ -296,6 +296,13 @@ export default function BarcodeScannerScreen() {
           });
           setResultModalVisible(true);
         } else if (data.recId) {
+          let cleanPackageNo = data.scannedBarcode || "";
+          if (
+            cleanPackageNo.toUpperCase().startsWith("P1") ||
+            cleanPackageNo.toUpperCase().startsWith("P2")
+          ) {
+            cleanPackageNo = cleanPackageNo.substring(2);
+          }
           router.push(
             `/(app)/koli-detay?id=${data.recId}&packageNo=${encodeURIComponent(data.scannedBarcode)}` as any,
           );
