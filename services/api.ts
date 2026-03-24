@@ -607,6 +607,7 @@ export const api = {
       msg: string;
       resultBoxId?: number;
       err?: number;
+      boxCode?: string;
     }> {
       console.log("API: Creating koli from order receipt", orderReceiptId);
       const apiBaseUrl = await getApiBaseUrl();
@@ -654,33 +655,50 @@ export const api = {
 
       const data = await response.json();
       console.log(
-        "API: CreateKoliFromOrderReceipt Response:",
+        "📦 YENI KOLI ACMA CEVABI (DEBUG):",
         JSON.stringify(data, null, 2),
       );
 
       let resultBoxId: number | undefined = data.resultBoxId;
+      let boxCode: string | undefined = data.resultBoxCode; // 2. YAKALAMAK İÇİN DEĞİŞKEN OLUŞTURUYORUZ
 
-      if (!resultBoxId && data.data) {
+      // 3. EĞER İÇERİDE "data" VARSA (Sadece ID eksikse değil, her zaman parse et)
+      if (data.data) {
         try {
           const parsedData =
             typeof data.data === "string" ? JSON.parse(data.data) : data.data;
+
           resultBoxId =
+            resultBoxId ||
             parsedData.resultBoxId ||
             parsedData.boxId ||
             parsedData.id ||
             parsedData.RecId;
+
+          // 4. İŞTE BURADA GİZLİ NUMARAYI ÇEKİP ALIYORUZ:
+          boxCode =
+            boxCode ||
+            parsedData.resultBoxCode ||
+            parsedData.boxCode ||
+            parsedData.PackageNo;
         } catch {
-          console.log("API: Could not parse resultBoxId from response data");
+          console.log("API: Could not parse response data");
         }
       }
 
-      console.log("API: CreateKoliFromOrderReceipt resultBoxId:", resultBoxId);
+      console.log(
+        "API: CreateKoliFromOrderReceipt resultBoxId:",
+        resultBoxId,
+        "boxCode:",
+        boxCode,
+      );
 
       return {
         success: data.success,
         msg: data.msg,
         resultBoxId,
         err: data.err,
+        boxCode,
       };
     },
 
@@ -688,7 +706,12 @@ export const api = {
       userName: string,
       password: string,
       boxId: number,
-    ): Promise<{ success: string; msg: string; resultBoxId?: number }> {
+    ): Promise<{
+      success: string;
+      msg: string;
+      resultBoxId?: number;
+      err?: number;
+    }> {
       console.log("API: Creating receipt for box", boxId);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
@@ -753,7 +776,22 @@ export const api = {
         }
       }
 
-      return { success: data.success, msg: data.msg, resultBoxId };
+      let finalErr = data.err;
+      if (data.data) {
+        try {
+          const parsedData =
+            typeof data.data === "string" ? JSON.parse(data.data) : data.data;
+          if (parsedData.err !== undefined) finalErr = parsedData.err;
+          if (parsedData.resultError === true) finalErr = finalErr || 99;
+        } catch (e) {}
+      }
+
+      return {
+        success: data.success,
+        msg: data.msg,
+        resultBoxId,
+        err: finalErr,
+      };
     },
 
     async getOrderReceipts(

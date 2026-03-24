@@ -244,7 +244,7 @@ export default function KoliDetayScreen() {
     },
     onSettled: () => {
       isProcessingRef.current = false;
-    }
+    },
   });
 
   const handleBarcodeSubmit = () => {
@@ -326,23 +326,28 @@ export default function KoliDetayScreen() {
       );
     },
     onSuccess: (data) => {
-      Alert.alert("Sonuç", data.msg || "Operation completed", [
-        {
-          text: "Tamam",
-          onPress: () => {
-            if (data.resultBoxId) {
-              router.replace(`/koli-detay?id=${data.resultBoxId}`);
-            } else {
-              queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
-            }
-          },
-        },
-      ]);
+      const isError =
+        String(data.success) !== "true" ||
+        (data.err !== undefined && data.err !== 0);
+
+      if (isError) {
+        // BAŞARISIZ İSE SADECE HATA GÖSTER (SAYFAYI DEĞİŞTİRME)
+        playErrorSignal();
+        Alert.alert("İşlem Başarısız", data.msg || "İrsaliye oluşturulamadı.");
+      } else {
+        // GERÇEKTEN BAŞARILI İSE BİLGİ VER VE LİSTEYİ YENİLE
+        showToast("Başarılı", data.msg || "İrsaliye oluşturuldu", "success");
+        queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
+        queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+      }
     },
     onError: (error) => {
+      playErrorSignal();
       Alert.alert(
-        "Hata",
-        error instanceof Error ? error.message : "Failed to create receipt",
+        "Sistem Hatası",
+        error instanceof Error
+          ? error.message
+          : "İrsaliye oluşturulurken hata meydana geldi.",
       );
     },
   });
