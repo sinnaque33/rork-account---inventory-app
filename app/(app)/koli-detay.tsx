@@ -331,11 +331,14 @@ export default function KoliDetayScreen() {
         (data.err !== undefined && data.err !== 0);
 
       if (isError) {
-        // BAŞARISIZ İSE SADECE HATA GÖSTER (SAYFAYI DEĞİŞTİRME)
         playErrorSignal();
-        Alert.alert("İşlem Başarısız", data.msg || "İrsaliye oluşturulamadı.");
+        // ALERT YERİNE KIRMIZI TOAST ÇAĞIRIYORUZ
+        showToast(
+          "İşlem Başarısız",
+          data.msg || "İrsaliye oluşturulamadı.",
+          "error",
+        );
       } else {
-        // GERÇEKTEN BAŞARILI İSE BİLGİ VER VE LİSTEYİ YENİLE
         showToast("Başarılı", data.msg || "İrsaliye oluşturuldu", "success");
         queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
         queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
@@ -343,15 +346,16 @@ export default function KoliDetayScreen() {
     },
     onError: (error) => {
       playErrorSignal();
-      Alert.alert(
+      // SİSTEM HATASI İÇİN DE ALERT YERİNE KIRMIZI TOAST
+      showToast(
         "Sistem Hatası",
         error instanceof Error
           ? error.message
           : "İrsaliye oluşturulurken hata meydana geldi.",
+        "error",
       );
     },
   });
-
   const koliDetailQuery = useQuery({
     queryKey: ["koli-detay", id, credentials],
     queryFn: async () => {
