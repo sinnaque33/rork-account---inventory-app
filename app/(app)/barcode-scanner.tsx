@@ -11,6 +11,7 @@ import {
   Platform,
   Animated,
   Easing,
+  Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -134,85 +135,129 @@ export default function BarcodeScannerScreen() {
   }, [resultModalVisible]);
 
   // --- API İŞLEMLERİ (MUTATION) ---
-  const barcodeMutation = useMutation({
+const barcodeMutation = useMutation({
     mutationFn: async (scannedBarcode: string) => {
       if (!credentials) throw new Error("No credentials available");
 
-      // DURUM 1: SİPARİŞTEN YENİ KOLİ OLUŞTURMA VE İLK ÜRÜNÜ EKLEME
+      // DURUM 1: SİPARİŞTEN YENİ KOLİ OLUŞTURMA VE İLK ÜRÜNÜ EKLEME (Servis 1 veya 101)
       if (params.mode === "create_from_order" && params.orderReceiptId) {
-        console.log(
-          `Siparişten (${params.orderReceiptId}) koli oluşturuluyor ve ürün ekleniyor...`,
-        );
+        console.log(`Siparişten (${params.orderReceiptId}) koli oluşturuluyor...`);
 
-        // Backend tek seferde hem koliyi açıyor hem de gönderdiğimiz barkodu içine atıyor
-        const koliResult = await api.koliListesi.createKoliFromOrderReceipt(
+        let koliResult = await api.koliListesi.createKoliFromOrderReceipt(
           credentials.userCode,
           credentials.password,
           parseInt(params.orderReceiptId, 10),
           scannedBarcode,
           useExistingBox,
+          3 // İlk deneme normal kontrolle
         );
 
-        const isError =
-          String(koliResult.success) !== "true" ||
-          (koliResult.err !== undefined && koliResult.err !== 0);
+        // Miktar aşımı onayı kontrolü
+        if (koliResult.resultErrorType === 2) {
+          const proceed = await new Promise((resolve) => {
+            Alert.alert(
+              "Miktar Aşımı",
+              "Sipariş miktarı aşılıyor, devam etmek istiyor musunuz?",
+              [
+                { text: "Hayır", style: "cancel", onPress: () => resolve(false) },
+                { text: "Evet", onPress: () => resolve(true) }
+              ]
+            );
+          });
+
+          if (proceed) {
+            koliResult = await api.koliListesi.createKoliFromOrderReceipt(
+              credentials.userCode,
+              credentials.password,
+              parseInt(params.orderReceiptId, 10),
+              scannedBarcode,
+              useExistingBox,
+              -1 // Kullanıcı onayladı, zorla gönder
+            );
+          } else {
+            throw new Error("İşlem kullanıcı tarafından iptal edildi.");
+          }
+        }
+
+        const isError = String(koliResult.success) !== "true" || (koliResult.err !== undefined && koliResult.err !== 0);
 
         if (isError) {
-          throw new Error(
-            koliResult.msg || "ERP işlem sırasında hata döndürdü.",
-          );
+          throw new Error(koliResult.msg || "ERP işlem sırasında hata döndürdü.");
         }
 
         if (!koliResult.resultBoxId) {
           throw new Error("Koli oluşturulamadı veya ürün eklenemedi.");
         }
 
-        if (!koliResult.resultBoxId) {
-          throw new Error(
-            koliResult.msg || "Koli oluşturulamadı veya ürün eklenemedi.",
-          );
-        }
-
-        const newKoliId = koliResult.resultBoxId;
-        console.log(
-          `İşlem başarılı! Koli (ID: ${newKoliId}) oluşturuldu ve barkod eklendi.`,
-        );
-
         return {
           mode: "create_from_order",
-          resultBoxId: newKoliId,
-          resultBoxCode: (koliResult as any).resultBoxCode,
-          resultExplanation: koliResult.msg, // Başarı/Hata mesajını direkt döndürüyoruz
+          resultBoxId: koliResult.resultBoxId,
+          resultBoxCode: koliResult.boxCode,
+          resultExplanation: koliResult.msg,
         };
       }
 
-      // DURUM 2: Mevcut Koliye Ürün Ekleme veya Silme Modu
+      // DURUM 2: MEVCUT KOLİYE ÜRÜN EKLEME VEYA SİLME (Servis 11 veya Silme)
       if (params.mode && params.koliId) {
         const koliIdNum = parseInt(params.koliId, 10);
 
         if (params.mode === "add") {
-          return await api.koliListesi.addItemByBarcode(
+          let addResult = await api.koliListesi.addItemByBarcode(
             credentials.userCode,
             credentials.password,
             koliIdNum,
             scannedBarcode,
+            undefined,
+            3 // İlk deneme normal
           );
+
+          // Miktar aşımı onayı kontrolü
+          if (addResult.resultErrorType === 2) {
+            const proceed = await new Promise((resolve) => {
+              Alert.alert(
+                "Miktar Aşımı",
+                "Sipariş miktarı aşılıyor, devam etmek istiyor musunuz?",
+                [
+                  { text: "Hayır", style: "cancel", onPress: () => resolve(false) },
+                  { text: "Evet", onPress: () => resolve(true) }
+                ]
+              );
+            });
+
+            if (proceed) {
+              addResult = await api.koliListesi.addItemByBarcode(
+                credentials.userCode,
+                credentials.password,
+                koliIdNum,
+                scannedBarcode,
+                undefined,
+                -1 // Kullanıcı onayladı, zorla gönder
+              );
+            } else {
+              throw new Error("İşlem kullanıcı tarafından iptal edildi.");
+            }
+          }
+          
+          return { ...addResult, mode: "add" };
+
         } else if (params.mode === "delete") {
-          return await api.koliListesi.deleteItemByBarcode(
+          const deleteResult = await api.koliListesi.deleteItemByBarcode(
             credentials.userCode,
             credentials.password,
             koliIdNum,
             scannedBarcode,
           );
+          return { ...deleteResult, mode: "delete" };
         }
       }
 
-      // DURUM 3: Varsayılan (Koli Arama) Modu
+      // DURUM 3: VARSAYILAN (KOLİ ARAMA) MODU
       const barcodeResult = await api.koliListesi.getKoliDetailByBarcode(
         credentials.userCode,
         credentials.password,
         scannedBarcode,
       );
+
       if (barcodeResult.err === 99)
         return { err: 99, msg: barcodeResult.msg, mode: "search" };
       if (!barcodeResult.recId)
@@ -220,25 +265,24 @@ export default function BarcodeScannerScreen() {
 
       return { recId: barcodeResult.recId, mode: "search", scannedBarcode };
     },
+
     onSuccess: (data: any) => {
       setBarcode("");
       inputRef.current?.focus();
 
-      const explanation =
-        data.addResult?.resultExplanation || data.resultExplanation || data.msg;
+      const explanation = data.resultExplanation || data.msg;
 
       // Koli kodunu yakala
       const extractedBoxCode =
         data.resultBoxCode ||
         data.boxCode ||
-        data.addResult?.boxCode ||
         (data.resultBoxId ? String(data.resultBoxId) : null);
 
       if (extractedBoxCode) {
         setDisplayBoxCode(extractedBoxCode);
       }
 
-      // Yeni Siparişten Koli Oluşturma Durumu
+      // 1. Yeni Siparişten Koli Oluşturma Durumu
       if (data.mode === "create_from_order") {
         queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
         router.replace({
@@ -254,7 +298,7 @@ export default function BarcodeScannerScreen() {
         return;
       }
 
-      // Seri Okuma (Ekleme/Silme) Durumu
+      // 2. Seri Okuma (Ekleme/Silme) Durumu
       if (data.mode !== "search") {
         const isError = data.err !== 0 && data.err !== undefined;
 
@@ -275,40 +319,33 @@ export default function BarcodeScannerScreen() {
           }
           setSuccessMessage(explanation);
 
-          // Toast gösterimi
-          const isAdd = params.mode === "add";
           showSuccessToast(
             "Başarılı",
-            isAdd ? "Ürün eklendi" : "Ürün silindi",
+            data.mode === "add" ? "Ürün eklendi" : "Ürün silindi",
             "success",
           );
         }
       }
-      // Koli Arama Durumu
+      // 3. Koli Arama Durumu
       else {
         if (data.err === 99 || data.err === 1) {
           playErrorSignal();
           setResultData({
             title: "Koli Bulunamadı",
-            message:
-              data.msg || "Okutulan barkoda ait koli sistemde bulunmuyor.",
+            message: data.msg || "Okutulan barkoda ait koli bulunmuyor.",
             type: "error",
           });
           setResultModalVisible(true);
         } else if (data.recId) {
           let cleanPackageNo = data.scannedBarcode || "";
-          if (
-            cleanPackageNo.toUpperCase().startsWith("P1") ||
-            cleanPackageNo.toUpperCase().startsWith("P2")
-          ) {
+          if (cleanPackageNo.toUpperCase().startsWith("P1") || cleanPackageNo.toUpperCase().startsWith("P2")) {
             cleanPackageNo = cleanPackageNo.substring(2);
           }
-          router.push(
-            `/(app)/koli-detay?id=${data.recId}&packageNo=${encodeURIComponent(data.scannedBarcode)}` as any,
-          );
+          router.push(`/(app)/koli-detay?id=${data.recId}&packageNo=${encodeURIComponent(cleanPackageNo)}` as any);
         }
       }
     },
+
     onError: (error: Error) => {
       playErrorSignal();
       setResultData({

@@ -110,6 +110,7 @@ export default function KoliDetayScreen() {
   // --- BARKOD OKUMA STATE'LERİ ---
   const [scanMode, setScanMode] = useState<"add" | "delete">("add");
   const [barcode, setBarcode] = useState("");
+  const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
   const barcodeValueRef = useRef("");
   const isProcessingRef = useRef(false);
@@ -181,19 +182,26 @@ export default function KoliDetayScreen() {
 
   // --- BARKOD OKUMA (MUTATION) ---
   const barcodeMutation = useMutation({
-    mutationFn: async (scannedBarcode: string) => {
+    mutationFn: async ({
+      scannedBarcode,
+      controlType = 1,
+    }: {
+      scannedBarcode: string;
+      controlType?: number;
+    }) => {
       if (!credentials || !id)
         throw new Error("Oturum veya Koli bilgisi eksik.");
 
       const koliIdNum = parseInt(id, 10);
 
-      // Kullanıcının seçimine göre GERÇEK Ekle veya Sil API'sine gidiyoruz
       if (scanMode === "add") {
         return await api.koliListesi.addItemByBarcode(
           credentials.userCode,
           credentials.password,
           koliIdNum,
           scannedBarcode,
+          undefined, // orderReceiptId opsiyonel
+          controlType,
         );
       } else {
         return await api.koliListesi.deleteItemByBarcode(
@@ -204,14 +212,48 @@ export default function KoliDetayScreen() {
         );
       }
     },
-    onSuccess: (data: any) => {
-      setBarcode("");
-      barcodeValueRef.current = "";
-      inputRef.current?.focus();
+    onSuccess: (data: any, variables) => {
+      // --- ÖZEL DURUM: Miktar Aşımı Kontrolü ---
+      // DİKKAT: Artık sadece resultErrorType === 2'ye bakıyoruz (Çalışan sayfandaki gibi)
+      if (data.resultErrorType === 2) {
+        playErrorSignal();
 
-      // Api'den dönen data yapısına göre hata kontrolü
+        // Loop'u engellemek için input'u hemen temizliyoruz
+        setBarcode("");
+        barcodeValueRef.current = "";
+
+        Alert.alert(
+          "Miktar Aşımı",
+          "Sipariş miktarı aşılıyor, yine de eklemek istiyor musunuz?",
+          [
+            {
+              text: "Vazgeç",
+              style: "cancel",
+              onPress: () => {
+                isProcessingRef.current = false; // İşlemi tamamen bitir
+                inputRef.current?.focus();
+              },
+            },
+            {
+              text: "Evet, Ekle",
+              onPress: () => {
+                // controlType: -1 göndererek miktar aşımını zorla onaylıyoruz
+                barcodeMutation.mutate({
+                  scannedBarcode: variables.scannedBarcode,
+                  controlType: -1,
+                });
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        return; // Fonksiyonun geri kalanına devam etme
+      }
+
+      // --- STANDART AKIŞ ---
       const explanation = data.resultExplanation || data.msg || "";
-      const isError = data.err !== 0 && data.err !== undefined;
+      const isError =
+        (data.err !== 0 && data.err !== undefined) || data.resultError === true;
 
       if (isError) {
         playErrorSignal();
@@ -221,8 +263,14 @@ export default function KoliDetayScreen() {
           type: "error",
         });
         setResultModalVisible(true);
+        setBarcode("");
+        barcodeValueRef.current = "";
       } else {
-        // BAŞARILI: Listeyi yenile ve kullanıcıya bildir
+        // Başarılı Eklenme/Silinme
+        setBarcode("");
+        barcodeValueRef.current = "";
+        inputRef.current?.focus();
+
         queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
         showToast(
           "Başarılı",
@@ -242,7 +290,11 @@ export default function KoliDetayScreen() {
       });
       setResultModalVisible(true);
     },
-    onSettled: () => {
+    onSettled: (data) => {
+      // Eğer miktar aşımı uyarısı aldıysak, kilidi kullanıcı cevap verene kadar açmıyoruz.
+      if (data?.resultErrorType === 2) {
+        return;
+      }
       isProcessingRef.current = false;
     },
   });
@@ -250,8 +302,14 @@ export default function KoliDetayScreen() {
   const handleBarcodeSubmit = () => {
     const finalBarcode = barcodeValueRef.current.trim();
     if (!finalBarcode || isProcessingRef.current) return;
+
     isProcessingRef.current = true;
-    barcodeMutation.mutate(finalBarcode);
+
+    // İlk okutma her zaman normal kontrol (1) ile yapılır
+    barcodeMutation.mutate({
+      scannedBarcode: finalBarcode,
+      controlType: 1,
+    });
   };
 
   const closeBoxMutation = useMutation({

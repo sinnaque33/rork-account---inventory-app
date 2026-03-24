@@ -221,10 +221,9 @@ export default function KoliListesiScreen() {
       <TouchableOpacity
         style={styles.fabSecondary}
         onPress={() => {
-          // Ortak barkod okuma ekranını arama modunda açıyoruz
           router.push({
             pathname: "/(app)/barcode-scanner",
-            params: { mode: "search" }, 
+            params: { mode: "search" },
           });
         }}
         activeOpacity={0.8}

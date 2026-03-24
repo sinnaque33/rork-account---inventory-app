@@ -524,18 +524,20 @@ export const api = {
       return data.data?.items || [];
     },
 
-    async addItemByBarcode(
+ async addItemByBarcode(
       userName: string,
       password: string,
       boxId: number,
       barcode: string,
       orderReceiptId?: number,
+      shipmentControlType: number = 3,
     ): Promise<{
       success: string;
       msg: string;
       err?: number;
       boxCode?: string;
       resultExplanation?: string;
+      resultErrorType?: number;
     }> {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
@@ -548,7 +550,7 @@ export const api = {
         inventoryBarcode: barcode,
         quantity: 1,
         orderConnection: 1,
-        orderShipmentControlType: 3,
+        orderShipmentControlType: shipmentControlType,
         orderReceiptId: orderReceiptId || 0,
       };
 
@@ -568,6 +570,12 @@ export const api = {
 
       const resData = await response.json();
 
+      // 🚨 1. BÜYÜK LOG: API'den dönen en dıştaki ham cevap
+      console.log("=========================================");
+      console.log("🚀 [RAW] API'DEN DÖNEN HAM CEVAP (resData):");
+      console.log(JSON.stringify(resData, null, 2));
+      console.log("=========================================");
+
       // --- PARSE İŞLEMİ ---
       let innerData: any = {};
       try {
@@ -579,12 +587,19 @@ export const api = {
         console.log("API: Data parse edilemedi");
       }
 
-      console.log("-----------------------------------------");
-      console.log("📦 KOLİ İŞLEM DETAYI");
-      console.log(`Hedef BoxId (Param): ${boxId}`);
-      console.log(`Dönen BoxCode (ERP): ${innerData?.resultBoxCode || "Yok"}`);
-      console.log(`Okutulan Barkod: ${barcode}`);
+      // 🚨 2. BÜYÜK LOG: İçerideki gizli datanın (varsa) açılmış hali
+      console.log("🧩 [PARSED] İÇERİDEN ÇIKAN DATA (innerData):");
+      console.log(JSON.stringify(innerData, null, 2));
+      console.log("=========================================");
+
+      // --- ESKİ ÖZET LOGLAR ---
+      console.log("📦 KOLİ ÜRÜN EKLEME İŞLEMİ (Service 11)");
+      console.log(`Hedef BoxId: ${boxId} | Barkod: ${barcode}`);
+      console.log(`Kontrol Tipi (Sent): ${shipmentControlType}`);
       console.log(`ERP Mesajı: ${resData.msg}`);
+      console.log(
+        `Hata Tipi (resultErrorType): ${innerData?.resultErrorType || resData.resultErrorType || 0}`,
+      );
       console.log("-----------------------------------------");
 
       return {
@@ -593,6 +608,7 @@ export const api = {
         err: resData.err,
         boxCode: innerData?.resultBoxCode,
         resultExplanation: innerData?.resultExplanation || resData.msg,
+        resultErrorType: innerData?.resultErrorType || resData.resultErrorType,
       };
     },
 
@@ -602,12 +618,14 @@ export const api = {
       orderReceiptId: number,
       barcode: string,
       useExistingBox: boolean = false,
+      shipmentControlType: number = 3, // Varsayılan 3, miktar aşımı onayı için -1 gönderilecek
     ): Promise<{
       success: string;
       msg: string;
       resultBoxId?: number;
       err?: number;
       boxCode?: string;
+      resultErrorType?: number; // Ön yüze hata tipini döndürüyoruz
     }> {
       console.log("API: Creating koli from order receipt", orderReceiptId);
       const apiBaseUrl = await getApiBaseUrl();
@@ -623,7 +641,7 @@ export const api = {
         inventoryBarcode: barcode,
         boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
         orderConnection: 1,
-        orderShipmentControlType: 3,
+        orderShipmentControlType: shipmentControlType, // Parametreden gelen değer
       };
 
       const requestBody = {
@@ -660,9 +678,9 @@ export const api = {
       );
 
       let resultBoxId: number | undefined = data.resultBoxId;
-      let boxCode: string | undefined = data.resultBoxCode; // 2. YAKALAMAK İÇİN DEĞİŞKEN OLUŞTURUYORUZ
+      let boxCode: string | undefined = data.resultBoxCode;
+      let resultErrorType: number | undefined = data.resultErrorType;
 
-      // 3. EĞER İÇERİDE "data" VARSA (Sadece ID eksikse değil, her zaman parse et)
       if (data.data) {
         try {
           const parsedData =
@@ -675,12 +693,14 @@ export const api = {
             parsedData.id ||
             parsedData.RecId;
 
-          // 4. İŞTE BURADA GİZLİ NUMARAYI ÇEKİP ALIYORUZ:
           boxCode =
             boxCode ||
             parsedData.resultBoxCode ||
             parsedData.boxCode ||
             parsedData.PackageNo;
+
+          // Hata tipi genelde parse edilen data içinden gelir
+          resultErrorType = resultErrorType || parsedData.resultErrorType;
         } catch {
           console.log("API: Could not parse response data");
         }
@@ -691,6 +711,8 @@ export const api = {
         resultBoxId,
         "boxCode:",
         boxCode,
+        "resultErrorType:",
+        resultErrorType,
       );
 
       return {
@@ -699,6 +721,7 @@ export const api = {
         resultBoxId,
         err: data.err,
         boxCode,
+        resultErrorType,
       };
     },
 
