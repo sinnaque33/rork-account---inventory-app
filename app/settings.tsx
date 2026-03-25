@@ -29,7 +29,7 @@ import {
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import colors from "@/constants/colors";
 import { SOUND_OPTIONS } from "@/constants/sounds";
-import i18n from "./i18n";
+import i18n from "../locales/i18n";
 
 export default function SettingsScreen() {
   const { t } = useTranslation();

@@ -1,10 +1,9 @@
-// i18n.ts
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import tr from '../locales/tr.json';
-import en from '../locales/en.json';
+import tr from './tr.json';
+import en from './en.json';
 
 const resources = {
   tr: { translation: tr },
@@ -21,7 +20,7 @@ const languageDetector: any = {
       if (savedLanguage) {
         return callback(savedLanguage);
       }
-      return callback('tr'); // Hafızada bir şey yoksa varsayılan TR başlasın
+      return callback('tr');
     } catch (error) {
       console.log('Dil okuma hatası:', error);
       return callback('tr');
@@ -34,7 +33,7 @@ const languageDetector: any = {
 };
 
 i18n
-  .use(languageDetector) // Önce dedektörü kullan
+  .use(languageDetector)
   .use(initReactI18next)
   .init({
     resources,
