@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   FileText,
@@ -23,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
 
 export default function OrderReceiptsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { credentials } = useAuth();
   const queryClient = useQueryClient();
@@ -86,9 +88,9 @@ export default function OrderReceiptsScreen() {
   if (orderReceiptsQuery.isLoading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: "Sipariş Seçimi" }} />
+        <Stack.Screen options={{ title: t("orderReceipts.headerTitle") }} />
         <ActivityIndicator size="large" color={colors.button.primary} />
-        <Text style={styles.loadingText}>Siparişler yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t("orderReceipts.loading")}</Text>
       </View>
     );
   }
@@ -96,13 +98,13 @@ export default function OrderReceiptsScreen() {
   if (orderReceiptsQuery.isError) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: "Sipariş Seçimi" }} />
+        <Stack.Screen options={{ title: t("orderReceipts.headerTitle") }} />
         <AlertCircle size={48} color={colors.border.error} />
-        <Text style={styles.errorTitle}>Yükleme Hatası</Text>
+        <Text style={styles.errorTitle}>{t("orderReceipts.errorTitle")}</Text>
         <Text style={styles.errorText}>
           {orderReceiptsQuery.error instanceof Error
             ? orderReceiptsQuery.error.message
-            : "Siparişler alınırken bir hata oluştu"}
+            : t("orderReceipts.defaultErrorMsg")}
         </Text>
       </View>
     );
@@ -120,7 +122,10 @@ export default function OrderReceiptsScreen() {
           <FileText size={22} color={colors.button.primary} />
         </View>
         <View style={styles.itemInfo}>
-          <Text style={styles.receiptNo}>Fiş: {item.ReceiptNo}</Text>
+          <Text style={styles.receiptNo}>
+            {t("orderReceipts.receiptPrefix")}
+            {item.ReceiptNo}
+          </Text>
           <Text style={styles.accountName} numberOfLines={2}>
             {item.CurrentAccountName}
           </Text>
@@ -132,13 +137,13 @@ export default function OrderReceiptsScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: "Sipariş Seçimi" }} />
+      <Stack.Screen options={{ title: t("orderReceipts.headerTitle") }} />
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Search size={20} color={colors.text.secondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Sipariş No veya Cari Ara..."
+            placeholder={t("orderReceipts.searchPlaceholder")}
             placeholderTextColor={colors.text.secondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -146,8 +151,6 @@ export default function OrderReceiptsScreen() {
           />
         </View>
       </View>
-
-  
 
       <FlatList
         data={filteredItems}
@@ -166,8 +169,8 @@ export default function OrderReceiptsScreen() {
             <FileText size={48} color={colors.text.secondary} />
             <Text style={styles.emptyText}>
               {searchQuery
-                ? "Aramanıza uygun sipariş bulunamadı"
-                : "Henüz bir sipariş fişi yok"}
+                ? t("orderReceipts.emptySearch")
+                : t("orderReceipts.emptyList")}
             </Text>
           </View>
         }

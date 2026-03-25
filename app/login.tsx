@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { LogIn, Settings } from "lucide-react-native";
@@ -17,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const { login, loginError, loginMsg, isLoggingIn } = useAuth();
   const router = useRouter();
   const [userCode, setUserCode] = useState<string>("");
@@ -26,7 +28,7 @@ export default function LoginScreen() {
 
   const validateUserCode = (text: string): boolean => {
     if (!text) {
-      setUserCodeError("User code is required");
+      setUserCodeError(t("login.alerts.userRequired"));
       return false;
     }
     setUserCodeError("");
@@ -35,7 +37,7 @@ export default function LoginScreen() {
 
   const validatePassword = (text: string): boolean => {
     if (!text) {
-      setPasswordError("Password is required");
+      setPasswordError(t("login.alerts.passwordRequired"));
       return false;
     }
     setPasswordError("");
@@ -83,8 +85,8 @@ export default function LoginScreen() {
                 style={styles.logo}
                 contentFit="contain"
               />
-              <Text style={styles.title}>Hoşgeldiniz</Text>
-              <Text style={styles.subtitle}>Hesap Girişi</Text>
+              <Text style={styles.title}>{t("login.welcome")}</Text>
+              <Text style={styles.subtitle}>{t("login.subtitle")}</Text>
               {loginMsg ? (
                 <Text style={styles.loginMsgText}>{loginMsg}</Text>
               ) : null}
@@ -92,13 +94,13 @@ export default function LoginScreen() {
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Kullanıcı</Text>
+                <Text style={styles.label}>{t("login.labels.user")}</Text>
                 <TextInput
                   style={[
                     styles.input,
                     userCodeError ? styles.inputError : null,
                   ]}
-                  placeholder="Kullanıcı"
+                  placeholder={t("login.placeholders.user")}
                   placeholderTextColor={colors.input.placeholder}
                   value={userCode}
                   onChangeText={(text) => {
@@ -116,13 +118,13 @@ export default function LoginScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Şifre</Text>
+                <Text style={styles.label}>{t("login.labels.password")}</Text>
                 <TextInput
                   style={[
                     styles.input,
                     passwordError ? styles.inputError : null,
                   ]}
-                  placeholder="Şifre"
+                  placeholder={t("login.placeholders.password")}
                   placeholderTextColor={colors.input.placeholder}
                   value={password}
                   onChangeText={(text) => {
@@ -160,14 +162,16 @@ export default function LoginScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Text style={styles.buttonText}>Giriş</Text>
+                    <Text style={styles.buttonText}>
+                      {t("login.buttons.login")}
+                    </Text>
                     <LogIn size={20} color="#fff" />
                   </>
                 )}
               </Pressable>
             </View>
 
-            <Text style={styles.footer}>Secure business authentication</Text>
+            <Text style={styles.footer}>{t("login.footer")}</Text>
           </View>
         </KeyboardAvoidingView>
       </LinearGradient>

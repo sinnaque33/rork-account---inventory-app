@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, Package, Search } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
@@ -15,6 +16,7 @@ import { api, InventoryItem } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function InventoryScreen() {
+  const { t } = useTranslation();
   const { credentials } = useAuth();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -73,13 +75,11 @@ export default function InventoryScreen() {
     }
   };
 
-
-
   if (inventoryQuery.isLoading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Loading inventory...</Text>
+        <Text style={styles.loadingText}>{t('inventory.loading')}</Text>
       </View>
     );
   }
@@ -88,11 +88,11 @@ export default function InventoryScreen() {
     return (
       <View style={styles.centerContainer}>
         <AlertCircle size={48} color="#ef4444" />
-        <Text style={styles.errorTitle}>Error Loading Inventory</Text>
+        <Text style={styles.errorTitle}>{t('inventory.errorTitle')}</Text>
         <Text style={styles.errorText}>
           {inventoryQuery.error instanceof Error
             ? inventoryQuery.error.message
-            : 'An error occurred'}
+            : t('inventory.defaultError')}
         </Text>
       </View>
     );
@@ -140,7 +140,7 @@ export default function InventoryScreen() {
           <Search size={20} color="#94a3b8" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by name or code"
+            placeholder={t('inventory.searchPlaceholder')}
             placeholderTextColor="#94a3b8"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -164,7 +164,7 @@ export default function InventoryScreen() {
           <View style={styles.emptyContainer}>
             <Package size={48} color="#cbd5e1" />
             <Text style={styles.emptyText}>
-              {searchQuery ? 'No items match your search' : 'No inventory items found'}
+              {searchQuery ? t('inventory.emptySearch') : t('inventory.emptyList')}
             </Text>
           </View>
         }

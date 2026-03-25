@@ -1,4 +1,5 @@
 import { ShoppingCart } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import {
   StyleSheet,
   Text,
@@ -11,19 +12,15 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import colors from '@/constants/colors';
 
-
-
 export default function CreateKoliScreen() {
   const router = useRouter();
-
-
-
+  const { t } = useTranslation();
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: 'Yeni Koli',
+          title: t('createKoli.headerTitle'),
         }}
       />
       <KeyboardAvoidingView
@@ -35,8 +32,8 @@ export default function CreateKoliScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            <Text style={styles.title}>Malzeme Ekleme</Text>
-            <Text style={styles.subtitle}>Malzeme ekleme şeklini seçiniz</Text>
+            <Text style={styles.title}>{t('createKoli.title')}</Text>
+            <Text style={styles.subtitle}>{t('createKoli.subtitle')}</Text>
 
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
@@ -51,14 +48,12 @@ export default function CreateKoliScreen() {
                 <View style={styles.iconCircle}>
                   <ShoppingCart size={32} color={colors.text.primary} />
                 </View>
-                <Text style={styles.optionTitle}>Sipariş</Text>
+                <Text style={styles.optionTitle}>{t('createKoli.orderOptionTitle')}</Text>
                 <Text style={styles.optionDescription}>
-                  Siparişten malzeme ekleme
+                  {t('createKoli.orderOptionDesc')}
                 </Text>
               </TouchableOpacity>
             </View>
-
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -123,5 +118,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-
 });

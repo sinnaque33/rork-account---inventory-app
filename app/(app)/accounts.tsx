@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   FlatList,
   StyleSheet,
@@ -15,6 +16,7 @@ import colors from "@/constants/colors";
 import { Stack } from "expo-router";
 
 export default function AccountsScreen() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
@@ -23,7 +25,7 @@ export default function AccountsScreen() {
     queryKey: ["accounts", user?.userName, user?.password],
     queryFn: async () => {
       if (!user?.userName || !user?.password) {
-        throw new Error("User credentials not available");
+        throw new Error(t("accounts.credentialsMissing"));
       }
       console.log("AccountsScreen: Fetching accounts");
       return api.accounts.getList(user.userName, user.password);
@@ -71,7 +73,7 @@ export default function AccountsScreen() {
       return (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.button.primary} />
-          <Text style={styles.loadingText}>Loading accounts...</Text>
+          <Text style={styles.loadingText}>{t("accounts.loading")}</Text>
         </View>
       );
     }
@@ -80,11 +82,11 @@ export default function AccountsScreen() {
       return (
         <View style={styles.centerContainer}>
           <AlertCircle size={48} color={colors.border.error} />
-          <Text style={styles.errorTitle}>Error Loading Accounts</Text>
+          <Text style={styles.errorTitle}>{t("accounts.errorTitle")}</Text>
           <Text style={styles.errorText}>
             {accountsQuery.error instanceof Error
               ? accountsQuery.error.message
-              : "An error occurred"}
+              : t("accounts.defaultError")}
           </Text>
         </View>
       );
@@ -92,7 +94,7 @@ export default function AccountsScreen() {
 
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>No accounts found</Text>
+        <Text style={styles.emptyText}>{t("accounts.emptyList")}</Text>
       </View>
     );
   };

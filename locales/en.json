@@ -1,0 +1,212 @@
+{
+  "settings": {
+    "sounds": {
+      "error_1": "Classic Beep",
+      "error_2": "Alternative Beep",
+      "vibration": "Vibration Only"
+    },
+    "language": "App Language",
+    "headerTitle": "API Settings",
+    "pageTitle": "API Settings",
+    "pageSubtitle": "Configure your API Settings",
+    "labels": {
+      "apiUrl": "API URL",
+      "companyCode": "Company Code",
+      "companyPassword": "Company Password",
+      "warehouseId": "Warehouse ID",
+      "errorSound": "Error Sound Type",
+      "boxMode": "Box Creation Mode"
+    },
+    "placeholders": {
+      "apiUrl": "https://example.com/api",
+      "companyCode": "Company Code (optional)",
+      "companyPassword": "Company Password (optional)",
+      "warehouseId": "Warehouse ID (default: 3)"
+    },
+    "boxModeDesc": {
+      "title": "Add to Existing Open Box",
+      "subtitle": "If there is an open box for the same order, it adds to it instead of opening a new one."
+    },
+    "buttons": {
+      "save": "Save",
+      "reset": "Reset"
+    },
+    "help": {
+      "title": "Help",
+      "text": "API URL is used for all services. Please ensure it is correct."
+    },
+    "alerts": {
+      "urlRequired": "URL is required",
+      "urlInvalid": "URL must start with http:// or https://",
+      "saveErrorTitle": "Error",
+      "saveErrorMsg": "Failed to save settings",
+      "resetTitle": "Reset to Default",
+      "resetMsg": "Are you sure you want to reset all settings to default?",
+      "cancel": "Cancel",
+      "resetBtn": "Reset",
+      "resetSuccessTitle": "Success",
+      "resetSuccessMsg": "Settings reset to default",
+      "toastSuccess": "Settings saved successfully"
+    }
+  },
+
+  "login": {
+    "welcome": "Welcome",
+    "subtitle": "Account Login",
+    "labels": {
+      "user": "User",
+      "password": "Password"
+    },
+    "placeholders": {
+      "user": "Enter your username",
+      "password": "Enter your password"
+    },
+    "buttons": {
+      "login": "Login"
+    },
+    "alerts": {
+      "userRequired": "User code is required",
+      "passwordRequired": "Password is required"
+    },
+    "footer": "Secure business authentication"
+  },
+  "orderReceipts": {
+    "headerTitle": "Order Selection",
+    "searchPlaceholder": "Search Order No or Account...",
+    "receiptPrefix": "Receipt: ",
+    "loading": "Loading orders...",
+    "errorTitle": "Loading Error",
+    "defaultErrorMsg": "An error occurred while fetching orders",
+    "emptySearch": "No orders found matching your search",
+    "emptyList": "There are no order receipts yet"
+  },
+  "koliListesi": {
+    "loading": "Loading box list...",
+    "errorTitle": "Box List Error",
+    "defaultError": "An error occurred",
+    "searchPlaceholder": "Search Box...",
+    "receiptNoPrefix": "Order No: ",
+    "allLoaded": "All boxes loaded",
+    "emptySearch": "No boxes found matching your search",
+    "emptyList": "No boxes found"
+  },
+  "koliDetay": {
+    "headerFallback": "Box Details",
+    "boxNo": "Box No: ",
+    "loading": "Loading box details...",
+    "loadErrorTitle": "Box detail loading error",
+    "defaultError": "An error occurred",
+    "missingInfo": "Session or Box info is missing.",
+    "operationFailed": "Operation Failed",
+    "systemError": "System Error",
+    "success": "Success",
+    "error": "Error",
+    "itemAdded": "Product added",
+    "itemDeleted": "Product deleted",
+    "boxClosed": "Box successfully closed",
+    "boxOpened": "Box successfully opened",
+    "receiptCreated": "Waybill created",
+    "receiptCreateFail": "Could not create waybill.",
+    "receiptSystemError": "An error occurred while creating waybill.",
+    "itemFallback": "Item #",
+    "quantity": "Quantity",
+    "orderNo": "Order No: ",
+    "addMaterial": "Add Material",
+    "deleteMaterial": "Delete Material",
+    "placeholderAdd": "Scan barcode to add...",
+    "placeholderDelete": "Scan barcode to delete...",
+    "emptyBox": "Box is empty",
+    "btnCreateReceipt": "Create\nWaybill",
+    "btnOpenBox": "Open\nBox",
+    "btnCloseBox": "Close\nBox",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "create": "Create",
+    "modals": {
+      "receiptTitle": "Create Waybill",
+      "receiptSubtitle": "Do you want to create a waybill?",
+      "closeTitle": "Close Box",
+      "closeSubtitle": "Enter weight",
+      "grossWeight": "Gross Weight",
+      "netWeight": "Net Weight",
+      "weightRequired": "Please enter both weights.",
+      "openTitle": "Open Box",
+      "openSubtitle": "Do you want to open the box?"
+    },
+    "overLimit": {
+      "title": "Quantity Exceeded",
+      "message": "Order quantity exceeded, do you still want to add?",
+      "cancelBtn": "Cancel",
+      "confirmBtn": "Yes, Add"
+    }
+  },
+  "inventory": {
+    "loading": "Loading inventory...",
+    "errorTitle": "Error Loading Inventory",
+    "defaultError": "An error occurred",
+    "searchPlaceholder": "Search by name or code",
+    "emptySearch": "No items match your search",
+    "emptyList": "No inventory items found"
+  },
+  "dashboard": {
+    "greeting": "Welcome,",
+    "quickAccess": "Quick Access",
+    "boxListTitle": "Box List",
+    "boxListSubtitle": "You can access your boxes here"
+  },
+  "createKoli": {
+    "headerTitle": "New Box",
+    "title": "Add Material",
+    "subtitle": "Choose how to add materials",
+    "orderOptionTitle": "Order",
+    "orderOptionDesc": "Add material from an order"
+  },
+  "accounts": {
+    "credentialsMissing": "User credentials not available",
+    "loading": "Loading accounts...",
+    "errorTitle": "Error Loading Accounts",
+    "defaultError": "An error occurred",
+    "emptyList": "No accounts found"
+  },
+  "navigation": {
+    "dashboard": "Home",
+    "accounts": "Current Accounts",
+    "inventory": "Inventory",
+    "koliListesi": "Box List",
+    "createKoli": "Create Box",
+    "barcodeScanner": "Barcode Scanner"
+  },
+  "scanner": {
+    "headerTitle": "Scan Barcode",
+    "placeholder": "Scan or type...",
+    "submitButton": "Submit",
+    "operationFailed": "Operation Failed",
+    "systemError": "System Error",
+    "success": "Success",
+    "itemAdded": "Product added",
+    "itemDeleted": "Product deleted",
+    "boxNotFoundTitle": "Box Not Found",
+    "boxNotFoundMsg": "No box found for the scanned barcode.",
+    "createBoxError": "An error occurred while creating the box.",
+    "retry": "Retry",
+    "overLimit": {
+      "title": "Quantity Exceeded",
+      "message": "Order quantity exceeded, do you want to continue?",
+      "cancelBtn": "No",
+      "confirmBtn": "Yes"
+    },
+    "titles": {
+      "createFromOrder": "Create Box from Order",
+      "firstItemPrompt": "Scan the first item",
+      "addMode": "Add Item",
+      "addSubtitle": "Adding item to Box #{{id}}",
+      "deleteMode": "Delete Item",
+      "deleteSubtitle": "Deleting item from Box #{{id}}",
+      "searchMode": "Search Box",
+      "searchSubtitle": "Scan to view box details",
+      "accountSelected": "Account Selected",
+      "receiptNo": "(Receipt: {{no}})"
+    }
+  }
+}

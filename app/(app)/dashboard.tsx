@@ -1,24 +1,39 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import { BookUser, FileText, LogOut, Package, Boxes } from 'lucide-react-native';
-import { Platform, Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
-import { useAuth } from '@/contexts/AuthContext';
-import colors from '@/constants/colors';
+import { LinearGradient } from "expo-linear-gradient";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import {
+  BookUser,
+  FileText,
+  LogOut,
+  Package,
+  Boxes,
+} from "lucide-react-native";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+} from "react-native";
+import { useAuth } from "@/contexts/AuthContext";
+import colors from "@/constants/colors";
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const router = useRouter();
 
   const handleNavigation = (route: string) => {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     router.push(route as any);
   };
 
   const handleLogout = async () => {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== "web") {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
     await logout();
@@ -33,8 +48,10 @@ export default function DashboardScreen() {
         <View style={styles.headerContent}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.greeting}>Hoşgeldiniz,</Text>
-              <Text style={styles.userName}>{user?.firstName || user?.userName}</Text>
+              <Text style={styles.greeting}>{t("dashboard.greeting")}</Text>
+              <Text style={styles.userName}>
+                {user?.firstName || user?.userName}
+              </Text>
             </View>
             <Pressable
               style={({ pressed }) => [
@@ -50,37 +67,41 @@ export default function DashboardScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
       >
         <View style={styles.content}>
-          <Text style={styles.sectionTitle}>Hızlı Erişim</Text>
+          <Text style={styles.sectionTitle}>{t("dashboard.quickAccess")}</Text>
 
           <View style={styles.cardGrid}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.card,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() => handleNavigation('/(app)/koli-listesi')}
-            testID="koli-listesi-card"
-          >
-            <LinearGradient
-              colors={['#B71C1C', '#8B0000']}
-              style={styles.cardGradient}
+            <Pressable
+              style={({ pressed }) => [
+                styles.card,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => handleNavigation("/(app)/koli-listesi")}
+              testID="koli-listesi-card"
             >
-              <View style={styles.cardIcon}>
-                <Boxes size={32} color="#fff" strokeWidth={2} />
-              </View>
-              <Text style={styles.cardTitle}>Koli Listesi</Text>
-              <Text style={styles.cardSubtitle}>Kolilerinize buradan ulaşabilirsiniz</Text>
-              <View style={styles.cardArrow}>
-                <FileText size={16} color="#fff" opacity={0.6} />
-              </View>
-            </LinearGradient>
-          </Pressable>
+              <LinearGradient
+                colors={["#B71C1C", "#8B0000"]}
+                style={styles.cardGradient}
+              >
+                <View style={styles.cardIcon}>
+                  <Boxes size={32} color="#fff" strokeWidth={2} />
+                </View>
+                <Text style={styles.cardTitle}>
+                  {t("dashboard.boxListTitle")}
+                </Text>
+                <Text style={styles.cardSubtitle}>
+                  {t("dashboard.boxListSubtitle")}
+                </Text>
+                <View style={styles.cardArrow}>
+                  <FileText size={16} color="#fff" opacity={0.6} />
+                </View>
+              </LinearGradient>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
@@ -101,9 +122,9 @@ const styles = StyleSheet.create({
     paddingTop: 64,
   },
   headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   greeting: {
     fontSize: 14,
@@ -112,7 +133,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 24,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
     color: colors.text.primary,
   },
   logoutButton: {
@@ -120,8 +141,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.button.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   logoutButtonPressed: {
     opacity: 0.7,
@@ -138,7 +159,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
     color: colors.text.primary,
     marginBottom: 16,
   },
@@ -147,9 +168,9 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -161,20 +182,20 @@ const styles = StyleSheet.create({
   cardGradient: {
     padding: 20,
     minHeight: 120,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   cardIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
     color: colors.text.primary,
     marginBottom: 4,
   },
@@ -184,7 +205,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   cardArrow: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 20,
   },

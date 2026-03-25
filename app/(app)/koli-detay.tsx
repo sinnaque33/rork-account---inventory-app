@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Audio } from "expo-av";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import { SOUND_FILES } from "@/constants/sounds";
@@ -67,6 +68,7 @@ function byteArrayToBase64(
 }
 
 export default function KoliDetayScreen() {
+  const { t } = useTranslation();
   const { id, packageNo, receiptNo, sipExp, boxCode } = useLocalSearchParams<{
     id: string;
     packageNo?: string;
@@ -189,8 +191,7 @@ export default function KoliDetayScreen() {
       scannedBarcode: string;
       controlType?: number;
     }) => {
-      if (!credentials || !id)
-        throw new Error("Oturum veya Koli bilgisi eksik.");
+      if (!credentials || !id) throw new Error(t("koliDetay.missingInfo"));
 
       const koliIdNum = parseInt(id, 10);
 
@@ -214,30 +215,27 @@ export default function KoliDetayScreen() {
     },
     onSuccess: (data: any, variables) => {
       // --- ÖZEL DURUM: Miktar Aşımı Kontrolü ---
-      // DİKKAT: Artık sadece resultErrorType === 2'ye bakıyoruz (Çalışan sayfandaki gibi)
       if (data.resultErrorType === 2) {
         playErrorSignal();
 
-        // Loop'u engellemek için input'u hemen temizliyoruz
         setBarcode("");
         barcodeValueRef.current = "";
 
         Alert.alert(
-          "Miktar Aşımı",
-          "Sipariş miktarı aşılıyor, yine de eklemek istiyor musunuz?",
+          t("koliDetay.overLimit.title"),
+          t("koliDetay.overLimit.message"),
           [
             {
-              text: "Vazgeç",
+              text: t("koliDetay.overLimit.cancelBtn"),
               style: "cancel",
               onPress: () => {
-                isProcessingRef.current = false; // İşlemi tamamen bitir
+                isProcessingRef.current = false;
                 inputRef.current?.focus();
               },
             },
             {
-              text: "Evet, Ekle",
+              text: t("koliDetay.overLimit.confirmBtn"),
               onPress: () => {
-                // controlType: -1 göndererek miktar aşımını zorla onaylıyoruz
                 barcodeMutation.mutate({
                   scannedBarcode: variables.scannedBarcode,
                   controlType: -1,
@@ -247,7 +245,7 @@ export default function KoliDetayScreen() {
           ],
           { cancelable: false },
         );
-        return; // Fonksiyonun geri kalanına devam etme
+        return;
       }
 
       // --- STANDART AKIŞ ---
@@ -258,23 +256,24 @@ export default function KoliDetayScreen() {
       if (isError) {
         playErrorSignal();
         setResultData({
-          title: "İşlem Başarısız",
-          message: explanation || "Hata oluştu.",
+          title: t("koliDetay.operationFailed"),
+          message: explanation || t("koliDetay.defaultError"),
           type: "error",
         });
         setResultModalVisible(true);
         setBarcode("");
         barcodeValueRef.current = "";
       } else {
-        // Başarılı Eklenme/Silinme
         setBarcode("");
         barcodeValueRef.current = "";
         inputRef.current?.focus();
 
         queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
         showToast(
-          "Başarılı",
-          scanMode === "add" ? "Ürün eklendi" : "Ürün silindi",
+          t("koliDetay.success"),
+          scanMode === "add"
+            ? t("koliDetay.itemAdded")
+            : t("koliDetay.itemDeleted"),
           "success",
         );
       }
@@ -284,14 +283,13 @@ export default function KoliDetayScreen() {
       setBarcode("");
       barcodeValueRef.current = "";
       setResultData({
-        title: "Sistem Hatası",
+        title: t("koliDetay.systemError"),
         message: err.message,
         type: "error",
       });
       setResultModalVisible(true);
     },
     onSettled: (data) => {
-      // Eğer miktar aşımı uyarısı aldıysak, kilidi kullanıcı cevap verene kadar açmıyoruz.
       if (data?.resultErrorType === 2) {
         return;
       }
@@ -305,7 +303,6 @@ export default function KoliDetayScreen() {
 
     isProcessingRef.current = true;
 
-    // İlk okutma her zaman normal kontrol (1) ile yapılır
     barcodeMutation.mutate({
       scannedBarcode: finalBarcode,
       controlType: 1,
@@ -321,7 +318,7 @@ export default function KoliDetayScreen() {
       netWeight: string;
     }) => {
       if (!credentials || !id) {
-        throw new Error("No credentials or id available");
+        throw new Error(t("koliDetay.missingInfo"));
       }
       return api.koliListesi.closeBox(
         credentials.userCode,
@@ -332,7 +329,11 @@ export default function KoliDetayScreen() {
       );
     },
     onSuccess: (data) => {
-      showToast("Başarılı", data.msg || "Koli başarıyla kapatıldı", "success");
+      showToast(
+        t("koliDetay.success"),
+        data.msg || t("koliDetay.boxClosed"),
+        "success",
+      );
       setShowCloseBoxModal(false);
       setGrossWeight("");
       setNetWeight("");
@@ -341,8 +342,8 @@ export default function KoliDetayScreen() {
     },
     onError: (error) => {
       Alert.alert(
-        "Hata",
-        error instanceof Error ? error.message : "Failed to close box",
+        t("koliDetay.error"),
+        error instanceof Error ? error.message : t("koliDetay.defaultError"),
       );
     },
   });
@@ -350,7 +351,7 @@ export default function KoliDetayScreen() {
   const openBoxMutation = useMutation({
     mutationFn: async () => {
       if (!credentials || !id) {
-        throw new Error("No credentials or id available");
+        throw new Error(t("koliDetay.missingInfo"));
       }
       return api.koliListesi.openBox(
         credentials.userCode,
@@ -359,15 +360,19 @@ export default function KoliDetayScreen() {
       );
     },
     onSuccess: (data) => {
-      showToast("Başarılı", data.msg || "Koli başarıyla açıldı", "success");
+      showToast(
+        t("koliDetay.success"),
+        data.msg || t("koliDetay.boxOpened"),
+        "success",
+      );
       setShowOpenBoxConfirm(false);
       queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
     },
     onError: (error) => {
       Alert.alert(
-        "Hata",
-        error instanceof Error ? error.message : "Failed to open box",
+        t("koliDetay.error"),
+        error instanceof Error ? error.message : t("koliDetay.defaultError"),
       );
     },
   });
@@ -375,7 +380,7 @@ export default function KoliDetayScreen() {
   const createReceiptMutation = useMutation({
     mutationFn: async () => {
       if (!credentials || !id) {
-        throw new Error("No credentials or id available");
+        throw new Error(t("koliDetay.missingInfo"));
       }
       return api.koliListesi.createReceipt(
         credentials.userCode,
@@ -390,35 +395,38 @@ export default function KoliDetayScreen() {
 
       if (isError) {
         playErrorSignal();
-        // ALERT YERİNE KIRMIZI TOAST ÇAĞIRIYORUZ
         showToast(
-          "İşlem Başarısız",
-          data.msg || "İrsaliye oluşturulamadı.",
+          t("koliDetay.operationFailed"),
+          data.msg || t("koliDetay.receiptCreateFail"),
           "error",
         );
       } else {
-        showToast("Başarılı", data.msg || "İrsaliye oluşturuldu", "success");
+        showToast(
+          t("koliDetay.success"),
+          data.msg || t("koliDetay.receiptCreated"),
+          "success",
+        );
         queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
         queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
       }
     },
     onError: (error) => {
       playErrorSignal();
-      // SİSTEM HATASI İÇİN DE ALERT YERİNE KIRMIZI TOAST
       showToast(
-        "Sistem Hatası",
+        t("koliDetay.systemError"),
         error instanceof Error
           ? error.message
-          : "İrsaliye oluşturulurken hata meydana geldi.",
+          : t("koliDetay.receiptSystemError"),
         "error",
       );
     },
   });
+
   const koliDetailQuery = useQuery({
     queryKey: ["koli-detay", id, credentials],
     queryFn: async () => {
       if (!credentials || !id) {
-        throw new Error("No credentials or id available");
+        throw new Error(t("koliDetay.missingInfo"));
       }
       return api.koliListesi.getDetail(
         credentials.userCode,
@@ -438,9 +446,9 @@ export default function KoliDetayScreen() {
   if (koliDetailQuery.isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: "Koli Detay" }} />
+        <Stack.Screen options={{ title: t("koliDetay.headerFallback") }} />
         <ActivityIndicator size="large" color={colors.button.primary} />
-        <Text style={styles.loadingText}>Koli detayları yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t("koliDetay.loading")}</Text>
       </View>
     );
   }
@@ -448,13 +456,13 @@ export default function KoliDetayScreen() {
   if (koliDetailQuery.isError) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: "Koli Detay" }} />
+        <Stack.Screen options={{ title: t("koliDetay.headerFallback") }} />
         <AlertCircle size={48} color={colors.border.error} />
-        <Text style={styles.errorTitle}>Koli detayı yükleme hatası</Text>
+        <Text style={styles.errorTitle}>{t("koliDetay.loadErrorTitle")}</Text>
         <Text style={styles.errorText}>
           {koliDetailQuery.error instanceof Error
             ? koliDetailQuery.error.message
-            : "An error occurred"}
+            : t("koliDetay.defaultError")}
         </Text>
       </View>
     );
@@ -473,10 +481,10 @@ export default function KoliDetayScreen() {
     const h1Key = keys.find((key) => key.startsWith("h1_"));
     const itemTitle = h1Key
       ? getDisplayValue(item, h1Key)
-      : item.InventoryName || `Kalem #${index + 1}`;
+      : item.InventoryName || `${t("koliDetay.itemFallback")}${index + 1}`;
 
     const h2Key = keys.find((key) => key.startsWith("h2_"));
-    let quantityLabel = "Miktar";
+    let quantityLabel = t("koliDetay.quantity");
     let quantityValue = String(item.Quantity || "");
 
     if (h2Key) {
@@ -563,17 +571,18 @@ export default function KoliDetayScreen() {
       <Stack.Screen
         options={{
           title: packageNo
-            ? `Koli No: ${packageNo}`
+            ? `${t("koliDetay.boxNo")}${packageNo}`
             : boxCode
-              ? `Koli No: ${boxCode}`
-              : `Koli Detay`,
+              ? `${t("koliDetay.boxNo")}${boxCode}`
+              : t("koliDetay.headerFallback"),
         }}
       />
       {receiptNo || sipExp ? (
         <View style={styles.receiptBanner}>
           {receiptNo ? (
             <Text style={styles.receiptBannerText}>
-              Sipariş No: {receiptNo}
+              {t("koliDetay.orderNo")}
+              {receiptNo}
             </Text>
           ) : null}
           {sipExp ? (
@@ -608,7 +617,7 @@ export default function KoliDetayScreen() {
                 scanMode === "add" && { color: "#fff" },
               ]}
             >
-              Malzeme Ekle
+              {t("koliDetay.addMaterial")}
             </Text>
           </TouchableOpacity>
 
@@ -633,7 +642,7 @@ export default function KoliDetayScreen() {
                 scanMode === "delete" && { color: "#fff" },
               ]}
             >
-              Malzeme Sil
+              {t("koliDetay.deleteMaterial")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -659,8 +668,8 @@ export default function KoliDetayScreen() {
             onSubmitEditing={handleBarcodeSubmit}
             placeholder={
               scanMode === "add"
-                ? "Eklenecek barkodu okutun..."
-                : "Silinecek barkodu okutun..."
+                ? t("koliDetay.placeholderAdd")
+                : t("koliDetay.placeholderDelete")
             }
             placeholderTextColor={colors.text.secondary}
             autoFocus
@@ -681,12 +690,12 @@ export default function KoliDetayScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Package size={48} color={colors.text.secondary} />
-            <Text style={styles.emptyText}>Kolide henüz bir şey yok</Text>
+            <Text style={styles.emptyText}>{t("koliDetay.emptyBox")}</Text>
           </View>
         }
       />
 
-      {/* ALT BUTONLAR (Sadece İrsaliye, Açma ve Kapatma kaldı) */}
+      {/* ALT BUTONLAR */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[
@@ -701,7 +710,9 @@ export default function KoliDetayScreen() {
           ) : (
             <FileText size={20} color="#000" />
           )}
-          <Text style={styles.buttonText}>İrsaliye{"\n"}Oluştur</Text>
+          <Text style={styles.buttonText}>
+            {t("koliDetay.btnCreateReceipt")}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -717,7 +728,7 @@ export default function KoliDetayScreen() {
           ) : (
             <Unlock size={20} color="#000" />
           )}
-          <Text style={styles.buttonText}>Koli{"\n"}Açma</Text>
+          <Text style={styles.buttonText}>{t("koliDetay.btnOpenBox")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -733,7 +744,7 @@ export default function KoliDetayScreen() {
           ) : (
             <Lock size={20} color="#000" />
           )}
-          <Text style={styles.buttonText}>Koli{"\n"}Kapatma</Text>
+          <Text style={styles.buttonText}>{t("koliDetay.btnCloseBox")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -763,7 +774,7 @@ export default function KoliDetayScreen() {
                 inputRef.current?.focus();
               }}
             >
-              <Text style={styles.resultCancelText}>Tamam</Text>
+              <Text style={styles.resultCancelText}>{t("koliDetay.ok")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -780,16 +791,20 @@ export default function KoliDetayScreen() {
             <View style={styles.receiptIconContainer}>
               <FileText size={48} color="#DC143C" />
             </View>
-            <Text style={styles.receiptModalTitle}>İrsaliye Oluştur</Text>
+            <Text style={styles.receiptModalTitle}>
+              {t("koliDetay.modals.receiptTitle")}
+            </Text>
             <Text style={styles.receiptModalSubtitle}>
-              İrsaliye oluşturmak istiyor musunuz?
+              {t("koliDetay.modals.receiptSubtitle")}
             </Text>
             <View style={styles.receiptModalButtons}>
               <TouchableOpacity
                 style={styles.receiptCancelButton}
                 onPress={() => setShowReceiptConfirm(false)}
               >
-                <Text style={styles.receiptCancelText}>İptal</Text>
+                <Text style={styles.receiptCancelText}>
+                  {t("koliDetay.cancel")}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -805,7 +820,9 @@ export default function KoliDetayScreen() {
                 {createReceiptMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.receiptConfirmText}>Oluştur</Text>
+                  <Text style={styles.receiptConfirmText}>
+                    {t("koliDetay.create")}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -829,11 +846,17 @@ export default function KoliDetayScreen() {
             <View style={styles.receiptIconContainer}>
               <Lock size={48} color="#DC143C" />
             </View>
-            <Text style={styles.receiptModalTitle}>Koli Kapatma</Text>
-            <Text style={styles.receiptModalSubtitle}>Ağırlık giriniz</Text>
+            <Text style={styles.receiptModalTitle}>
+              {t("koliDetay.modals.closeTitle")}
+            </Text>
+            <Text style={styles.receiptModalSubtitle}>
+              {t("koliDetay.modals.closeSubtitle")}
+            </Text>
 
             <View style={styles.weightInputContainer}>
-              <Text style={styles.weightLabel}>Brüt Ağırlık</Text>
+              <Text style={styles.weightLabel}>
+                {t("koliDetay.modals.grossWeight")}
+              </Text>
               <TextInput
                 style={styles.weightInput}
                 placeholder="0.00"
@@ -848,7 +871,9 @@ export default function KoliDetayScreen() {
             </View>
 
             <View style={styles.weightInputContainer}>
-              <Text style={styles.weightLabel}>Net Ağırlık</Text>
+              <Text style={styles.weightLabel}>
+                {t("koliDetay.modals.netWeight")}
+              </Text>
               <TextInput
                 style={styles.weightInput}
                 placeholder="0.00"
@@ -880,7 +905,9 @@ export default function KoliDetayScreen() {
                   setWeightError(null);
                 }}
               >
-                <Text style={styles.receiptCancelText}>İptal</Text>
+                <Text style={styles.receiptCancelText}>
+                  {t("koliDetay.cancel")}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -892,7 +919,7 @@ export default function KoliDetayScreen() {
                   Keyboard.dismiss();
 
                   if (!grossWeight.trim() || !netWeight.trim()) {
-                    setWeightError("Lütfen her iki ağırlığı da giriniz.");
+                    setWeightError(t("koliDetay.modals.weightRequired"));
                     return;
                   }
 
@@ -907,7 +934,9 @@ export default function KoliDetayScreen() {
                 {closeBoxMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.receiptConfirmText}>Devam</Text>
+                  <Text style={styles.receiptConfirmText}>
+                    {t("koliDetay.continue")}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -931,16 +960,20 @@ export default function KoliDetayScreen() {
             >
               <Unlock size={48} color="#4CAF50" />
             </View>
-            <Text style={styles.receiptModalTitle}>Koli Açma</Text>
+            <Text style={styles.receiptModalTitle}>
+              {t("koliDetay.modals.openTitle")}
+            </Text>
             <Text style={styles.receiptModalSubtitle}>
-              Koliyi açmak istiyor musunuz?
+              {t("koliDetay.modals.openSubtitle")}
             </Text>
             <View style={styles.receiptModalButtons}>
               <TouchableOpacity
                 style={styles.receiptCancelButton}
                 onPress={() => setShowOpenBoxConfirm(false)}
               >
-                <Text style={styles.receiptCancelText}>İptal</Text>
+                <Text style={styles.receiptCancelText}>
+                  {t("koliDetay.cancel")}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -954,7 +987,9 @@ export default function KoliDetayScreen() {
                 {openBoxMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.receiptConfirmText}>Devam</Text>
+                  <Text style={styles.receiptConfirmText}>
+                    {t("koliDetay.continue")}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>

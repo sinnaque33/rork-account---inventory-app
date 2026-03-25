@@ -1,7 +1,10 @@
 import { Stack } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import colors from '@/constants/colors';
 
 export default function AppLayout() {
+  const { t } = useTranslation();
+
   return (
     <Stack
       screenOptions={{
@@ -17,38 +20,38 @@ export default function AppLayout() {
       <Stack.Screen
         name="dashboard"
         options={{
-          title: 'Ana Sayfa',
+          title: t('navigation.dashboard'),
           headerBackVisible: false,
         }}
       />
       <Stack.Screen
         name="accounts"
         options={{
-          title: 'Current Accounts',
+          title: t('navigation.accounts'),
         }}
       />
       <Stack.Screen
         name="inventory"
         options={{
-          title: 'Inventory',
+          title: t('navigation.inventory'),
         }}
       />
       <Stack.Screen
         name="koli-listesi"
         options={{
-          title: 'Koli Listesi',
+          title: t('navigation.koliListesi'),
         }}
       />
       <Stack.Screen
         name="create-koli"
         options={{
-          title: 'Create Koli',
+          title: t('navigation.createKoli'),
         }}
       />
       <Stack.Screen
         name="barcode-scanner"
         options={{
-          title: 'Barcode Scanner',
+          title: t('navigation.barcodeScanner'),
           headerShown: false,
           presentation: 'fullScreenModal',
         }}

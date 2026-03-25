@@ -1,6 +1,14 @@
+import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
-import { Settings, RefreshCw, Save, CheckCircle, CheckSquare, Square } from "lucide-react-native";
+import {
+  Settings,
+  RefreshCw,
+  Save,
+  CheckCircle,
+  CheckSquare,
+  Square,
+} from "lucide-react-native";
 import { useState, useEffect, useRef } from "react";
 import { Audio, InterruptionModeAndroid } from "expo-av";
 import {
@@ -21,8 +29,10 @@ import {
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import colors from "@/constants/colors";
 import { SOUND_OPTIONS } from "@/constants/sounds";
+import i18n from "./i18n";
 
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const {
     apiBaseUrl,
     companyCode,
@@ -47,8 +57,12 @@ export default function SettingsScreen() {
   const [password, setPassword] = useState<string>("");
   const [whId, setWhId] = useState<string>("");
   const [error, setError] = useState<string>("");
-  const [selectedSound, setSelectedSound] = useState<string>(errorSound || "error_1");
-  const [existingBoxMode, setExistingBoxMode] = useState<boolean>(useExistingBox || false);
+  const [selectedSound, setSelectedSound] = useState<string>(
+    errorSound || "error_1",
+  );
+  const [existingBoxMode, setExistingBoxMode] = useState<boolean>(
+    useExistingBox || false,
+  );
   const router = useRouter();
 
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -73,7 +87,14 @@ export default function SettingsScreen() {
     if (errorSound) {
       setSelectedSound(errorSound);
     }
-  }, [apiBaseUrl, companyCode, companyPassword, warehouseId, errorSound, useExistingBox]);
+  }, [
+    apiBaseUrl,
+    companyCode,
+    companyPassword,
+    warehouseId,
+    errorSound,
+    useExistingBox,
+  ]);
 
   const playErrorSound = async (soundFile: any) => {
     try {
@@ -103,11 +124,11 @@ export default function SettingsScreen() {
 
   const validateUrl = (text: string): boolean => {
     if (!text) {
-      setError("URL is required");
+      setError(t("settings.alerts.urlRequired"));
       return false;
     }
     if (!text.startsWith("http://") && !text.startsWith("https://")) {
-      setError("URL must start with http:// or https://");
+      setError(t("settings.alerts.urlInvalid"));
       return false;
     }
     setError("");
@@ -155,18 +176,21 @@ export default function SettingsScreen() {
 
       showSuccessToast();
     } catch {
-      Alert.alert("Error", "Failed to save settings");
+      Alert.alert(
+        t("settings.alerts.saveErrorTitle"),
+        t("settings.alerts.saveErrorMsg"),
+      );
     }
   };
 
   const handleReset = () => {
     Alert.alert(
-      "Reset to Default",
-      "Are you sure you want to reset all settings to default?",
+      t("settings.alerts.resetTitle"),
+      t("settings.alerts.resetMsg"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("settings.alerts.cancel"), style: "cancel" },
         {
-          text: "Reset",
+          text: t("settings.alerts.resetBtn"),
           style: "destructive",
           onPress: async () => {
             await resetToDefault();
@@ -176,7 +200,10 @@ export default function SettingsScreen() {
             setWhId("");
             setSelectedSound("error_1");
             setExistingBoxMode(false);
-            Alert.alert("Success", "Settings reset to default");
+            Alert.alert(
+              t("settings.alerts.resetSuccessTitle"),
+              t("settings.alerts.resetSuccessMsg"),
+            );
           },
         },
       ],
@@ -196,7 +223,7 @@ export default function SettingsScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: "API Settings",
+          title: t("settings.headerTitle"),
           headerStyle: {
             backgroundColor: colors.background.darker,
           },
@@ -224,16 +251,84 @@ export default function SettingsScreen() {
                 <View style={styles.iconContainer}>
                   <Settings size={40} color="#fff" strokeWidth={2} />
                 </View>
-                <Text style={styles.title}>API Ayarları</Text>
-                <Text style={styles.subtitle}>API Ayarlarını yapınız</Text>
+                <Text style={styles.title}>{t("settings.pageTitle")}</Text>
+                <Text style={styles.subtitle}>
+                  {t("settings.pageSubtitle")}
+                </Text>
               </View>
 
               <View style={styles.form}>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>API URL</Text>
+                  <Text style={styles.label}>
+                    {t("settings.language") || "Dil / Language"}
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    <Pressable
+                      style={[
+                        styles.button,
+                        {
+                          flex: 1,
+                          backgroundColor:
+                            i18n.language === "tr"
+                              ? colors.button.primary
+                              : colors.background.darker,
+                          borderWidth: 1,
+                          borderColor: colors.border.default,
+                        },
+                      ]}
+                      onPress={() => i18n.changeLanguage("tr")}
+                    >
+                      <Text
+                        style={[
+                          styles.buttonText,
+                          {
+                            color:
+                              i18n.language === "tr"
+                                ? "#fff"
+                                : colors.text.secondary,
+                          },
+                        ]}
+                      >
+                        🇹🇷 Türkçe
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[
+                        styles.button,
+                        {
+                          flex: 1,
+                          backgroundColor:
+                            i18n.language === "en"
+                              ? colors.button.primary
+                              : colors.background.darker,
+                          borderWidth: 1,
+                          borderColor: colors.border.default,
+                        },
+                      ]}
+                      onPress={() => i18n.changeLanguage("en")}
+                    >
+                      <Text
+                        style={[
+                          styles.buttonText,
+                          {
+                            color:
+                              i18n.language === "en"
+                                ? "#fff"
+                                : colors.text.secondary,
+                          },
+                        ]}
+                      >
+                        🇬🇧 English
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <Text style={styles.label}>
+                    {t("settings.labels.apiUrl")}
+                  </Text>
                   <TextInput
                     style={[styles.input, error ? styles.inputError : null]}
-                    placeholder="https://example.com/api"
+                    placeholder={t("settings.placeholders.apiUrl")}
                     placeholderTextColor={colors.input.placeholder}
                     value={url}
                     onChangeText={(text) => {
@@ -251,10 +346,12 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Şirket Kodu</Text>
+                  <Text style={styles.label}>
+                    {t("settings.labels.companyCode")}
+                  </Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Şirket Kodu (opsiyonel)"
+                    placeholder={t("settings.placeholders.companyCode")}
                     placeholderTextColor={colors.input.placeholder}
                     value={code}
                     onChangeText={setCode}
@@ -266,10 +363,12 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Şirket Şifresi</Text>
+                  <Text style={styles.label}>
+                    {t("settings.labels.companyPassword")}
+                  </Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Şirket Şifresi (opsiyonel)"
+                    placeholder={t("settings.placeholders.companyPassword")}
                     placeholderTextColor={colors.input.placeholder}
                     value={password}
                     onChangeText={setPassword}
@@ -282,10 +381,12 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Depo ID</Text>
+                  <Text style={styles.label}>
+                    {t("settings.labels.warehouseId")}
+                  </Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Depo ID (varsayılan: 3)"
+                    placeholder={t("settings.placeholders.warehouseId")}
                     placeholderTextColor={colors.input.placeholder}
                     value={whId}
                     onChangeText={setWhId}
@@ -297,7 +398,9 @@ export default function SettingsScreen() {
                   />
                 </View>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Hata Uyarı Tipi</Text>
+                  <Text style={styles.label}>
+                    {t("settings.labels.errorSound")}
+                  </Text>
                   <View style={styles.soundSelectorContainer}>
                     {SOUND_OPTIONS.map((option) => (
                       <Pressable
@@ -319,7 +422,9 @@ export default function SettingsScreen() {
                               styles.soundOptionTextSelected,
                           ]}
                         >
-                          {option.name}
+                          {t(`settings.sounds.${option.id}`, {
+                            defaultValue: option.name,
+                          })}
                         </Text>
                       </Pressable>
                     ))}
@@ -327,7 +432,9 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Koli Oluşturma Modu</Text>
+                  <Text style={styles.label}>
+                    {t("settings.labels.boxMode")}
+                  </Text>
                   <Pressable
                     style={styles.checkboxContainer}
                     onPress={() => setExistingBoxMode(!existingBoxMode)}
@@ -338,9 +445,11 @@ export default function SettingsScreen() {
                       <Square size={24} color={colors.text.secondary} />
                     )}
                     <View style={styles.checkboxTextContainer}>
-                      <Text style={styles.checkboxTitle}>Mevcut Açık Koliye Ekle</Text>
+                      <Text style={styles.checkboxTitle}>
+                        {t("settings.boxModeDesc.title")}
+                      </Text>
                       <Text style={styles.checkboxSubtitle}>
-                        Aynı siparişin açık kolisi varsa yeni açmak yerine ona ekler.
+                        {t("settings.boxModeDesc.subtitle")}
                       </Text>
                     </View>
                   </Pressable>
@@ -363,7 +472,9 @@ export default function SettingsScreen() {
                     ) : (
                       <>
                         <Save size={20} color="#fff" />
-                        <Text style={styles.buttonText}>Kaydet</Text>
+                        <Text style={styles.buttonText}>
+                          {t("settings.buttons.save")}
+                        </Text>
                       </>
                     )}
                   </Pressable>
@@ -380,17 +491,16 @@ export default function SettingsScreen() {
                     testID="reset-button"
                   >
                     <RefreshCw size={20} color="#fff" />
-                    <Text style={styles.buttonText}>Sıfırla</Text>
+                    <Text style={styles.buttonText}>
+                      {t("settings.buttons.reset")}
+                    </Text>
                   </Pressable>
                 </View>
               </View>
 
               <View style={styles.helpBox}>
-                <Text style={styles.helpTitle}>Yardım</Text>
-                <Text style={styles.helpText}>
-                  API URL bilgisi tüm servisler için kullanılır. Doğruluğundan
-                  emin olunuz.
-                </Text>
+                <Text style={styles.helpTitle}>{t("settings.help.title")}</Text>
+                <Text style={styles.helpText}>{t("settings.help.text")}</Text>
               </View>
             </View>
           </ScrollView>
@@ -409,7 +519,9 @@ export default function SettingsScreen() {
         >
           <View style={styles.toastContent}>
             <CheckCircle size={22} color="#4CAF50" />
-            <Text style={styles.toastText}>Ayarlar başarıyla kaydedildi</Text>
+            <Text style={styles.toastText}>
+              {t("settings.alerts.toastSuccess")}
+            </Text>
           </View>
         </Animated.View>
       </LinearGradient>

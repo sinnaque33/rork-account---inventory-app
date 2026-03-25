@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   Package,
@@ -25,6 +26,7 @@ import colors from "@/constants/colors";
 const PAGE_LEN = 7 as const;
 
 export default function KoliListesiScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { credentials } = useAuth();
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -106,7 +108,7 @@ export default function KoliListesiScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.button.primary} />
-        <Text style={styles.loadingText}>Koli listesi yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t("koliListesi.loading")}</Text>
       </View>
     );
   }
@@ -115,11 +117,11 @@ export default function KoliListesiScreen() {
     return (
       <View style={styles.centerContainer}>
         <AlertCircle size={48} color={colors.border.error} />
-        <Text style={styles.errorTitle}>Hata Koli Listesi</Text>
+        <Text style={styles.errorTitle}>{t("koliListesi.errorTitle")}</Text>
         <Text style={styles.errorText}>
           {koliQuery.error instanceof Error
             ? koliQuery.error.message
-            : "An error occurred"}
+            : t("koliListesi.defaultError")}
         </Text>
       </View>
     );
@@ -144,7 +146,10 @@ export default function KoliListesiScreen() {
         <View style={styles.itemInfo}>
           <Text style={styles.packageNo}>{item.PackageNo}</Text>
           {item.ReceiptNo ? (
-            <Text style={styles.receiptNo}>Sipariş No: {item.ReceiptNo}</Text>
+            <Text style={styles.receiptNo}>
+              {t("koliListesi.receiptNoPrefix")}
+              {item.ReceiptNo}
+            </Text>
           ) : null}
           {item.SipExp ? (
             <Text style={styles.sipExp}>{item.SipExp}</Text>
@@ -168,7 +173,7 @@ export default function KoliListesiScreen() {
     if (!koliQuery.hasNextPage && allItems.length > 0) {
       return (
         <View style={styles.footerLoader}>
-          <Text style={styles.footerText}>Tüm koliler yüklendi</Text>
+          <Text style={styles.footerText}>{t("koliListesi.allLoaded")}</Text>
         </View>
       );
     }
@@ -182,7 +187,7 @@ export default function KoliListesiScreen() {
           <Search size={20} color={colors.text.secondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Koli Ara..."
+            placeholder={t("koliListesi.searchPlaceholder")}
             placeholderTextColor={colors.text.secondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -211,8 +216,8 @@ export default function KoliListesiScreen() {
             <Package size={48} color={colors.text.secondary} />
             <Text style={styles.emptyText}>
               {searchQuery
-                ? "Aramanızla eşleşen koli bulunamadı"
-                : "Koli bulunamadı"}
+                ? t("koliListesi.emptySearch")
+                : t("koliListesi.emptyList")}
             </Text>
           </View>
         }

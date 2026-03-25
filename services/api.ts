@@ -593,7 +593,7 @@ export const api = {
       console.log("=========================================");
 
       // --- ESKİ ÖZET LOGLAR ---
-      console.log("📦 KOLİ ÜRÜN EKLEME İŞLEMİ (Service 11)");
+      console.log("KOLİ ÜRÜN EKLEME İŞLEMİ (Service 11)");
       console.log(`Hedef BoxId: ${boxId} | Barkod: ${barcode}`);
       console.log(`Kontrol Tipi (Sent): ${shipmentControlType}`);
       console.log(`ERP Mesajı: ${resData.msg}`);
@@ -618,14 +618,14 @@ export const api = {
       orderReceiptId: number,
       barcode: string,
       useExistingBox: boolean = false,
-      shipmentControlType: number = 3, // Varsayılan 3, miktar aşımı onayı için -1 gönderilecek
+      shipmentControlType: number = 3,
     ): Promise<{
       success: string;
       msg: string;
       resultBoxId?: number;
       err?: number;
       boxCode?: string;
-      resultErrorType?: number; // Ön yüze hata tipini döndürüyoruz
+      resultErrorType?: number;
     }> {
       console.log("API: Creating koli from order receipt", orderReceiptId);
       const apiBaseUrl = await getApiBaseUrl();
@@ -641,7 +641,7 @@ export const api = {
         inventoryBarcode: barcode,
         boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
         orderConnection: 1,
-        orderShipmentControlType: shipmentControlType, // Parametreden gelen değer
+        orderShipmentControlType: shipmentControlType,
       };
 
       const requestBody = {
@@ -673,7 +673,7 @@ export const api = {
 
       const data = await response.json();
       console.log(
-        "📦 YENI KOLI ACMA CEVABI (DEBUG):",
+        "YENI KOLI ACMA CEVABI (DEBUG):",
         JSON.stringify(data, null, 2),
       );
 
