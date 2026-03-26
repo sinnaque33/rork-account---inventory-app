@@ -1040,7 +1040,7 @@ export const api = {
       userName: string,
       password: string,
       barcode: string,
-    ): Promise<{ recId: number; err?: number; msg?: string }> {
+    ): Promise<{ recId: number; err?: number; msg?: string , success: string}> {
       console.log("API: Fetching koli detail by barcode", barcode);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
@@ -1079,25 +1079,33 @@ export const api = {
         JSON.stringify(data, null, 2),
       );
 
-      // Return err and msg for handling in the UI
       if (data.err === 99) {
         return {
           recId: 0,
           err: data.err,
           msg: data.msg,
+          success: "false"
         };
       }
 
-      if (data.success !== "true") {
-        throw new Error(data.msg || "Failed to fetch koli detail by barcode");
+    if (data.success !== "true") {
+        return {
+          recId: 0,
+          err: data.err || 1,
+          msg: data.msg || "Failed to fetch koli detail",
+          success: "false"
+        };
       }
 
       // Extract RecId from items array
       const recId = data.data?.items?.[0]?.RecId || 0;
       console.log("API: Extracted RecId from items:", recId);
 
-      return {
+   return {
         recId,
+        success: "true",
+        err: 0,
+        msg: data.msg
       };
     },
   },

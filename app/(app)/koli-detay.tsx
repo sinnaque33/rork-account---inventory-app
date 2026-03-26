@@ -13,6 +13,7 @@ import {
   CheckCircle,
   Plus,
   ScanBarcode,
+  AlertTriangle,
 } from "lucide-react-native";
 import {
   ActivityIndicator,
@@ -33,48 +34,29 @@ import {
   Vibration,
 } from "react-native";
 import { useState, useRef, useEffect } from "react";
-import { useLocalSearchParams, Stack, useRouter } from "expo-router";
-import { api, KoliDetailItem } from "@/services/api";
+import { useLocalSearchParams, Stack } from "expo-router";
+import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { byteArrayToBase64 } from "@/utils/imageUtils";
 
 import colors from "@/constants/colors";
 
-function byteArrayToBase64(
-  byteArray: number[] | Uint8Array | string | null | undefined,
-): string | null {
-  if (!byteArray) return null;
-
-  if (typeof byteArray === "string") {
-    return byteArray.trim().length > 0 ? byteArray : null;
-  }
-
-  if (Array.isArray(byteArray) || byteArray instanceof Uint8Array) {
-    try {
-      const bytes = Array.isArray(byteArray)
-        ? new Uint8Array(byteArray)
-        : byteArray;
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      return btoa(binary);
-    } catch (e) {
-      console.log("byteArrayToBase64: Error converting byte array", e);
-      return null;
-    }
-  }
-
-  return null;
-}
-
 export default function KoliDetayScreen() {
   const { t } = useTranslation();
-  const { id, packageNo, receiptNo, sipExp, boxCode } = useLocalSearchParams<{
+  const {
+    id,
+    packageNo,
+    receiptNo,
+    sipExp,
+    boxCode,
+    alwaysIgnoreLimit: initialIgnoreLimit,
+  } = useLocalSearchParams<{
     id: string;
     packageNo?: string;
     receiptNo?: string;
     sipExp?: string;
     boxCode?: string;
+    alwaysIgnoreLimit?: string;
   }>();
 
   const { errorSound } = useApiConfig();
@@ -86,6 +68,8 @@ export default function KoliDetayScreen() {
         const { sound } = await Audio.Sound.createAsync(
           SOUND_FILES[errorSound],
           { shouldPlay: true },
+          undefined,
+          true,
         );
         sound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
@@ -99,7 +83,6 @@ export default function KoliDetayScreen() {
   };
 
   const { credentials } = useAuth();
-  const router = useRouter();
 
   const queryClient = useQueryClient();
   const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
@@ -112,10 +95,18 @@ export default function KoliDetayScreen() {
   // --- BARKOD OKUMA STATE'LERİ ---
   const [scanMode, setScanMode] = useState<"add" | "delete">("add");
   const [barcode, setBarcode] = useState("");
-  const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
   const barcodeValueRef = useRef("");
   const isProcessingRef = useRef(false);
+
+  // --- Miktar Aşımı Onay Modalı State'leri ---
+  const [showOverLimitModal, setShowOverLimitModal] = useState(false);
+  const [pendingOverLimitBarcode, setPendingOverLimitBarcode] = useState("");
+  const [alwaysIgnoreLimit, setAlwaysIgnoreLimit] = useState(
+    initialIgnoreLimit === "true",
+  );
+  // const [activeReceiptNo, setActiveReceiptNo] = useState(receiptNo || "");
+  // const [activeSipExp, setActiveSipExp] = useState(sipExp || "");
 
   // --- BİLDİRİM VE HATA MODAL STATE'LERİ ---
   const [resultModalVisible, setResultModalVisible] = useState(false);
@@ -186,7 +177,7 @@ export default function KoliDetayScreen() {
   const barcodeMutation = useMutation({
     mutationFn: async ({
       scannedBarcode,
-      controlType = 1,
+      controlType = 3,
     }: {
       scannedBarcode: string;
       controlType?: number;
@@ -196,12 +187,17 @@ export default function KoliDetayScreen() {
       const koliIdNum = parseInt(id, 10);
 
       if (scanMode === "add") {
+        console.log(
+          "*****************koli detayda gönderilen controlType: ",
+          controlType,
+        );
+
         return await api.koliListesi.addItemByBarcode(
           credentials.userCode,
           credentials.password,
           koliIdNum,
           scannedBarcode,
-          undefined, // orderReceiptId opsiyonel
+          undefined,
           controlType,
         );
       } else {
@@ -220,31 +216,9 @@ export default function KoliDetayScreen() {
 
         setBarcode("");
         barcodeValueRef.current = "";
+        setPendingOverLimitBarcode(variables.scannedBarcode);
+        setShowOverLimitModal(true);
 
-        Alert.alert(
-          t("koliDetay.overLimit.title"),
-          t("koliDetay.overLimit.message"),
-          [
-            {
-              text: t("koliDetay.overLimit.cancelBtn"),
-              style: "cancel",
-              onPress: () => {
-                isProcessingRef.current = false;
-                inputRef.current?.focus();
-              },
-            },
-            {
-              text: t("koliDetay.overLimit.confirmBtn"),
-              onPress: () => {
-                barcodeMutation.mutate({
-                  scannedBarcode: variables.scannedBarcode,
-                  controlType: -1,
-                });
-              },
-            },
-          ],
-          { cancelable: false },
-        );
         return;
       }
 
@@ -305,7 +279,7 @@ export default function KoliDetayScreen() {
 
     barcodeMutation.mutate({
       scannedBarcode: finalBarcode,
-      controlType: 1,
+      controlType: alwaysIgnoreLimit ? -1 : 3,
     });
   };
 
@@ -436,6 +410,18 @@ export default function KoliDetayScreen() {
     },
     enabled: !!credentials && !!id,
   });
+
+  // // Koli detay verisi geldiğinde içindeki alanları görmek için logluyoruz
+  // useEffect(() => {
+  //   if (koliDetailQuery.data && koliDetailQuery.data.length > 0) {
+  //     const firstItem = koliDetailQuery.data[0];
+      
+  //     console.log("\n🔍 --- Koli Detay API'den Gelen İlk Ürün Datası ---");
+  //     // JSON.stringify ile objeyi okunaklı bir formatta yazdırıyoruz
+  //     console.log(JSON.stringify(firstItem, null, 2)); 
+  //     console.log("---------------------------------------------------\n");
+  //   }
+  // }, [koliDetailQuery.data]);
 
   const getDisplayValue = (item: any, key: string): string => {
     const val = item[key];
@@ -1035,6 +1021,82 @@ export default function KoliDetayScreen() {
           </View>
         </View>
       </Animated.View>
+      {/* MİKTAR AŞIMI ONAY MODALI */}
+      <Modal
+        visible={showOverLimitModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowOverLimitModal(false);
+          isProcessingRef.current = false;
+          inputRef.current?.focus();
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View
+              style={[
+                styles.resultIconContainer,
+                { backgroundColor: "rgba(255, 152, 0, 0.1)" },
+              ]}
+            >
+              <AlertTriangle size={48} color="#FF9800" />
+            </View>
+            <Text style={styles.resultTitle}>
+              {t("scanner.overLimit.title")}
+            </Text>
+            <Text style={styles.resultMessage}>
+              {t("scanner.overLimit.message")}
+            </Text>
+
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+              <TouchableOpacity
+                style={[
+                  styles.resultButton,
+                  { flex: 1, backgroundColor: colors.background.darker },
+                ]}
+                onPress={() => {
+                  setShowOverLimitModal(false);
+                  isProcessingRef.current = false;
+                  inputRef.current?.focus();
+                }}
+              >
+                <Text
+                  style={[
+                    styles.resultButtonText,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  {t("scanner.overLimit.cancelBtn")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.resultButton,
+                  {
+                    flex: 1,
+                    backgroundColor: "#FF9800",
+                    borderColor: "#FF9800",
+                  },
+                ]}
+                onPress={() => {
+                  setShowOverLimitModal(false);
+                  setAlwaysIgnoreLimit(true);
+                  barcodeMutation.mutate({
+                    scannedBarcode: pendingOverLimitBarcode,
+                    controlType: -1,
+                  });
+                }}
+              >
+                <Text style={[styles.resultButtonText, { color: "#fff" }]}>
+                  {t("scanner.overLimit.confirmBtn")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -1512,4 +1574,23 @@ const styles = StyleSheet.create({
     fontWeight: "600" as const,
     flex: 1,
   },
+  modalContent: {
+    width: "100%",
+    maxWidth: 320,
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  resultButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  resultButtonText: { fontSize: 16, fontWeight: "600" },
 });

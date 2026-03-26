@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "packagerOpts": {
-        "https": false
+      "https": false
     },
     "splash": {
       "image": "./assets/images/splash-icon.png",
@@ -54,15 +54,15 @@
           "configureAndroidBackup": true,
           "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
         }
-      ], 
+      ],
       [
-      "expo-build-properties",
-      {
-        "android": {
-          "usesCleartextTraffic": true
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
-      }
-  ]
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -72,9 +72,8 @@
         "origin": "https://rork.com/"
       },
       "eas": {
-        "projectId": "c27a0432-9c73-4ca2-9e48-f51fa2970130"
+        "projectId": "21376bc8-c870-4133-a52b-4a11539be715"
       }
-    },
-    "owner": "xtrbstest"
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 import {
   StyleSheet,
   Text,
@@ -12,7 +13,6 @@ import {
   Platform,
   Animated,
   Easing,
-  Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,6 +32,7 @@ import { SOUND_FILES } from "@/constants/sounds";
 
 export default function BarcodeScannerScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const { errorSound, useExistingBox } = useApiConfig();
   const playErrorSignal = async () => {
@@ -80,6 +81,11 @@ export default function BarcodeScannerScreen() {
     type: "success" as "success" | "error",
   });
 
+  // --- Miktar Aşımı Onay Modalı State'leri ---
+  const [showOverLimitModal, setShowOverLimitModal] = useState(false);
+  const [pendingOverLimitBarcode, setPendingOverLimitBarcode] = useState("");
+  const [alwaysIgnoreLimit, setAlwaysIgnoreLimit] = useState(false);
+
   // --- Toast İçeriği ve Animasyonu ---
   const [toastContent, setToastContent] = useState({
     title: "",
@@ -126,7 +132,6 @@ export default function BarcodeScannerScreen() {
     }, 1500);
   };
 
-  // Sayfa açıldığında veya modal kapandığında inputa odaklan
   useEffect(() => {
     const focusInput = () => {
       const timer = setTimeout(() => {
@@ -141,7 +146,7 @@ export default function BarcodeScannerScreen() {
   const barcodeMutation = useMutation({
     mutationFn: async ({
       scannedBarcode,
-      controlType = 1,
+      controlType = 3,
     }: {
       scannedBarcode: string;
       controlType?: number;
@@ -153,6 +158,7 @@ export default function BarcodeScannerScreen() {
         console.log(
           `Siparişten (${params.orderReceiptId}) koli oluşturuluyor...`,
         );
+        console.log("barkod scannerde gönderilen controlType: ", controlType);
 
         const koliResult = await api.koliListesi.createKoliFromOrderReceipt(
           credentials.userCode,
@@ -198,20 +204,12 @@ export default function BarcodeScannerScreen() {
         scannedBarcode,
       );
 
-      if (barcodeResult.err === 99)
-        return {
-          err: 99,
-          msg: barcodeResult.msg,
-          mode: "search",
-          scannedBarcode,
-        };
-
-      if (!barcodeResult.recId) throw new Error(t("scanner.boxNotFoundMsg"));
-
       return {
-        recId: barcodeResult.recId,
+        ...barcodeResult,
         mode: "search",
-        scannedBarcode
+        scannedBarcode,
+        success: barcodeResult.success || "true",
+        err: barcodeResult.err ?? 0,
       };
     },
 
@@ -222,31 +220,8 @@ export default function BarcodeScannerScreen() {
 
         setBarcode("");
         barcodeValueRef.current = "";
-
-        Alert.alert(
-          t("scanner.overLimit.title"),
-          t("scanner.overLimit.message"),
-          [
-            {
-              text: t("scanner.overLimit.cancelBtn"),
-              style: "cancel",
-              onPress: () => {
-                isProcessingRef.current = false;
-                inputRef.current?.focus();
-              },
-            },
-            {
-              text: t("scanner.overLimit.confirmBtn"),
-              onPress: () => {
-                barcodeMutation.mutate({
-                  scannedBarcode: variables.scannedBarcode,
-                  controlType: -1,
-                });
-              },
-            },
-          ],
-          { cancelable: false },
-        );
+        setPendingOverLimitBarcode(variables.scannedBarcode);
+        setShowOverLimitModal(true);
         return;
       }
 
@@ -281,16 +256,50 @@ export default function BarcodeScannerScreen() {
           setResultModalVisible(true);
         } else {
           queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
-          router.replace({
-            pathname: "/(app)/koli-detay",
-            params: {
-              id: data.resultBoxId?.toString(),
-              packageNo: extractedBoxCode,
-              boxCode: extractedBoxCode,
-              receiptNo: params.receiptNo,
-              initialSuccessMsg: explanation,
-            },
-          } as any);
+          navigation.dispatch((state) => {
+            const koliListesiIndex = state.routes.findIndex(
+              (r) => r.name === "koli-listesi",
+            );
+
+            if (koliListesiIndex !== -1) {
+              const newRoutes = state.routes.slice(0, koliListesiIndex + 1);
+              newRoutes.push({
+                name: "koli-detay",
+                params: {
+                  id: data.resultBoxId?.toString(),
+                  packageNo: extractedBoxCode,
+                  boxCode: extractedBoxCode,
+                  receiptNo: params.receiptNo,
+                  initialSuccessMsg: explanation,
+                  alwaysIgnoreLimit: alwaysIgnoreLimit ? "true" : "false",
+                },
+              } as any);
+
+              return CommonActions.reset({
+                index: newRoutes.length - 1,
+                routes: newRoutes,
+              } as any);
+            } else {
+              return CommonActions.reset({
+                index: 2,
+                routes: [
+                  { name: "dashboard" },
+                  { name: "koli-listesi" },
+                  {
+                    name: "koli-detay",
+                    params: {
+                      id: data.resultBoxId?.toString(),
+                      packageNo: extractedBoxCode,
+                      boxCode: extractedBoxCode,
+                      receiptNo: params.receiptNo,
+                      initialSuccessMsg: explanation,
+                      alwaysIgnoreLimit: alwaysIgnoreLimit ? "true" : "false",
+                    },
+                  },
+                ],
+              } as any);
+            }
+          });
         }
         return;
       }
@@ -340,17 +349,46 @@ export default function BarcodeScannerScreen() {
           ) {
             cleanPackageNo = cleanPackageNo.substring(2);
           }
+          navigation.dispatch((state: any) => {
+            const koliListesiIndex = state.routes.findIndex(
+              (r: any) => r.name === "koli-listesi",
+            );
 
-          const receiptParam = data.receiptNo
-            ? `&receiptNo=${data.receiptNo}`
-            : "";
-          const sipExpParam = data.sipExp
-            ? `&sipExp=${encodeURIComponent(data.sipExp)}`
-            : "";
+            if (koliListesiIndex !== -1) {
+              const newRoutes = state.routes.slice(0, koliListesiIndex + 1);
+              newRoutes.push({
+                name: "koli-detay",
+                params: {
+                  id: data.recId,
+                  packageNo: cleanPackageNo,
+                  receiptNo: data.receiptNo || "",
+                  sipExp: data.sipExp || "",
+                },
+              });
 
-          router.push(
-            `/(app)/koli-detay?id=${data.recId}&packageNo=${encodeURIComponent(cleanPackageNo)}${receiptParam}${sipExpParam}` as any,
-          );
+              return CommonActions.reset({
+                index: newRoutes.length - 1,
+                routes: newRoutes,
+              });
+            } else {
+              return CommonActions.reset({
+                index: 2,
+                routes: [
+                  { name: "dashboard" },
+                  { name: "koli-listesi" },
+                  {
+                    name: "koli-detay",
+                    params: {
+                      id: data.recId,
+                      packageNo: cleanPackageNo,
+                      receiptNo: data.receiptNo || "",
+                      sipExp: data.sipExp || "",
+                    },
+                  },
+                ],
+              });
+            }
+          });
         }
       }
     },
@@ -386,7 +424,7 @@ export default function BarcodeScannerScreen() {
 
     barcodeMutation.mutate({
       scannedBarcode: finalBarcode,
-      controlType: 1,
+      controlType: alwaysIgnoreLimit ? -1 : 3,
     });
   };
 
@@ -591,6 +629,82 @@ export default function BarcodeScannerScreen() {
           </View>
         </View>
       </Animated.View>
+      {/* MİKTAR AŞIMI ONAY MODALI */}
+      <Modal
+        visible={showOverLimitModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowOverLimitModal(false);
+          isProcessingRef.current = false;
+          inputRef.current?.focus();
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View
+              style={[
+                styles.resultIconContainer,
+                { backgroundColor: "rgba(255, 152, 0, 0.1)" },
+              ]}
+            >
+              <AlertTriangle size={48} color="#FF9800" />
+            </View>
+            <Text style={styles.resultTitle}>
+              {t("scanner.overLimit.title")}
+            </Text>
+            <Text style={styles.resultMessage}>
+              {t("scanner.overLimit.message")}
+            </Text>
+
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+              <TouchableOpacity
+                style={[
+                  styles.resultButton,
+                  { flex: 1, backgroundColor: colors.background.darker },
+                ]}
+                onPress={() => {
+                  setShowOverLimitModal(false);
+                  isProcessingRef.current = false;
+                  inputRef.current?.focus();
+                }}
+              >
+                <Text
+                  style={[
+                    styles.resultButtonText,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  {t("scanner.overLimit.cancelBtn")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.resultButton,
+                  {
+                    flex: 1,
+                    backgroundColor: "#FF9800",
+                    borderColor: "#FF9800",
+                  },
+                ]}
+                onPress={() => {
+                  setShowOverLimitModal(false);
+                  setAlwaysIgnoreLimit(true);
+                  barcodeMutation.mutate({
+                    scannedBarcode: pendingOverLimitBarcode,
+                    controlType: -1,
+                  });
+                }}
+              >
+                <Text style={[styles.resultButtonText, { color: "#fff" }]}>
+                  {t("scanner.overLimit.confirmBtn")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
