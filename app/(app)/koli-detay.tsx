@@ -415,10 +415,10 @@ export default function KoliDetayScreen() {
   // useEffect(() => {
   //   if (koliDetailQuery.data && koliDetailQuery.data.length > 0) {
   //     const firstItem = koliDetailQuery.data[0];
-      
+
   //     console.log("\n🔍 --- Koli Detay API'den Gelen İlk Ürün Datası ---");
   //     // JSON.stringify ile objeyi okunaklı bir formatta yazdırıyoruz
-  //     console.log(JSON.stringify(firstItem, null, 2)); 
+  //     console.log(JSON.stringify(firstItem, null, 2));
   //     console.log("---------------------------------------------------\n");
   //   }
   // }, [koliDetailQuery.data]);

@@ -171,6 +171,21 @@ export default function BarcodeScannerScreen() {
 
         return { ...koliResult, mode: "create_from_order", scannedBarcode };
       }
+      // SİPARİŞTEN BAĞIMSIZ KOLİ OLUŞTURMA
+      if (params.mode === "create_standalone") {
+        console.log("Siparişten bağımsız koli oluşturuluyor...");
+
+        const koliResult = await api.koliListesi.createKoliFromOrderReceipt(
+          credentials.userCode,
+          credentials.password,
+          0,
+          scannedBarcode,
+          useExistingBox,
+          controlType,
+        );
+
+        return { ...koliResult, mode: "create_from_order", scannedBarcode };
+      }
 
       // DURUM 2: MEVCUT KOLİYE ÜRÜN EKLEME VEYA SİLME (Servis 11 veya Silme)
       if (params.mode && params.koliId) {
@@ -438,6 +453,12 @@ export default function BarcodeScannerScreen() {
       return {
         title: t("scanner.titles.createFromOrder"),
         subtitle: `${acc} - ${rec}\n${t("scanner.titles.firstItemPrompt")}`,
+      };
+    }
+    if (params.mode === "create_standalone") {
+      return {
+        title: t("scanner.titles.createStandalone", "Bağımsız Koli Oluştur"),
+        subtitle: t("scanner.titles.standaloneSubtitle", "Koliye eklenecek ilk ürünün barkodunu okutun."),
       };
     }
     if (params.mode === "add") {

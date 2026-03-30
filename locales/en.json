@@ -78,7 +78,9 @@
     "errorTitle": "Loading Error",
     "defaultErrorMsg": "An error occurred while fetching orders",
     "emptySearch": "No orders found matching your search",
-    "emptyList": "There are no order receipts yet"
+    "emptyList": "There are no order receipts yet",
+    "noOrderLink": "No Order Link",
+    "noOrderDesc": "Create a standalone box"
   },
   "koliListesi": {
     "loading": "Loading box list...",
@@ -198,6 +200,8 @@
     },
     "titles": {
       "createFromOrder": "Create Box from Order",
+      "createStandalone": "Create Standalone Box",
+      "standaloneSubtitle": "Scan the barcode of the first item to add to the box.",
       "firstItemPrompt": "Scan the first item",
       "addMode": "Add Item",
       "addSubtitle": "Adding item to Box #{{id}}",

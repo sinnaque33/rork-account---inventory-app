@@ -47,11 +47,6 @@ export default function OrderReceiptsScreen() {
   });
 
   const handleReceiptSelect = (item: OrderReceipt) => {
-    console.log(
-      "OrderReceiptsScreen: Sipariş seçildi, okuyucuya gidiliyor",
-      item.RecId,
-    );
-
     // Koli oluşturmak yerine barkod okuyucuya yönlendiriyoruz
     router.push({
       pathname: "/(app)/barcode-scanner",
@@ -60,6 +55,15 @@ export default function OrderReceiptsScreen() {
         orderReceiptId: item.RecId.toString(),
         accountName: item.CurrentAccountName,
         receiptNo: item.ReceiptNo,
+      },
+    });
+  };
+
+  const handleNoOrderSelect = () => {
+    router.push({
+      pathname: "/(app)/barcode-scanner",
+      params: {
+        mode: "create_standalone",
       },
     });
   };
@@ -163,6 +167,47 @@ export default function OrderReceiptsScreen() {
             onRefresh={onRefresh}
             colors={[colors.button.primary]}
           />
+        }
+        ListHeaderComponent={
+          <TouchableOpacity
+            style={[
+              styles.card,
+              {
+                borderColor: colors.button.primary,
+                borderWidth: 2,
+                marginBottom: 20,
+              },
+            ]}
+            activeOpacity={0.7}
+            onPress={handleNoOrderSelect}
+          >
+            <View style={styles.cardHeader}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: colors.button.primary },
+                ]}
+              >
+                {/* İstersen lucide-react-native'den 'Link2Off' veya 'PackagePlus' import edip kullanabilirsin */}
+                <FileText size={22} color="#fff" />
+              </View>
+              <View style={styles.itemInfo}>
+                <Text style={styles.receiptNo}>
+                  {t(
+                    "orderReceipts.noOrderLink",
+                    "Sipariş bağlantısı yapılmayacak",
+                  )}
+                </Text>
+                <Text style={styles.accountName}>
+                  {t(
+                    "orderReceipts.noOrderDesc",
+                    "Siparişten bağımsız koli oluştur",
+                  )}
+                </Text>
+              </View>
+              <ChevronRight size={20} color={colors.button.primary} />
+            </View>
+          </TouchableOpacity>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>

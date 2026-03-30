@@ -78,7 +78,9 @@
     "errorTitle": "Yükleme Hatası",
     "defaultErrorMsg": "Siparişler alınırken bir hata oluştu",
     "emptySearch": "Aramanıza uygun sipariş bulunamadı",
-    "emptyList": "Henüz bir sipariş fişi yok"
+    "emptyList": "Henüz bir sipariş fişi yok",
+    "noOrderLink": "Sipariş bağlantısı yapılmayacak",
+    "noOrderDesc": "Siparişten bağımsız koli oluştur"
   },
   "koliListesi": {
     "loading": "Koli listesi yükleniyor...",
@@ -198,8 +200,10 @@
     },
     "titles": {
       "createFromOrder": "Siparişten Koli Aç",
+      "createStandalone": "Bağımsız Koli Oluştur",
       "firstItemPrompt": "İlk ürünü okutun",
       "addMode": "Ürün Ekle",
+      "standaloneSubtitle": "Koliye eklenecek ilk ürünün barkodunu okutun.",
       "addSubtitle": "Koli #{{id}} içine ürün ekleniyor",
       "deleteMode": "Ürün Sil",
       "deleteSubtitle": "Koli #{{id}} içinden ürün siliniyor",
