@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Audio } from "expo-av";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
+
 import { SOUND_FILES } from "@/constants/sounds";
 import {
   AlertCircle,
@@ -14,6 +15,7 @@ import {
   Plus,
   ScanBarcode,
   AlertTriangle,
+  Printer,
 } from "lucide-react-native";
 import {
   ActivityIndicator,
@@ -40,6 +42,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { byteArrayToBase64 } from "@/utils/imageUtils";
 
 import colors from "@/constants/colors";
+import PrintBarcodeModal from "../components/PrintBarcodeModal";
+import { ActionButton } from "../components/ActionButton";
 
 export default function KoliDetayScreen() {
   const { t } = useTranslation();
@@ -98,6 +102,9 @@ export default function KoliDetayScreen() {
   const inputRef = useRef<TextInput>(null);
   const barcodeValueRef = useRef("");
   const isProcessingRef = useRef(false);
+
+  // --- YAZDIRMA STATE'LERİ ---
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // --- Miktar Aşımı Onay Modalı State'leri ---
   const [showOverLimitModal, setShowOverLimitModal] = useState(false);
@@ -683,55 +690,32 @@ export default function KoliDetayScreen() {
 
       {/* ALT BUTONLAR */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            createReceiptMutation.isPending && styles.disabledButton,
-          ]}
+        <ActionButton
+          text="Yazdır"
+          icon={<Printer size={20} color="#000" />}
+          onPress={() => setShowPrintModal(true)}
+        />
+
+        <ActionButton
+          text={t("koliDetay.btnCreateReceipt")}
+          icon={<FileText size={20} color="#000" />}
           onPress={() => setShowReceiptConfirm(true)}
-          disabled={createReceiptMutation.isPending}
-        >
-          {createReceiptMutation.isPending ? (
-            <ActivityIndicator size="small" color="#000" />
-          ) : (
-            <FileText size={20} color="#000" />
-          )}
-          <Text style={styles.buttonText}>
-            {t("koliDetay.btnCreateReceipt")}
-          </Text>
-        </TouchableOpacity>
+          isLoading={createReceiptMutation.isPending}
+        />
 
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            openBoxMutation.isPending && styles.disabledButton,
-          ]}
+        <ActionButton
+          text={t("koliDetay.btnOpenBox")}
+          icon={<Unlock size={20} color="#000" />}
           onPress={() => setShowOpenBoxConfirm(true)}
-          disabled={openBoxMutation.isPending}
-        >
-          {openBoxMutation.isPending ? (
-            <ActivityIndicator size="small" color="#000" />
-          ) : (
-            <Unlock size={20} color="#000" />
-          )}
-          <Text style={styles.buttonText}>{t("koliDetay.btnOpenBox")}</Text>
-        </TouchableOpacity>
+          isLoading={openBoxMutation.isPending}
+        />
 
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            closeBoxMutation.isPending && styles.disabledButton,
-          ]}
+        <ActionButton
+          text={t("koliDetay.btnCloseBox")}
+          icon={<Lock size={20} color="#000" />}
           onPress={() => setShowCloseBoxModal(true)}
-          disabled={closeBoxMutation.isPending}
-        >
-          {closeBoxMutation.isPending ? (
-            <ActivityIndicator size="small" color="#000" />
-          ) : (
-            <Lock size={20} color="#000" />
-          )}
-          <Text style={styles.buttonText}>{t("koliDetay.btnCloseBox")}</Text>
-        </TouchableOpacity>
+          isLoading={closeBoxMutation.isPending}
+        />
       </View>
 
       {/* --- MODALLAR --- */}
@@ -1097,6 +1081,17 @@ export default function KoliDetayScreen() {
           </View>
         </View>
       </Modal>
+
+      <PrintBarcodeModal
+        visible={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        koliId={id}
+        onSuccess={(msg) => showToast("Başarılı", msg, "success")}
+        onError={(msg) => {
+          playErrorSignal();
+          showToast("Hata", msg, "error");
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -1320,37 +1315,14 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: "row",
-    padding: 16,
-    paddingBottom: 32,
+    padding: 18,
+    paddingBottom: 36,
     gap: 12,
     backgroundColor: colors.background.dark,
     borderTopWidth: 1,
     borderTopColor: colors.border.default,
   },
-  actionButton: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  buttonText: {
-    fontSize: 12,
-    fontFamily: "Segoe UI",
-    fontWeight: "700" as const,
-    color: "#000",
-    textAlign: "center",
-    lineHeight: 16,
-  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",

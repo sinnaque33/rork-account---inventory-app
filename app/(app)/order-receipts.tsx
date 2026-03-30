@@ -19,9 +19,10 @@ import {
   View,
 } from "react-native";
 import { useRouter, Stack } from "expo-router";
-import { api, OrderReceipt } from "@/services/api";
+import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
+import { OrderReceipt } from "@/services/types";
 
 export default function OrderReceiptsScreen() {
   const { t } = useTranslation();

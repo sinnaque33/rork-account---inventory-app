@@ -2,7 +2,8 @@ import createContextHook from "@nkzw/create-context-hook";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { api, LoginCredentials, LoginResponse } from "@/services/api";
+import { api } from "@/services/api";
+import { LoginCredentials, LoginResponse } from "@/services/types";
 
 const USER_STORAGE_KEY = "auth_user";
 

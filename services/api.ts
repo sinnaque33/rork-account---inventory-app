@@ -1,6 +1,18 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  AccountsData,
+  BarcodeForm,
+  CurrentAccount,
+  InventoryItem,
+  KoliDetailItem,
+  KoliItem,
+  LoginCredentials,
+  LoginResponse,
+  OrderReceipt,
+  RunJsonServiceResponse,
+} from "./types";
 
 const API_URL_STORAGE_KEY = "api_base_url";
 const COMPANY_CODE_KEY = "company_code";
@@ -98,120 +110,23 @@ const tokenStorage = {
       await SecureStore.deleteItemAsync("auth_token");
     }
   },
+  async getTicket(): Promise<string | null> {
+    if (Platform.OS === "web") {
+      return localStorage.getItem("auth_ticket");
+    }
+    return await SecureStore.getItemAsync("auth_ticket");
+  },
+
+  async setTicket(ticket: string): Promise<void> {
+    if (Platform.OS === "web") {
+      localStorage.setItem("auth_ticket", ticket);
+    } else {
+      await SecureStore.setItemAsync("auth_ticket", ticket);
+    }
+  },
 };
 
-export interface LoginCredentials {
-  userCode: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  success: string;
-  err: number;
-  msg: string;
-  firstName: string;
-  lastName: string;
-  admin: boolean;
-  email: string | null;
-  uid: number;
-  code: string;
-  special: string | null;
-  password: string;
-  token: string;
-  ticket: string;
-  company: string;
-  companyPassword: string;
-  companyName: string;
-  picture: string;
-  version: string;
-  employeeId: number;
-  resourceId: number;
-  agent: boolean;
-  dept: {
-    id: number;
-    code: string;
-    name: string;
-  };
-  wh: {
-    id: number;
-    code: string;
-    name: string;
-  };
-  ca: {
-    id: number;
-    code: string;
-    name: string;
-  };
-  contact: {
-    id: number;
-    name: string;
-    email: string;
-  };
-  privs: {
-    logical: number;
-    module: number;
-    item: number;
-    subitem: number;
-    privilege: number;
-  }[];
-  decs: {
-    pDecs: string;
-    fpDecs: string;
-    aDecs: string;
-    faDecs: string;
-    rDecs: string;
-    frDecs: string;
-    qDecs: string;
-    vDecs: string;
-    rrDecs: string;
-  };
-  menu: any[];
-  app: Record<string, any>;
-}
-
-export interface CurrentAccount {
-  CurrentAccountCode: string;
-  CurrentAccountName: string;
-}
-
-export interface RunJsonServiceResponse<T> {
-  success: string;
-  err: number;
-  msg: string;
-  ticket: string;
-  version: string;
-  data: T;
-}
-
-export interface AccountsData {
-  items: CurrentAccount[];
-}
-
-export interface InventoryItem {
-  InventoryCode: string;
-  InventoryName: string;
-  Thumbnail: string;
-}
-
-export interface KoliItem {
-  id: number;
-  PackageNo: string;
-  Explanation: string;
-  ReceiptNo?: string;
-  SipExp?: string;
-}
-
-export interface KoliDetailItem {
-  InventoryName: string;
-  Quantity: number;
-  Thumbnail?: string | null;
-}
-
-export interface OrderReceipt {
-  RecId: number;
-  ReceiptNo: string;
-  CurrentAccountName: string;
-}
+export { tokenStorage };
 
 export const api = {
   auth: {
@@ -229,8 +144,6 @@ export const api = {
         companyPassword: companyPassword || "",
       };
 
-      console.log("API: Making request to", `${apiBaseUrl}/Login`);
-
       try {
         const response = await fetch(`${apiBaseUrl}/Login`, {
           method: "POST",
@@ -245,10 +158,6 @@ export const api = {
           "API: Response status",
           response.status,
           response.statusText,
-        );
-        console.log(
-          "API: Response content-type",
-          response.headers.get("content-type"),
         );
 
         if (!response.ok) {
@@ -282,6 +191,9 @@ export const api = {
 
         if (data.success === "true" && data.err === 0) {
           await tokenStorage.setToken(data.token);
+          if (data.ticket) {
+            await tokenStorage.setTicket(data.ticket);
+          }
           console.log("API: Login successful for user", credentials.userCode);
         }
 
@@ -506,12 +418,6 @@ export const api = {
       const data: RunJsonServiceResponse<{ items: KoliDetailItem[] }> =
         await response.json();
 
-      // EKLENEN LOG: Gelen datayı formatlı bir şekilde konsola basar
-      console.log(
-        "📦 API DEBUG - Gelen Koli Detay Datası:\n",
-        JSON.stringify(data.data?.items, null, 2),
-      );
-
       console.log("API: Received koli detail response", {
         success: data.success,
         itemsCount: data.data?.items?.length,
@@ -524,7 +430,7 @@ export const api = {
       return data.data?.items || [];
     },
 
- async addItemByBarcode(
+    async addItemByBarcode(
       userName: string,
       password: string,
       boxId: number,
@@ -570,12 +476,6 @@ export const api = {
 
       const resData = await response.json();
 
-      // 🚨 1. BÜYÜK LOG: API'den dönen en dıştaki ham cevap
-      console.log("=========================================");
-      console.log("🚀 [RAW] API'DEN DÖNEN HAM CEVAP (resData):");
-      console.log(JSON.stringify(resData, null, 2));
-      console.log("=========================================");
-
       // --- PARSE İŞLEMİ ---
       let innerData: any = {};
       try {
@@ -586,21 +486,6 @@ export const api = {
       } catch (e) {
         console.log("API: Data parse edilemedi");
       }
-
-      // 🚨 2. BÜYÜK LOG: İçerideki gizli datanın (varsa) açılmış hali
-      console.log("🧩 [PARSED] İÇERİDEN ÇIKAN DATA (innerData):");
-      console.log(JSON.stringify(innerData, null, 2));
-      console.log("=========================================");
-
-      // --- ESKİ ÖZET LOGLAR ---
-      console.log("KOLİ ÜRÜN EKLEME İŞLEMİ (Service 11)");
-      console.log(`Hedef BoxId: ${boxId} | Barkod: ${barcode}`);
-      console.log(`Kontrol Tipi (Sent): ${shipmentControlType}`);
-      console.log(`ERP Mesajı: ${resData.msg}`);
-      console.log(
-        `Hata Tipi (resultErrorType): ${innerData?.resultErrorType || resData.resultErrorType || 0}`,
-      );
-      console.log("-----------------------------------------");
 
       return {
         success: resData.success,
@@ -632,7 +517,7 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
-      const dataPayload = {
+      let dataPayload: any = {
         serviceType: useExistingBox ? 101 : 1,
         boxType: 2,
         boxId: 0,
@@ -643,6 +528,9 @@ export const api = {
         orderConnection: 1,
         orderShipmentControlType: shipmentControlType,
       };
+      if (orderReceiptId !== 0) {
+        dataPayload.orderReceiptId = orderReceiptId;
+      }
 
       const requestBody = {
         data: JSON.stringify(dataPayload),
@@ -1036,11 +924,140 @@ export const api = {
       return { success: data.success, msg: data.msg };
     },
 
+    async getBarcodeForms(
+      userName: string,
+      password: string,
+    ): Promise<BarcodeForm[]> {
+      console.log("API: Fetching barcode forms (MOCK DATA)");
+
+      // 1. Ağ gecikmesini simüle etmek için 1 saniye (1000ms) beklet
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // 2. Test için Dummy Data dönüyoruz
+      return [
+        { Name: "Koli Formu" },
+        { Name: "Palet Etiketi" },
+        { Name: "Küçük Barkod (40x20)" },
+        { Name: "İhracat Çeki Listesi" },
+      ];
+
+      /* --- BACKEND HAZIR OLDUĞUNDA BURADAN AŞAĞISININ YORUMUNU AÇ ---
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+
+      const requestBody: Record<string, string> = {
+        userName,
+        password,
+        licenseKey: "16016923",
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        data: '{ "name": "BoxFormList"}',
+      };
+
+      const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data: RunJsonServiceResponse<{ items: BarcodeForm[] }> =
+        await response.json();
+
+      console.log("API: Received barcode forms response", {
+        success: data.success,
+        itemsCount: data.data?.items?.length,
+      });
+
+      if (data.success !== "true") {
+        throw new Error(data.msg || "Form listesi getirilemedi");
+      }
+
+      return data.data?.items || [];
+      -------------------------------------------------------------- */
+    },
+    async printBarcode(
+      userName: string,
+      password: string,
+      recId: number,
+      formName: string,
+      printerName: string,
+    ): Promise<{ success: string; msg: string }> {
+      console.log(
+        `API: Printing barcode for RecId: ${recId} on printer: ${printerName}`,
+      );
+
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      const ticket = await tokenStorage.getTicket();
+
+      // 1. İç data objesi
+      const dataPayload = {
+        name: "BoxForm",
+        filter: formName,
+        printer: printerName,
+      };
+
+      // 2. Postman'daki pre-request scriptinde yer alan 'meta' objesi
+      const meta = {
+        ticket: ticket || "",
+        userName: userName,
+        password: password,
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        licenseKey: "16016923",
+        isDemo: false,
+        data: JSON.stringify(dataPayload),
+      };
+      console.log(meta);
+
+      const baseUrl = apiBaseUrl.endsWith("/")
+        ? apiBaseUrl.slice(0, -1)
+        : apiBaseUrl;
+      const url = `${baseUrl}/PrintForm/Entity/${recId}`;
+
+      // 3. Postman json belgesindeki Headers bloğunun BİREBİR aynısı
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json;charset=UTF-8",
+        "Service-Meta": encodeURIComponent(JSON.stringify(meta)),
+      };
+
+      console.log("API: PrintBarcode Request URL:", url);
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Print request failed with status ${response.status}`);
+      }
+
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        return {
+          success: data.success || "true",
+          msg: data.msg || "Yazdırma isteği gönderildi",
+        };
+      } catch (e) {
+        // Sunucu düz metin dönerse çökmemesi için
+        return { success: "true", msg: text || "Yazdırma isteği gönderildi" };
+      }
+    },
+
     async getKoliDetailByBarcode(
       userName: string,
       password: string,
       barcode: string,
-    ): Promise<{ recId: number; err?: number; msg?: string , success: string}> {
+    ): Promise<{ recId: number; err?: number; msg?: string; success: string }> {
       console.log("API: Fetching koli detail by barcode", barcode);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
@@ -1084,16 +1101,16 @@ export const api = {
           recId: 0,
           err: data.err,
           msg: data.msg,
-          success: "false"
+          success: "false",
         };
       }
 
-    if (data.success !== "true") {
+      if (data.success !== "true") {
         return {
           recId: 0,
           err: data.err || 1,
           msg: data.msg || "Failed to fetch koli detail",
-          success: "false"
+          success: "false",
         };
       }
 
@@ -1101,14 +1118,12 @@ export const api = {
       const recId = data.data?.items?.[0]?.RecId || 0;
       console.log("API: Extracted RecId from items:", recId);
 
-   return {
+      return {
         recId,
         success: "true",
         err: 0,
-        msg: data.msg
+        msg: data.msg,
       };
     },
   },
 };
-
-export { tokenStorage };
