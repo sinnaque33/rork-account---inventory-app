@@ -211,6 +211,22 @@
       "searchSubtitle": "Scan to view box details",
       "accountSelected": "Account Selected",
       "receiptNo": "(Receipt: {{no}})"
+    },
+    "printModal": {
+      "title": "Print Label",
+      "targetPrinter": "Target Printer:",
+      "printerPlaceholder": "Printer Name (e.g., EPSON)",
+      "emptyPrinterError": "Printer name cannot be empty!",
+      "printerSavedSuccess": "Printer saved as default.",
+      "selectForm": "Select Form:",
+      "missingInfoError": "Login information or Box ID is missing",
+      "formNotSelectedError": "Please select a form",
+      "formsLoadError": "Failed to load forms.",
+      "noActiveFormError": "No active form found.",
+      "printStartedSuccess": "Printing process started",
+      "printError": "Printing error",
+      "printButton": "Print",
+      "cancelButton": "Cancel"
     }
   }
 }

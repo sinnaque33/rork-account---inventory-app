@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   View,
@@ -9,12 +9,13 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
-import { Printer, FileText, CheckCircle } from "lucide-react-native";
+import { Printer, FileText, CheckCircle, Save } from "lucide-react-native";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
+import { useApiConfig } from "@/contexts/ApiConfigContext";
 
 interface PrintBarcodeModalProps {
   visible: boolean;
@@ -31,11 +32,31 @@ export default function PrintBarcodeModal({
   onSuccess,
   onError,
 }: PrintBarcodeModalProps) {
+  const { printerName, updatePrinterName } = useApiConfig();
   const { t } = useTranslation();
   const { credentials } = useAuth();
 
+  const [localPrinter, setLocalPrinter] = useState(printerName);
   const [selectedForm, setSelectedForm] = useState<string | null>(null);
-  const [printerName, setPrinterName] = useState("EPSON");
+  const [isSavingPrinter, setIsSavingPrinter] = useState(false);
+
+  const isModified = localPrinter.trim() !== printerName;
+
+  useEffect(() => {
+    setLocalPrinter(printerName);
+  }, [printerName, visible]);
+
+  // --- SADECE YAZICIYI KAYDETME FONKSİYONU ---
+  const handleSavePrinter = async () => {
+    if (!localPrinter.trim()) {
+      onError(t("printModal.emptyPrinterError"));
+      return;
+    }
+    setIsSavingPrinter(true);
+    await updatePrinterName(localPrinter.trim());
+    setIsSavingPrinter(false);
+    onSuccess(t("printModal.printerSavedSuccess"));
+  };
 
   // 1. Form Listesini Getiren Query
   const formsQuery = useQuery({
@@ -54,23 +75,27 @@ export default function PrintBarcodeModal({
   const printMutation = useMutation({
     mutationFn: async () => {
       if (!credentials || !koliId)
-        throw new Error("Giriş bilgileri veya Koli ID eksik");
-      if (!selectedForm) throw new Error("Lütfen bir form seçin");
+        throw new Error(t("printModal.missingInfoError"));
+      if (!selectedForm) throw new Error(t("printModal.formNotSelectedError"));
+
+      await updatePrinterName(localPrinter);
 
       return api.koliListesi.printBarcode(
         credentials.userCode,
         credentials.password,
         parseInt(koliId, 10),
         selectedForm,
-        printerName,
+        localPrinter,
       );
     },
     onSuccess: (data) => {
-      onSuccess(data.msg || "Yazdırma işlemi başlatıldı");
+      onSuccess(data.msg || t("printModal.printStartedSuccess"));
       handleClose();
     },
     onError: (error) => {
-      onError(error instanceof Error ? error.message : "Yazdırma hatası");
+      onError(
+        error instanceof Error ? error.message : t("printModal.printError"),
+      );
     },
   });
 
@@ -90,21 +115,43 @@ export default function PrintBarcodeModal({
         <View style={styles.printModalContent}>
           <View style={styles.printModalHeader}>
             <Printer size={28} color={colors.button.primary} />
-            <Text style={styles.printModalTitle}>Etiket Yazdır</Text>
+            <Text style={styles.printModalTitle}>{t("printModal.title")}</Text>
           </View>
 
+          {/* --- MODERNİZE EDİLMİŞ INPUT VE BUTON SATIRI --- */}
           <View style={styles.printerInputContainer}>
-            <Text style={styles.printerInputLabel}>Hedef Yazıcı:</Text>
-            <TextInput
-              style={styles.printerInput}
-              value={printerName}
-              onChangeText={setPrinterName}
-              placeholder="Yazıcı Adı (Örn: EPSON)"
-              placeholderTextColor={colors.text.secondary}
-            />
+            <Text style={styles.printerInputLabel}>
+              {t("printModal.targetPrinter")}
+            </Text>
+            <View style={styles.printerInputRow}>
+              <TextInput
+                style={styles.printerInput}
+                value={localPrinter}
+                onChangeText={setLocalPrinter}
+                placeholder={t("printModal.printerPlaceholder")}
+                placeholderTextColor={colors.text.secondary}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.savePrinterButton,
+                  !isModified && styles.savePrinterButtonDisabled,
+                ]}
+                onPress={handleSavePrinter}
+                disabled={!isModified || isSavingPrinter}
+              >
+                {isSavingPrinter ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Save
+                    size={20}
+                    color={isModified ? "#fff" : colors.text.secondary}
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <Text style={styles.formListTitle}>Form Seçin:</Text>
+          <Text style={styles.formListTitle}>{t("printModal.selectForm")}</Text>
 
           {formsQuery.isLoading ? (
             <ActivityIndicator
@@ -120,7 +167,7 @@ export default function PrintBarcodeModal({
                 marginVertical: 10,
               }}
             >
-              Formlar yüklenemedi.
+              {t("printModal.formsLoadError")}
             </Text>
           ) : (
             <FlatList
@@ -161,7 +208,7 @@ export default function PrintBarcodeModal({
                 <Text
                   style={{ textAlign: "center", color: colors.text.secondary }}
                 >
-                  Aktif form bulunamadı.
+                  {t("printModal.noActiveFormError")}
                 </Text>
               }
             />
@@ -173,7 +220,7 @@ export default function PrintBarcodeModal({
               onPress={handleClose}
             >
               <Text style={styles.receiptCancelText}>
-                {t("koliDetay.cancel")}
+                {t("printModal.cancelButton")}
               </Text>
             </TouchableOpacity>
 
@@ -188,7 +235,9 @@ export default function PrintBarcodeModal({
               {printMutation.isPending ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={styles.receiptConfirmText}>Yazdır</Text>
+                <Text style={styles.receiptConfirmText}>
+                  {t("printModal.printButton")}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -232,7 +281,12 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginBottom: 6,
   },
+  printerInputRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
   printerInput: {
+    flex: 1,
     backgroundColor: colors.background.darker,
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -242,6 +296,18 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontFamily: "Segoe UI",
     fontSize: 15,
+  },
+  savePrinterButton: {
+    backgroundColor: colors.button.primary,
+    borderRadius: 10,
+    width: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  savePrinterButtonDisabled: {
+    backgroundColor: colors.background.darker,
+    borderWidth: 1,
+    borderColor: colors.border.default,
   },
   formListTitle: {
     fontSize: 15,

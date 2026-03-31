@@ -10,6 +10,7 @@ const COMPANY_PASSWORD_KEY = "company_password";
 const WAREHOUSE_ID_KEY = "warehouse_id";
 const ERROR_SOUND_KEY = "error_sound";
 const USE_EXISTING_BOX_KEY = "use_existing_box";
+const PRINTER_NAME_KEY = "preferred_printer_name";
 
 export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
   const [apiBaseUrl, setApiBaseUrl] = useState<string>("");
@@ -18,19 +19,22 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
   const [warehouseId, setWarehouseId] = useState<string>("");
   const [errorSound, setErrorSound] = useState<string>("error_1");
   const [useExistingBox, setUseExistingBox] = useState<boolean>(false);
+  const [printerName, setPrinterName] = useState<string>("VARSAYILAN YAZICI ADINI GİRİN");
 
   const loadUrlQuery = useQuery({
     queryKey: ["api-config"],
     queryFn: async () => {
       console.log("ApiConfigContext: Loading API config from storage");
-      const [url, code, pwd, whId, eSound, existingBox] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEY),
-        AsyncStorage.getItem(COMPANY_CODE_KEY),
-        AsyncStorage.getItem(COMPANY_PASSWORD_KEY),
-        AsyncStorage.getItem(WAREHOUSE_ID_KEY),
-        AsyncStorage.getItem(ERROR_SOUND_KEY),
-        AsyncStorage.getItem(USE_EXISTING_BOX_KEY),
-      ]);
+      const [url, code, pwd, whId, eSound, existingBox, pName] =
+        await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEY),
+          AsyncStorage.getItem(COMPANY_CODE_KEY),
+          AsyncStorage.getItem(COMPANY_PASSWORD_KEY),
+          AsyncStorage.getItem(WAREHOUSE_ID_KEY),
+          AsyncStorage.getItem(ERROR_SOUND_KEY),
+          AsyncStorage.getItem(USE_EXISTING_BOX_KEY),
+          AsyncStorage.getItem(PRINTER_NAME_KEY),
+        ]);
       return {
         url: url || "",
         companyCode: code || "",
@@ -38,6 +42,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
         warehouseId: whId || "",
         errorSound: eSound || "error_1",
         useExistingBox: existingBox === "true",
+        printerName: pName || "EPSON",
       };
     },
     retry: false,
@@ -52,6 +57,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       setWarehouseId(loadUrlQuery.data.warehouseId);
       setErrorSound(loadUrlQuery.data.errorSound);
       setUseExistingBox(loadUrlQuery.data.useExistingBox);
+      setPrinterName(loadUrlQuery.data.printerName);
     }
   }, [loadUrlQuery.data]);
 
@@ -63,9 +69,16 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       warehouseId?: string;
       errorSound?: string;
       useExistingBox?: boolean;
+      printerName?: string;
     }) => {
       console.log("ApiConfigContext: Saving API config to storage", params);
       const promises: Promise<void>[] = [];
+
+      if (params.printerName !== undefined) {
+        promises.push(
+          AsyncStorage.setItem(PRINTER_NAME_KEY, params.printerName),
+        );
+      }
 
       if (params.url !== undefined) {
         promises.push(AsyncStorage.setItem(STORAGE_KEY, params.url));
@@ -86,13 +99,14 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
         );
       }
       if (params.errorSound !== undefined) {
-        promises.push(
-          AsyncStorage.setItem(ERROR_SOUND_KEY, params.errorSound)
-        );
+        promises.push(AsyncStorage.setItem(ERROR_SOUND_KEY, params.errorSound));
       }
       if (params.useExistingBox !== undefined) {
         promises.push(
-          AsyncStorage.setItem(USE_EXISTING_BOX_KEY, String(params.useExistingBox))
+          AsyncStorage.setItem(
+            USE_EXISTING_BOX_KEY,
+            String(params.useExistingBox),
+          ),
         );
       }
       await Promise.all(promises);
@@ -107,7 +121,9 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
         setCompanyPassword(params.companyPassword);
       if (params.warehouseId !== undefined) setWarehouseId(params.warehouseId);
       if (params.errorSound !== undefined) setErrorSound(params.errorSound);
-      if (params.useExistingBox !== undefined) setUseExistingBox(params.useExistingBox);
+      if (params.useExistingBox !== undefined)
+        setUseExistingBox(params.useExistingBox);
+      if (params.printerName !== undefined) setPrinterName(params.printerName);
     },
   });
   const { mutateAsync: saveMutateAsync } = saveMutation;
@@ -139,13 +155,26 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     },
     [saveMutateAsync],
   );
-  const updateErrorSound = useCallback(async (sound: string) => {
-    await saveMutateAsync({ errorSound: sound });
-  }, [saveMutateAsync]);
+  const updateErrorSound = useCallback(
+    async (sound: string) => {
+      await saveMutateAsync({ errorSound: sound });
+    },
+    [saveMutateAsync],
+  );
 
-  const updateUseExistingBox = useCallback(async (value: boolean) => {
-    await saveMutateAsync({ useExistingBox: value });
-  }, [saveMutateAsync]);
+  const updateUseExistingBox = useCallback(
+    async (value: boolean) => {
+      await saveMutateAsync({ useExistingBox: value });
+    },
+    [saveMutateAsync],
+  );
+
+  const updatePrinterName = useCallback(
+    async (name: string) => {
+      await saveMutateAsync({ printerName: name });
+    },
+    [saveMutateAsync],
+  );
 
   const resetToDefault = useCallback(async () => {
     await Promise.all([
@@ -155,14 +184,16 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       AsyncStorage.removeItem(WAREHOUSE_ID_KEY),
       AsyncStorage.removeItem(ERROR_SOUND_KEY),
       AsyncStorage.removeItem(USE_EXISTING_BOX_KEY),
+      AsyncStorage.removeItem(PRINTER_NAME_KEY),
     ]);
     clearApiUrlCache();
     setApiBaseUrl("");
     setCompanyCode("");
     setCompanyPassword("");
     setWarehouseId("");
-    setErrorSound('error_1');
+    setErrorSound("error_1");
     setUseExistingBox(false);
+    setPrinterName("EPSON");
   }, []);
 
   return useMemo(
@@ -173,6 +204,8 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       warehouseId,
       errorSound,
       useExistingBox,
+      printerName,
+      updatePrinterName,
       updateUseExistingBox,
       updateApiUrl,
       updateCompanyCode,
@@ -191,6 +224,8 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       warehouseId,
       errorSound,
       useExistingBox,
+      printerName,
+      updatePrinterName,
       updateUseExistingBox,
       updateApiUrl,
       updateCompanyCode,

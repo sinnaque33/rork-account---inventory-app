@@ -212,5 +212,21 @@
       "accountSelected": "Cari Seçildi",
       "receiptNo": "(Fiş: {{no}})"
     }
+  },
+  "printModal": {
+    "title": "Etiket Yazdır",
+    "targetPrinter": "Hedef Yazıcı:",
+    "printerPlaceholder": "Yazıcı Adı (Örn: EPSON)",
+    "emptyPrinterError": "Yazıcı adı boş olamaz!",
+    "printerSavedSuccess": "Yazıcı varsayılan olarak kaydedildi.",
+    "selectForm": "Form Seçin:",
+    "missingInfoError": "Giriş bilgileri veya Koli ID eksik",
+    "formNotSelectedError": "Lütfen bir form seçin",
+    "formsLoadError": "Formlar yüklenemedi.",
+    "noActiveFormError": "Aktif form bulunamadı.",
+    "printStartedSuccess": "Yazdırma işlemi başlatıldı",
+    "printError": "Yazdırma hatası",
+    "printButton": "Yazdır",
+    "cancelButton": "İptal"
   }
 }
