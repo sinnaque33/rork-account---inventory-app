@@ -928,20 +928,6 @@ export const api = {
       userName: string,
       password: string,
     ): Promise<BarcodeForm[]> {
-      console.log("API: Fetching barcode forms (MOCK DATA)");
-
-      // 1. Ağ gecikmesini simüle etmek için 1 saniye (1000ms) beklet
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // 2. Test için Dummy Data dönüyoruz
-      return [
-        { Name: "Koli Formu" },
-        { Name: "Palet Etiketi" },
-        { Name: "Küçük Barkod (40x20)" },
-        { Name: "İhracat Çeki Listesi" },
-      ];
-
-      /* --- BACKEND HAZIR OLDUĞUNDA BURADAN AŞAĞISININ YORUMUNU AÇ ---
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
@@ -952,7 +938,7 @@ export const api = {
         licenseKey: "16016923",
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
-        data: '{ "name": "BoxFormList"}',
+        data: '{ "name": "koliFormlari"}',
       };
 
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
@@ -967,8 +953,8 @@ export const api = {
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      const data: RunJsonServiceResponse<{ items: BarcodeForm[] }> =
-        await response.json();
+      const responseText = await response.text();
+      const data = JSON.parse(responseText);
 
       console.log("API: Received barcode forms response", {
         success: data.success,
@@ -979,8 +965,14 @@ export const api = {
         throw new Error(data.msg || "Form listesi getirilemedi");
       }
 
-      return data.data?.items || [];
-      -------------------------------------------------------------- */
+      const rawItems = data.data?.items || [];
+
+      const formattedItems = rawItems.map((item: any) => ({
+        ...item,
+        Name: item.ReportTitle || "İsimsiz Form",
+      }));
+
+      return formattedItems;
     },
     async printBarcode(
       userName: string,
@@ -1023,7 +1015,6 @@ export const api = {
         : apiBaseUrl;
       const url = `${baseUrl}/PrintForm/Entity/${recId}`;
 
-      // 3. Postman json belgesindeki Headers bloğunun BİREBİR aynısı
       const headers: Record<string, string> = {
         "Content-Type": "application/json;charset=UTF-8",
         "Service-Meta": encodeURIComponent(JSON.stringify(meta)),
@@ -1048,7 +1039,6 @@ export const api = {
           msg: data.msg || "Yazdırma isteği gönderildi",
         };
       } catch (e) {
-        // Sunucu düz metin dönerse çökmemesi için
         return { success: "true", msg: text || "Yazdırma isteği gönderildi" };
       }
     },
