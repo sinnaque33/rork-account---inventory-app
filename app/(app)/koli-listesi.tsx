@@ -1,4 +1,8 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
@@ -6,6 +10,9 @@ import {
   Search,
   Plus,
   ScanBarcode,
+  CheckCircle2,
+  X,
+  FileText,
 } from "lucide-react-native";
 import { useMemo, useState, useCallback, useEffect } from "react";
 import {
@@ -17,11 +24,15 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Vibration,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { api, KoliItem } from "@/services/api";
+import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
+import { KoliItem } from "@/services/types";
+import ReceiptConfirmModal from "../components/ReceiptConfirmModal";
+import ResultModal from "../components/ResultModal";
 
 const PAGE_LEN = 7 as const;
 
@@ -29,9 +40,22 @@ export default function KoliListesiScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { credentials } = useAuth();
+  const queryClient = useQueryClient();
+
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
+
+  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
+  const [selectedItems, setSelectedItems] = useState<KoliItem[]>([]);
+  const [showReceiptConfirm, setShowReceiptConfirm] = useState<boolean>(false);
+
+  const [resultModalVisible, setResultModalVisible] = useState(false);
+  const [resultData, setResultData] = useState({
+    title: "",
+    message: "",
+    type: "success" as "success" | "error" | "warning",
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -43,12 +67,6 @@ export default function KoliListesiScreen() {
   const koliQuery = useInfiniteQuery({
     queryKey: ["koli-listesi", credentials, debouncedSearchQuery],
     queryFn: async ({ pageParam = 0 }) => {
-      console.log(
-        "KoliListesiScreen: Fetching koli listesi with offSet:",
-        pageParam,
-        "searchId:",
-        debouncedSearchQuery,
-      );
       if (!credentials) {
         throw new Error("No credentials available");
       }
@@ -59,27 +77,14 @@ export default function KoliListesiScreen() {
         PAGE_LEN,
         debouncedSearchQuery || undefined,
       );
-
-      if (items && items.length > 0) {
-        console.log("\n📦 --- API'DEN GELEN ÖRNEK BİR KOLİ OBJESİ ---");
-        console.log(JSON.stringify(items[0], null, 2));
-        console.log("------------------------------------------------\n");
-      }
       return items;
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < PAGE_LEN) {
-        console.log(
-          "KoliListesiScreen: No more pages, last page had",
-          lastPage.length,
-          "items",
-        );
         return undefined;
       }
-      const nextOffset = allPages.length * PAGE_LEN;
-      console.log("KoliListesiScreen: Next offset will be", nextOffset);
-      return nextOffset;
+      return allPages.length * PAGE_LEN;
     },
     enabled: !!credentials,
   });
@@ -89,7 +94,6 @@ export default function KoliListesiScreen() {
   }, [koliQuery.data]);
 
   const onRefresh = async () => {
-    console.log("KoliListesiScreen: Manual refresh triggered");
     setRefreshing(true);
     await koliQuery.refetch();
     setRefreshing(false);
@@ -99,10 +103,98 @@ export default function KoliListesiScreen() {
 
   const loadMore = useCallback(() => {
     if (koliQuery.hasNextPage && !koliQuery.isFetchingNextPage) {
-      console.log("KoliListesiScreen: Loading more items from server");
       koliQuery.fetchNextPage();
     }
-  }, [koliQuery.hasNextPage, koliQuery.isFetchingNextPage]);
+  }, [koliQuery]);
+
+  const bulkCreateReceiptMutation = useMutation({
+    mutationFn: async (selectedIds: number[]) => {
+      if (!credentials) throw new Error("Giriş bilgileri eksik.");
+
+      const data = await api.koliListesi.createReceipts(
+        credentials.userCode,
+        credentials.password,
+        selectedIds,
+      );
+
+      console.log("Toplu İşlem Yanıtı:", JSON.stringify(data, null, 2));
+
+      const isError =
+        String(data.success) !== "true" ||
+        (data.err !== undefined && data.err !== 0);
+
+      if (isError) {
+        throw new Error(
+          data.msg || "Toplu irsaliye oluşturulurken bir hata oluştu.",
+        );
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      setResultData({
+        title: "Başarılı",
+        message: `Seçilen koliler için ${data.resultReceiptNo} nolu irsaliye başarıyla oluşturuldu.`,
+        type: "success",
+      });
+      setResultModalVisible(true);
+
+      cancelSelectionMode();
+      queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+    },
+    onError: (error) => {
+      setResultData({
+        title: "Hata",
+        message: error instanceof Error ? error.message : "Bir hata oluştu.",
+        type: "error",
+      });
+      setResultModalVisible(true);
+    },
+  });
+
+  const toggleSelection = (item: KoliItem) => {
+    setSelectedItems((prev) => {
+      const isAlreadySelected = prev.some(
+        (selected) => selected.id === item.id,
+      );
+      let newSelection;
+
+      if (isAlreadySelected) {
+        newSelection = prev.filter((selected) => selected.id !== item.id);
+      } else {
+        newSelection = [...prev, item];
+      }
+
+      if (newSelection.length === 0) {
+        setIsSelectionMode(false);
+      }
+      return newSelection;
+    });
+  };
+
+  const handleLongPress = (item: KoliItem) => {
+    if (!isSelectionMode) {
+      Vibration.vibrate(50);
+      setIsSelectionMode(true);
+      setSelectedItems([item]);
+    }
+  };
+
+  const handlePress = (item: KoliItem) => {
+    if (isSelectionMode) {
+      toggleSelection(item);
+    } else {
+      router.push(
+        `/(app)/koli-detay?id=${item.id}&packageNo=${item.PackageNo || ""}&receiptNo=${item.ReceiptNo || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
+      );
+    }
+  };
+
+  const cancelSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedItems([]);
+    setShowReceiptConfirm(false);
+  };
 
   if (koliQuery.isLoading && allItems.length === 0 && !refreshing) {
     return (
@@ -127,40 +219,51 @@ export default function KoliListesiScreen() {
     );
   }
 
-  const renderItem = ({ item }: { item: KoliItem }) => (
-    <TouchableOpacity
-      style={styles.card}
-      activeOpacity={0.7}
-      onPress={() => {
-        console.log("KoliListesiScreen: Item clicked with id", item.id);
-        router.push(
-          `/(app)/koli-detay?id=${item.id}&packageNo=${item.PackageNo || ""}&receiptNo=${item.ReceiptNo || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
-        );
-      }}
-      testID={`koli-item-${item.id}`}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <Package size={24} color={colors.button.primary} />
+  const renderItem = ({ item }: { item: KoliItem }) => {
+    const isSelected = selectedItems.some(
+      (selected) => selected.id === item.id,
+    );
+
+    return (
+      <TouchableOpacity
+        style={[styles.card, isSelected && styles.cardSelected]}
+        activeOpacity={0.7}
+        onLongPress={() => handleLongPress(item)}
+        onPress={() => handlePress(item)}
+        testID={`koli-item-${item.id}`}
+      >
+        <View style={styles.cardHeader}>
+          <View
+            style={[
+              styles.iconContainer,
+              isSelected && { backgroundColor: colors.button.primary },
+            ]}
+          >
+            {isSelected ? (
+              <CheckCircle2 size={24} color="#fff" />
+            ) : (
+              <Package size={24} color={colors.button.primary} />
+            )}
+          </View>
+          <View style={styles.itemInfo}>
+            <Text style={styles.packageNo}>{item.PackageNo}</Text>
+            {item.ReceiptNo ? (
+              <Text style={styles.receiptNo}>
+                {t("koliListesi.receiptNoPrefix")}
+                {item.ReceiptNo}
+              </Text>
+            ) : null}
+            {item.SipExp ? (
+              <Text style={styles.sipExp}>{item.SipExp}</Text>
+            ) : null}
+            {item.Explanation ? (
+              <Text style={styles.explanation}>{item.Explanation}</Text>
+            ) : null}
+          </View>
         </View>
-        <View style={styles.itemInfo}>
-          <Text style={styles.packageNo}>{item.PackageNo}</Text>
-          {item.ReceiptNo ? (
-            <Text style={styles.receiptNo}>
-              {t("koliListesi.receiptNoPrefix")}
-              {item.ReceiptNo}
-            </Text>
-          ) : null}
-          {item.SipExp ? (
-            <Text style={styles.sipExp}>{item.SipExp}</Text>
-          ) : null}
-          {item.Explanation ? (
-            <Text style={styles.explanation}>{item.Explanation}</Text>
-          ) : null}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderFooter = () => {
     if (koliQuery.isFetchingNextPage) {
@@ -177,7 +280,7 @@ export default function KoliListesiScreen() {
         </View>
       );
     }
-    return null;
+    return <View style={{ height: isSelectionMode ? 80 : 0 }} />;
   };
 
   return (
@@ -223,28 +326,81 @@ export default function KoliListesiScreen() {
         }
       />
 
-      <TouchableOpacity
-        style={styles.fabSecondary}
-        onPress={() => {
-          router.push({
-            pathname: "/(app)/barcode-scanner",
-            params: { mode: "search" },
-          });
-        }}
-        activeOpacity={0.8}
-        testID="barcode-scanner-button"
-      >
-        <ScanBarcode size={26} color="#fff" />
-      </TouchableOpacity>
+      {!isSelectionMode && (
+        <>
+          <TouchableOpacity
+            style={styles.fabSecondary}
+            onPress={() => {
+              router.push({
+                pathname: "/(app)/barcode-scanner",
+                params: { mode: "search" },
+              });
+            }}
+            activeOpacity={0.8}
+            testID="barcode-scanner-button"
+          >
+            <ScanBarcode size={26} color="#fff" />
+          </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push("/(app)/create-koli")}
-        activeOpacity={0.8}
-        testID="create-koli-button"
-      >
-        <Plus size={28} color="#fff" />
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => router.push("/(app)/create-koli")}
+            activeOpacity={0.8}
+            testID="create-koli-button"
+          >
+            <Plus size={28} color="#fff" />
+          </TouchableOpacity>
+        </>
+      )}
+
+      {isSelectionMode && (
+        <View style={styles.selectionBar}>
+          <TouchableOpacity
+            onPress={cancelSelectionMode}
+            style={styles.cancelSelectionBtn}
+          >
+            <X size={24} color="#fff" />
+          </TouchableOpacity>
+
+          <Text style={styles.selectionCountText}>
+            {selectedItems.length} Koli Seçildi
+          </Text>
+
+          <TouchableOpacity
+            style={[
+              styles.bulkActionButton,
+              bulkCreateReceiptMutation.isPending && { opacity: 0.7 },
+            ]}
+            onPress={() => setShowReceiptConfirm(true)}
+            disabled={bulkCreateReceiptMutation.isPending}
+          >
+            {bulkCreateReceiptMutation.isPending ? (
+              <ActivityIndicator size="small" color={colors.button.primary} />
+            ) : (
+              <FileText size={18} color={colors.button.primary} />
+            )}
+            <Text style={styles.bulkActionText}>İrsaliye Oluştur</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      <ReceiptConfirmModal
+        visible={showReceiptConfirm}
+        onClose={() => setShowReceiptConfirm(false)}
+        isLoading={bulkCreateReceiptMutation.isPending}
+        itemCount={selectedItems.length}
+        onConfirm={() => {
+          setShowReceiptConfirm(false);
+          const selectedIds = selectedItems.map((item) => item.id);
+          bulkCreateReceiptMutation.mutate(selectedIds);
+        }}
+      />
+      <ResultModal
+        visible={resultModalVisible}
+        onClose={() => setResultModalVisible(false)}
+        title={resultData.title}
+        message={resultData.message}
+        type={resultData.type as "success" | "error" | "warning"}
+      />
     </View>
   );
 }
@@ -324,6 +480,10 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     borderWidth: 1,
     borderColor: colors.border.default,
+  },
+  cardSelected: {
+    borderColor: colors.button.primary,
+    backgroundColor: "rgba(220, 20, 60, 0.05)",
   },
   cardHeader: {
     flexDirection: "row",
@@ -406,5 +566,63 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+  },
+  selectionBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.background.darker,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.default,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    elevation: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+  },
+  cancelSelectionBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F44336",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 2,
+    shadowColor: "#F44336",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  selectionCountText: {
+    flex: 1,
+    fontSize: 17,
+    fontFamily: "Segoe UI",
+    fontWeight: "700",
+    color: "#fff",
+    marginLeft: 14,
+  },
+  bulkActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(220, 20, 60, 0.15)",
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: colors.button.primary,
+    gap: 8,
+  },
+  bulkActionText: {
+    color: colors.button.primary,
+    fontSize: 15,
+    fontFamily: "Segoe UI",
+    fontWeight: "700",
   },
 });

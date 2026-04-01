@@ -29,6 +29,7 @@ import { Audio } from "expo-av";
 import { Vibration } from "react-native";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import { SOUND_FILES } from "@/constants/sounds";
+import ResultModal from "../components/ResultModal";
 
 export default function BarcodeScannerScreen() {
   const router = useRouter();
@@ -458,7 +459,10 @@ export default function BarcodeScannerScreen() {
     if (params.mode === "create_standalone") {
       return {
         title: t("scanner.titles.createStandalone", "Bağımsız Koli Oluştur"),
-        subtitle: t("scanner.titles.standaloneSubtitle", "Koliye eklenecek ilk ürünün barkodunu okutun."),
+        subtitle: t(
+          "scanner.titles.standaloneSubtitle",
+          "Koliye eklenecek ilk ürünün barkodunu okutun.",
+        ),
       };
     }
     if (params.mode === "add") {
@@ -574,46 +578,16 @@ export default function BarcodeScannerScreen() {
       </View>
 
       {/* SONUÇ (HATA) MODALI */}
-      <Modal
+      <ResultModal
         visible={resultModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setResultModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View
-              style={[
-                styles.resultIconContainer,
-                { backgroundColor: "rgba(244, 67, 54, 0.1)" },
-              ]}
-            >
-              <AlertTriangle size={48} color="#F44336" />
-            </View>
-            <Text style={styles.resultTitle}>{resultData.title}</Text>
-            <Text style={styles.resultMessage}>{resultData.message}</Text>
-            <TouchableOpacity
-              style={[
-                styles.resultButton,
-                { backgroundColor: colors.background.darker },
-              ]}
-              onPress={() => {
-                setResultModalVisible(false);
-                inputRef.current?.focus();
-              }}
-            >
-              <Text
-                style={[
-                  styles.resultButtonText,
-                  { color: colors.text.primary },
-                ]}
-              >
-                {t("scanner.retry")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => {
+          setResultModalVisible(false);
+          inputRef.current?.focus();
+        }}
+        title={resultData.title}
+        message={resultData.message}
+        type={resultData.type as "success" | "error" | "warning"}
+      />
 
       {/* BAŞARI BİLDİRİMİ */}
       <Animated.View

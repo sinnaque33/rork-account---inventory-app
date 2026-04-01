@@ -12,8 +12,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { api, InventoryItem } from '@/services/api';
+import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { InventoryItem } from '@/services/types';
 
 export default function InventoryScreen() {
   const { t } = useTranslation();

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
@@ -9,7 +9,6 @@ import {
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -28,7 +27,6 @@ export default function OrderReceiptsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { credentials } = useAuth();
-  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -48,7 +46,6 @@ export default function OrderReceiptsScreen() {
   });
 
   const handleReceiptSelect = (item: OrderReceipt) => {
-    // Koli oluşturmak yerine barkod okuyucuya yönlendiriyoruz
     router.push({
       pathname: "/(app)/barcode-scanner",
       params: {
@@ -189,7 +186,6 @@ export default function OrderReceiptsScreen() {
                   { backgroundColor: colors.button.primary },
                 ]}
               >
-                {/* İstersen lucide-react-native'den 'Link2Off' veya 'PackagePlus' import edip kullanabilirsin */}
                 <FileText size={22} color="#fff" />
               </View>
               <View style={styles.itemInfo}>

@@ -44,6 +44,8 @@ import { byteArrayToBase64 } from "@/utils/imageUtils";
 import colors from "@/constants/colors";
 import PrintBarcodeModal from "../components/PrintBarcodeModal";
 import { ActionButton } from "../components/ActionButton";
+import ReceiptConfirmModal from "../components/ReceiptConfirmModal";
+import ResultModal from "../components/ResultModal";
 
 export default function KoliDetayScreen() {
   const { t } = useTranslation();
@@ -418,18 +420,6 @@ export default function KoliDetayScreen() {
     enabled: !!credentials && !!id,
   });
 
-  // // Koli detay verisi geldiğinde içindeki alanları görmek için logluyoruz
-  // useEffect(() => {
-  //   if (koliDetailQuery.data && koliDetailQuery.data.length > 0) {
-  //     const firstItem = koliDetailQuery.data[0];
-
-  //     console.log("\n🔍 --- Koli Detay API'den Gelen İlk Ürün Datası ---");
-  //     // JSON.stringify ile objeyi okunaklı bir formatta yazdırıyoruz
-  //     console.log(JSON.stringify(firstItem, null, 2));
-  //     console.log("---------------------------------------------------\n");
-  //   }
-  // }, [koliDetailQuery.data]);
-
   const getDisplayValue = (item: any, key: string): string => {
     const val = item[key];
     if (val === null || val === undefined || val === "") return "";
@@ -719,86 +709,28 @@ export default function KoliDetayScreen() {
       </View>
 
       {/* --- MODALLAR --- */}
-      <Modal
+      <ResultModal
         visible={resultModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setResultModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.resultModalContent}>
-            <View
-              style={[
-                styles.resultIconContainer,
-                { backgroundColor: "rgba(244, 67, 54, 0.1)" },
-              ]}
-            >
-              <AlertCircle size={48} color="#F44336" />
-            </View>
-            <Text style={styles.resultTitle}>{resultData.title}</Text>
-            <Text style={styles.resultMessage}>{resultData.message}</Text>
-            <TouchableOpacity
-              style={styles.resultCancelButton}
-              onPress={() => {
-                setResultModalVisible(false);
-                inputRef.current?.focus();
-              }}
-            >
-              <Text style={styles.resultCancelText}>{t("koliDetay.ok")}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => {
+          setResultModalVisible(false);
+          inputRef.current?.focus();
+        }}
+        title={resultData.title}
+        message={resultData.message}
+        type={resultData.type as "success" | "error" | "warning"}
+      />
 
-      <Modal
+      {/* --- ONAY MODALI (Yeni Component) --- */}
+      <ReceiptConfirmModal
         visible={showReceiptConfirm}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowReceiptConfirm(false)}
-      >
-        <View style={styles.receiptModalOverlay}>
-          <View style={styles.receiptModalContent}>
-            <View style={styles.receiptIconContainer}>
-              <FileText size={48} color="#DC143C" />
-            </View>
-            <Text style={styles.receiptModalTitle}>
-              {t("koliDetay.modals.receiptTitle")}
-            </Text>
-            <Text style={styles.receiptModalSubtitle}>
-              {t("koliDetay.modals.receiptSubtitle")}
-            </Text>
-            <View style={styles.receiptModalButtons}>
-              <TouchableOpacity
-                style={styles.receiptCancelButton}
-                onPress={() => setShowReceiptConfirm(false)}
-              >
-                <Text style={styles.receiptCancelText}>
-                  {t("koliDetay.cancel")}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.receiptConfirmButton,
-                  createReceiptMutation.isPending && styles.disabledButton,
-                ]}
-                onPress={() => {
-                  setShowReceiptConfirm(false);
-                  createReceiptMutation.mutate();
-                }}
-                disabled={createReceiptMutation.isPending}
-              >
-                {createReceiptMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.receiptConfirmText}>
-                    {t("koliDetay.create")}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowReceiptConfirm(false)}
+        isLoading={createReceiptMutation.isPending}
+        itemCount={1}
+        onConfirm={() => {
+          setShowReceiptConfirm(false);
+          createReceiptMutation.mutate();
+        }}
+      />
 
       <Modal
         visible={showCloseBoxModal}
@@ -1330,16 +1262,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 24,
   },
-  resultModalContent: {
-    backgroundColor: colors.background.card,
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    maxWidth: 340,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
   resultIconContainer: {
     width: 64,
     height: 64,
@@ -1363,22 +1285,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 20,
-  },
-  resultCancelButton: {
-    backgroundColor: colors.background.darker,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    width: "100%",
-  },
-  resultCancelText: {
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    fontWeight: "600",
-    color: colors.text.primary,
   },
   disabledButton: {
     opacity: 0.6,

@@ -704,6 +704,100 @@ export const api = {
         err: finalErr,
       };
     },
+    async createReceipts(
+      userName: string,
+      password: string,
+      boxIds: number[],
+    ): Promise<{
+      success: string;
+      msg: string;
+      err?: number;
+      resultReceiptNo?: string;
+    }> {
+      console.log("API: Creating receipt for box(es):", boxIds);
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+      const warehouseId = await getWarehouseId();
+
+      const joinedBoxCodes = boxIds.join("|");
+
+      const dataPayload = {
+        serviceType: 100,
+        boxCode: joinedBoxCodes,
+        inventoryReceiptType: 120,
+        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
+        orderConnection: 1,
+        orderShipmentControlType: 3,
+      };
+
+      const requestBody = {
+        data: JSON.stringify(dataPayload),
+        userName,
+        password,
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        licenseKey: "16016923",
+        logout: true,
+      };
+
+      console.log(
+        "API: CreateReceipt Request:",
+        JSON.stringify(requestBody, null, 2),
+      );
+
+      const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(
+        "API: CreateReceipt Response:",
+        JSON.stringify(data, null, 2),
+      );
+      let resultReceiptNo: string | undefined = data.resultReceiptNo;
+
+      let resultBoxId: number | undefined = data.resultBoxId;
+
+      if (!resultBoxId && data.data) {
+        try {
+          const parsedData =
+            typeof data.data === "string" ? JSON.parse(data.data) : data.data;
+          resultBoxId =
+            parsedData.resultBoxId ||
+            parsedData.boxId ||
+            parsedData.id ||
+            parsedData.RecId;
+        } catch {
+          console.log("API: Could not parse resultBoxId from response data");
+        }
+      }
+
+      let finalErr = data.err;
+      if (data.data) {
+        try {
+          const parsedData =
+            typeof data.data === "string" ? JSON.parse(data.data) : data.data;
+          if (parsedData.err !== undefined) finalErr = parsedData.err;
+          if (parsedData.resultError === true) finalErr = finalErr || 99;
+        } catch (e) {}
+      }
+
+      return {
+        success: data.success,
+        msg: data.msg,
+        err: finalErr,
+        resultReceiptNo: resultReceiptNo,
+      };
+    },
 
     async getOrderReceipts(
       userName: string,

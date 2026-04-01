@@ -3,10 +3,8 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
-  BookUser,
   FileText,
   LogOut,
-  Package,
   Boxes,
 } from "lucide-react-native";
 import {

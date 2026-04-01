@@ -8,12 +8,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { api, CurrentAccount } from "@/services/api";
+import { api } from "@/services/api";
 import { AlertCircle, Building2 } from "lucide-react-native";
 import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
 import { Stack } from "expo-router";
+import { CurrentAccount } from "@/services/types";
 
 export default function AccountsScreen() {
   const { t } = useTranslation();
