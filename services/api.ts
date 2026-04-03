@@ -233,10 +233,11 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
-      const requestBody: Record<string, string> = {
+      const requestBody: Record<string, string | boolean> = {
         userName,
         password,
         licenseKey: "16016923",
+        logout: true,
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
         data: '{ "name": "accounts"}',
@@ -278,10 +279,11 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
-      const requestBody: Record<string, string> = {
+      const requestBody: Record<string, string | boolean> = {
         userName,
         password,
         licenseKey: "16016923",
+        logout: true,
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
         data: '{ "name": "inventory"}',
@@ -394,10 +396,11 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
-      const requestBody: Record<string, string> = {
+      const requestBody: Record<string, string | boolean> = {
         userName,
         password,
         licenseKey: "16016923",
+        logout: true,
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
         data: `{ "name": "koliDetay", "id": "${id}"}`,
@@ -808,10 +811,11 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
-      const requestBody: Record<string, string> = {
+      const requestBody: Record<string, string | boolean> = {
         userName,
         password,
         licenseKey: "16016923",
+        logout: true,
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
         data: '{ "name": "orderReceipts"}',
@@ -913,9 +917,7 @@ export const api = {
       const dataPayload = {
         serviceType: 2,
         boxId: boxId,
-        boxFieldsValue: [
-          { name: "Status", value: "0" }, // Sadece statüyü 0 olarak gönderiyoruz
-        ],
+        boxFieldsValue: [{ name: "Status", value: "0" }],
         orderConnection: 1,
         orderShipmentControlType: 3,
       };
@@ -930,7 +932,6 @@ export const api = {
         logout: true,
       };
 
-      // YENİ EKLENEN LOG: İstek atılmadan önce ne gönderildiğini konsola yazdırır
       console.log(
         "API: OpenBox Request:",
         JSON.stringify(requestBody, null, 2),
@@ -1026,10 +1027,11 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
-      const requestBody: Record<string, string> = {
+      const requestBody: Record<string, string | boolean> = {
         userName,
         password,
         licenseKey: "16016923",
+        logout: true,
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
         data: '{ "name": "koliFormlari"}',
@@ -1099,6 +1101,7 @@ export const api = {
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
         licenseKey: "16016923",
+        logout: true,
         isDemo: false,
         data: JSON.stringify(dataPayload),
       };
@@ -1147,11 +1150,13 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
-      const requestBody: Record<string, string> = {
+      const requestBody: Record<string, string | boolean> = {
         userName,
         password,
         licenseKey: "16016923",
+        logout: true,
         companyCode: companyCode || "",
+
         companyPassword: companyPassword || "",
         data: `{ "name": "koliDetayWithBarcode", "val": "${barcode}"}`,
       };
