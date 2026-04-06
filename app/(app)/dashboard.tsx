@@ -6,6 +6,7 @@ import {
   FileText,
   LogOut,
   Boxes,
+  Truck, // YENİ: İrsaliye kartı için ikon
 } from "lucide-react-native";
 import {
   Platform,
@@ -74,6 +75,7 @@ export default function DashboardScreen() {
           <Text style={styles.sectionTitle}>{t("dashboard.quickAccess")}</Text>
 
           <View style={styles.cardGrid}>
+            {/* 1. KART: Koli Listesi */}
             <Pressable
               style={({ pressed }) => [
                 styles.card,
@@ -94,6 +96,35 @@ export default function DashboardScreen() {
                 </Text>
                 <Text style={styles.cardSubtitle}>
                   {t("dashboard.boxListSubtitle")}
+                </Text>
+                <View style={styles.cardArrow}>
+                  <FileText size={16} color="#fff" opacity={0.6} />
+                </View>
+              </LinearGradient>
+            </Pressable>
+
+            {/* 2. KART: İrsaliye Oluştur (YENİ EKLENEN) */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.card,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => handleNavigation("/(app)/irskoli-listesi")}
+              testID="irsaliye-olustur-card"
+            >
+              <LinearGradient
+                colors={["#1976D2", "#0D47A1"]}
+                style={styles.cardGradient}
+              >
+                <View style={styles.cardIcon}>
+                  <Truck size={32} color="#fff" strokeWidth={2} />
+                </View>
+                <Text style={styles.cardTitle}>
+                  {t("dashboard.createWaybillTitle") || "İrsaliye Oluştur"}
+                </Text>
+                <Text style={styles.cardSubtitle}>
+                  {t("dashboard.createWaybillSubtitle") ||
+                    "Kolileri seçerek yeni irsaliye oluşturun"}
                 </Text>
                 <View style={styles.cardArrow}>
                   <FileText size={16} color="#fff" opacity={0.6} />

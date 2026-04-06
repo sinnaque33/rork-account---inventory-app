@@ -152,6 +152,8 @@
     "emptyList": "Envanterde ürün bulunamadı"
   },
   "dashboard": {
+    "createWaybillTitle": "İrsaliye Oluştur",
+    "createWaybillSubtitle": "Kolileri seçerek yeni irsaliye oluşturun",
     "greeting": "Hoşgeldiniz,",
     "quickAccess": "Hızlı Erişim",
     "boxListTitle": "Koli Listesi",

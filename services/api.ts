@@ -385,6 +385,82 @@ export const api = {
 
       return data.data?.items || [];
     },
+    async irsKoliListesi(
+      userName: string,
+      password: string,
+      offSet: number = 0,
+      pageLen: number = 7,
+      searchId?: string,
+    ): Promise<KoliItem[]> {
+      console.log(
+        "API: Fetching irs koli listesi items with offSet:",
+        offSet,
+        "pageLen:",
+        pageLen,
+        "searchId:",
+        searchId,
+      );
+      const apiBaseUrl = await getApiBaseUrl();
+      const companyCode = await getCompanyCode();
+      const companyPassword = await getCompanyPassword();
+
+      // Servis adını irsKoliListesi olarak güncelledik
+      const dataPayload =
+        searchId && searchId.trim()
+          ? `{ "name": "irsKoliListesi", "id": "${searchId.trim()}" }`
+          : '{ "name": "irsKoliListesi" }';
+
+      const requestBody: Record<string, string | number | boolean> = {
+        userName,
+        password,
+        licenseKey: "16016923",
+        companyCode: companyCode || "",
+        companyPassword: companyPassword || "",
+        logout: true,
+        data: dataPayload,
+        offSet,
+        pageLen,
+      };
+
+      console.log(
+        "API: irsKoliListesi Request:",
+        JSON.stringify(requestBody, null, 2),
+      );
+
+      const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data: RunJsonServiceResponse<{ items: KoliItem[] }> =
+        await response.json();
+
+      // BURASI YENİ: Dönen ham cevabı olduğu gibi logluyoruz
+      console.log(
+        "API: irsKoliListesi Raw Response:",
+        JSON.stringify(data, null, 2),
+      );
+
+      console.log("API: Received irs koli listesi response", {
+        success: data.success,
+        itemsCount: data.data?.items?.length,
+        offSet,
+        pageLen,
+      });
+
+      if (data.success !== "true") {
+        throw new Error(data.msg || "Failed to fetch irs koli listesi");
+      }
+
+      return data.data?.items || [];
+    },
 
     async getDetail(
       userName: string,
@@ -455,7 +531,10 @@ export const api = {
       const dataPayload: any = {
         serviceType: 11,
         boxId: boxId,
-        boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
+        boxFieldsValue: [
+          { name: "SpecialCode", value: "fromExt" },
+          { name: "Explanation", value: barcode },
+        ],
         inventoryBarcode: barcode,
         quantity: 1,
         orderConnection: 1,
@@ -479,7 +558,10 @@ export const api = {
 
       const resData = await response.json();
 
-      console.log("API: addItemByBarcode Response:", JSON.stringify(resData, null, 2));
+      console.log(
+        "API: addItemByBarcode Response:",
+        JSON.stringify(resData, null, 2),
+      );
 
       // --- PARSE İŞLEMİ ---
       let innerData: any = {};
@@ -529,7 +611,10 @@ export const api = {
         boxCode: "",
         orderReceiptId: orderReceiptId,
         inventoryBarcode: barcode,
-        boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
+        boxFieldsValue: [
+          { name: "SpecialCode", value: "fromExt" },
+          { name: "Explanation", value: barcode },
+        ],
         orderConnection: 1,
         orderShipmentControlType: shipmentControlType,
       };
@@ -863,7 +948,10 @@ export const api = {
       const dataPayload = {
         serviceType: 11,
         boxId: boxId,
-        boxFieldsValue: [{ name: "SpecialCode", value: "fromExt" }],
+        boxFieldsValue: [
+          { name: "SpecialCode", value: "fromExt" },
+          { name: "Explanation", value: barcode },
+        ],
         inventoryBarcode: barcode,
         quantity: -1,
         orderConnection: 1,
