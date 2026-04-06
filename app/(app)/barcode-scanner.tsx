@@ -86,6 +86,7 @@ export default function BarcodeScannerScreen() {
   const [showOverLimitModal, setShowOverLimitModal] = useState(false);
   const [pendingOverLimitBarcode, setPendingOverLimitBarcode] = useState("");
   const [alwaysIgnoreLimit, setAlwaysIgnoreLimit] = useState(false);
+  const [overLimitType, setOverLimitType] = useState<number>(2);
 
   // --- Toast İçeriği ve Animasyonu ---
   const [toastContent, setToastContent] = useState({
@@ -231,12 +232,13 @@ export default function BarcodeScannerScreen() {
 
     onSuccess: (data: any, variables) => {
       // --- ÖZEL DURUM: Miktar Aşımı Kontrolü ---
-      if (data.resultErrorType === 2) {
+      if (data.resultErrorType === 2 || data.resultErrorType === 1) {
         playErrorSignal();
 
         setBarcode("");
         barcodeValueRef.current = "";
         setPendingOverLimitBarcode(variables.scannedBarcode);
+        setOverLimitType(data.resultErrorType);
         setShowOverLimitModal(true);
         return;
       }
@@ -440,7 +442,7 @@ export default function BarcodeScannerScreen() {
 
     barcodeMutation.mutate({
       scannedBarcode: finalBarcode,
-      controlType: alwaysIgnoreLimit ? -1 : 3,
+      controlType: 3,
     });
   };
 
@@ -646,10 +648,14 @@ export default function BarcodeScannerScreen() {
               <AlertTriangle size={48} color="#FF9800" />
             </View>
             <Text style={styles.resultTitle}>
-              {t("scanner.overLimit.title")}
+              {overLimitType === 1
+                ? "Sipariş Dışı Ürün"
+                : t("scanner.overLimit.title")}{" "}
             </Text>
             <Text style={styles.resultMessage}>
-              {t("scanner.overLimit.message")}
+              {overLimitType === 1
+                ? "Siparişte olmayan malzeme okutuyorsunuz. Devam etmek istiyor musunuz?"
+                : t("scanner.overLimit.message")}
             </Text>
 
             <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
@@ -685,7 +691,7 @@ export default function BarcodeScannerScreen() {
                 ]}
                 onPress={() => {
                   setShowOverLimitModal(false);
-                  setAlwaysIgnoreLimit(true);
+                  // setAlwaysIgnoreLimit(true);
                   barcodeMutation.mutate({
                     scannedBarcode: pendingOverLimitBarcode,
                     controlType: -1,

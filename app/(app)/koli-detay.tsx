@@ -114,6 +114,7 @@ export default function KoliDetayScreen() {
   const [alwaysIgnoreLimit, setAlwaysIgnoreLimit] = useState(
     initialIgnoreLimit === "true",
   );
+  const [overLimitType, setOverLimitType] = useState<number>(2);
   // const [activeReceiptNo, setActiveReceiptNo] = useState(receiptNo || "");
   // const [activeSipExp, setActiveSipExp] = useState(sipExp || "");
 
@@ -219,13 +220,14 @@ export default function KoliDetayScreen() {
       }
     },
     onSuccess: (data: any, variables) => {
-      // --- ÖZEL DURUM: Miktar Aşımı Kontrolü ---
-      if (data.resultErrorType === 2) {
+      // --- miktar aşımı ve olmayan malzeme okutma ---
+      if (data.resultErrorType === 2 || data.resultErrorType === 1) {
         playErrorSignal();
 
         setBarcode("");
         barcodeValueRef.current = "";
         setPendingOverLimitBarcode(variables.scannedBarcode);
+        setOverLimitType(data.resultErrorType);
         setShowOverLimitModal(true);
 
         return;
@@ -959,10 +961,14 @@ export default function KoliDetayScreen() {
               <AlertTriangle size={48} color="#FF9800" />
             </View>
             <Text style={styles.resultTitle}>
-              {t("scanner.overLimit.title")}
+              {overLimitType === 1
+                ? "Sipariş Dışı Ürün"
+                : t("scanner.overLimit.title")}{" "}
             </Text>
             <Text style={styles.resultMessage}>
-              {t("scanner.overLimit.message")}
+              {overLimitType === 1
+                ? "Siparişte olmayan malzeme okutuyorsunuz. Devam etmek istiyor musunuz?"
+                : t("scanner.overLimit.message")}
             </Text>
 
             <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
@@ -998,7 +1004,7 @@ export default function KoliDetayScreen() {
                 ]}
                 onPress={() => {
                   setShowOverLimitModal(false);
-                  setAlwaysIgnoreLimit(true);
+                  //setAlwaysIgnoreLimit(true);
                   barcodeMutation.mutate({
                     scannedBarcode: pendingOverLimitBarcode,
                     controlType: -1,

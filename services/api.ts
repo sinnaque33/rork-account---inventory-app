@@ -479,6 +479,8 @@ export const api = {
 
       const resData = await response.json();
 
+      console.log("API: addItemByBarcode Response:", JSON.stringify(resData, null, 2));
+
       // --- PARSE İŞLEMİ ---
       let innerData: any = {};
       try {
