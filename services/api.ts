@@ -385,6 +385,7 @@ export const api = {
 
       return data.data?.items || [];
     },
+
     async irsKoliListesi(
       userName: string,
       password: string,
@@ -442,7 +443,6 @@ export const api = {
       const data: RunJsonServiceResponse<{ items: KoliItem[] }> =
         await response.json();
 
-      // BURASI YENİ: Dönen ham cevabı olduğu gibi logluyoruz
       console.log(
         "API: irsKoliListesi Raw Response:",
         JSON.stringify(data, null, 2),
@@ -527,6 +527,7 @@ export const api = {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
+      const warehouseId = await getWarehouseId();
 
       const dataPayload: any = {
         serviceType: 11,
@@ -540,6 +541,8 @@ export const api = {
         orderConnection: 1,
         orderShipmentControlType: shipmentControlType,
         orderReceiptId: orderReceiptId || 0,
+        boxWarehouseControlType: 1,
+        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
       };
 
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
@@ -603,6 +606,7 @@ export const api = {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
+      const warehouseId = await getWarehouseId();
 
       let dataPayload: any = {
         serviceType: useExistingBox ? 101 : 1,
@@ -617,6 +621,8 @@ export const api = {
         ],
         orderConnection: 1,
         orderShipmentControlType: shipmentControlType,
+        boxWarehouseControlType: 1,
+        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
       };
       if (orderReceiptId !== 0) {
         dataPayload.orderReceiptId = orderReceiptId;
@@ -944,6 +950,7 @@ export const api = {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
+      const warehouseId = await getWarehouseId();
 
       const dataPayload = {
         serviceType: 11,
@@ -956,6 +963,8 @@ export const api = {
         quantity: -1,
         orderConnection: 1,
         orderShipmentControlType: 3,
+        boxWarehouseControlType: 1,
+        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
       };
 
       const requestBody = {
