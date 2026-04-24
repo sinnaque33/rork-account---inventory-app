@@ -17,12 +17,12 @@ import {
 const API_URL_STORAGE_KEY = "api_base_url";
 const COMPANY_CODE_KEY = "company_code";
 const COMPANY_PASSWORD_KEY = "company_password";
-const WAREHOUSE_ID_KEY = "warehouse_id";
+const WAREHOUSE_CODE_KEY = "warehouse_code";
 
 let cachedApiUrl: string | null = null;
 let cachedCompanyCode: string | null = null;
 let cachedCompanyPassword: string | null = null;
-let cachedWarehouseId: string | null = null;
+let cachedWarehouseCode: string | null = null;
 
 async function getApiBaseUrl(): Promise<string> {
   if (cachedApiUrl) {
@@ -66,14 +66,14 @@ async function getCompanyPassword(): Promise<string> {
   }
 }
 
-async function getWarehouseId(): Promise<string> {
-  if (cachedWarehouseId !== null) {
-    return cachedWarehouseId;
+async function getWarehouseCode(): Promise<string> {
+  if (cachedWarehouseCode !== null) {
+    return cachedWarehouseCode;
   }
   try {
-    const stored = await AsyncStorage.getItem(WAREHOUSE_ID_KEY);
-    cachedWarehouseId = stored || "3";
-    return cachedWarehouseId;
+    const stored = await AsyncStorage.getItem(WAREHOUSE_CODE_KEY);
+    cachedWarehouseCode = stored || "3";
+    return cachedWarehouseCode;
   } catch (error) {
     console.error("Failed to load warehouse id from storage:", error);
     return "3";
@@ -84,7 +84,7 @@ export function clearApiUrlCache() {
   cachedApiUrl = null;
   cachedCompanyCode = null;
   cachedCompanyPassword = null;
-  cachedWarehouseId = null;
+  cachedWarehouseCode = null;
 }
 
 const tokenStorage = {
@@ -527,7 +527,7 @@ export const api = {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
-      const warehouseId = await getWarehouseId();
+      const warehouseCode = await getWarehouseCode();
 
       const dataPayload: any = {
         serviceType: 11,
@@ -542,9 +542,10 @@ export const api = {
         orderShipmentControlType: shipmentControlType,
         orderReceiptId: orderReceiptId || 0,
         boxWarehouseControlType: 1,
-        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
+        inventoryReceiptWarehouseCode: warehouseCode || 3,
       };
 
+      console.log(JSON.stringify(dataPayload));
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -606,7 +607,7 @@ export const api = {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
-      const warehouseId = await getWarehouseId();
+      const warehouseCode = await getWarehouseCode();
 
       let dataPayload: any = {
         serviceType: useExistingBox ? 101 : 1,
@@ -622,7 +623,7 @@ export const api = {
         orderConnection: 1,
         orderShipmentControlType: shipmentControlType,
         boxWarehouseControlType: 1,
-        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
+        inventoryReceiptWarehouseId: warehouseCode || 3,
       };
       if (orderReceiptId !== 0) {
         dataPayload.orderReceiptId = orderReceiptId;
@@ -723,13 +724,13 @@ export const api = {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
-      const warehouseId = await getWarehouseId();
+      const warehouseCode = await getWarehouseCode();
 
       const dataPayload = {
         serviceType: 100,
         boxId: boxId,
         inventoryReceiptType: 120,
-        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
+        inventoryReceiptWarehouseId: warehouseCode || 3,
         orderConnection: 1,
         orderShipmentControlType: 3,
       };
@@ -814,7 +815,7 @@ export const api = {
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
-      const warehouseId = await getWarehouseId();
+      const warehouseCode = await getWarehouseCode();
 
       const joinedBoxCodes = boxIds.join("|");
 
@@ -822,7 +823,7 @@ export const api = {
         serviceType: 100,
         boxCode: joinedBoxCodes,
         inventoryReceiptType: 120,
-        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
+        inventoryReceiptWarehouseId: warehouseCode || 3, // todo
         orderConnection: 1,
         orderShipmentControlType: 3,
       };
@@ -945,12 +946,13 @@ export const api = {
       password: string,
       boxId: number,
       barcode: string,
+      RecId: string | number | undefined,
     ): Promise<{ success: string; msg: string }> {
       console.log("API: Deleting item by barcode from box", boxId);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
-      const warehouseId = await getWarehouseId();
+      const warehouseCode = await getWarehouseCode();
 
       const dataPayload = {
         serviceType: 11,
@@ -963,8 +965,9 @@ export const api = {
         quantity: -1,
         orderConnection: 1,
         orderShipmentControlType: 3,
+        RecId: RecId,
         boxWarehouseControlType: 1,
-        inventoryReceiptWarehouseId: parseInt(warehouseId, 10) || 3,
+        inventoryReceiptWarehouseId: warehouseCode || 3,
       };
 
       const requestBody = {

@@ -77,6 +77,7 @@ export default function KoliListesiScreen() {
         PAGE_LEN,
         debouncedSearchQuery || undefined,
       );
+      console.log(" itemler ",items);
       return items;
     },
     initialPageParam: 0,
@@ -181,11 +182,12 @@ export default function KoliListesiScreen() {
   };
 
   const handlePress = (item: KoliItem) => {
+    
     if (isSelectionMode) {
       toggleSelection(item);
-    } else {
+    } else { //todo recId gönder
       router.push(
-        `/(app)/koli-detay?id=${item.id}&packageNo=${item.PackageNo || ""}&receiptNo=${item.ReceiptNo || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
+        `/(app)/koli-detay?id=${item.id}&packageNo=${item.PackageNo || ""}&receiptNo=${item.ReceiptNo || ""}&recId=${item.id || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
       );
     }
   };

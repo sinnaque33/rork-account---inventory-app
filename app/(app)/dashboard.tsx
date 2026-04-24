@@ -6,7 +6,7 @@ import {
   FileText,
   LogOut,
   Boxes,
-  Truck, // YENİ: İrsaliye kartı için ikon
+  Truck,
 } from "lucide-react-native";
 import {
   Platform,
@@ -103,7 +103,7 @@ export default function DashboardScreen() {
               </LinearGradient>
             </Pressable>
 
-            {/* 2. KART: İrsaliye Oluştur (YENİ EKLENEN) */}
+            {/* 2. KART: İrsaliye Oluştur */}
             <Pressable
               style={({ pressed }) => [
                 styles.card,

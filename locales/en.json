@@ -13,7 +13,7 @@
       "apiUrl": "API URL",
       "companyCode": "Company Code",
       "companyPassword": "Company Password",
-      "warehouseId": "Warehouse ID",
+      "warehouseCode": "Warehouse Code",
       "errorSound": "Error Sound Type",
       "boxMode": "Box Creation Mode"
     },
@@ -21,7 +21,7 @@
       "apiUrl": "https://example.com/api",
       "companyCode": "Company Code (optional)",
       "companyPassword": "Company Password (optional)",
-      "warehouseId": "Warehouse ID (default: 3)"
+      "warehouseCode": "Warehouse Code (default: 3)"
     },
     "boxModeDesc": {
       "title": "Add to Existing Open Box",

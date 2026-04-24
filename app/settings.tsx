@@ -37,13 +37,13 @@ export default function SettingsScreen() {
     apiBaseUrl,
     companyCode,
     companyPassword,
-    warehouseId,
+    warehouseCode,
     errorSound,
     useExistingBox,
     updateApiUrl,
     updateCompanyCode,
     updateCompanyPassword,
-    updateWarehouseId,
+    updateWarehouseCode,
     updateErrorSound,
     updateUseExistingBox,
     resetToDefault,
@@ -55,7 +55,7 @@ export default function SettingsScreen() {
   const [url, setUrl] = useState<string>("");
   const [code, setCode] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [whId, setWhId] = useState<string>("");
+  const [whCode, setWhCode] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [selectedSound, setSelectedSound] = useState<string>(
     errorSound || "error_1",
@@ -82,7 +82,7 @@ export default function SettingsScreen() {
     setUrl(apiBaseUrl);
     setCode(companyCode);
     setPassword(companyPassword);
-    setWhId(warehouseId);
+    setWhCode(warehouseCode);
     setExistingBoxMode(useExistingBox || false);
     if (errorSound) {
       setSelectedSound(errorSound);
@@ -91,7 +91,7 @@ export default function SettingsScreen() {
     apiBaseUrl,
     companyCode,
     companyPassword,
-    warehouseId,
+    warehouseCode,
     errorSound,
     useExistingBox,
   ]);
@@ -170,7 +170,7 @@ export default function SettingsScreen() {
       await updateApiUrl(url.trim());
       await updateCompanyCode(code.trim());
       await updateCompanyPassword(password.trim());
-      await updateWarehouseId(whId.trim());
+      await updateWarehouseCode(whCode.trim());
       await updateErrorSound(selectedSound);
       await updateUseExistingBox(existingBoxMode);
 
@@ -197,7 +197,7 @@ export default function SettingsScreen() {
             setUrl(defaultUrl);
             setCode("");
             setPassword("");
-            setWhId("");
+            setWhCode("");
             setSelectedSound("error_1");
             setExistingBoxMode(false);
             Alert.alert(
@@ -382,14 +382,14 @@ export default function SettingsScreen() {
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>
-                    {t("settings.labels.warehouseId")}
+                    {t("settings.labels.warehouseCode")}
                   </Text>
                   <TextInput
                     style={styles.input}
-                    placeholder={t("settings.placeholders.warehouseId")}
+                    placeholder={t("settings.placeholders.warehouseCode")}
                     placeholderTextColor={colors.input.placeholder}
-                    value={whId}
-                    onChangeText={setWhId}
+                    value={whCode}
+                    onChangeText={setWhCode}
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="numeric"

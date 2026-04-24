@@ -13,7 +13,7 @@
       "apiUrl": "API URL",
       "companyCode": "Şirket Kodu",
       "companyPassword": "Şirket Şifresi",
-      "warehouseId": "Depo ID",
+      "warehouseCode": "Depo Kodu",
       "errorSound": "Hata Uyarı Tipi",
       "boxMode": "Koli Oluşturma Modu"
     },
@@ -21,7 +21,7 @@
       "apiUrl": "https://example.com/api",
       "companyCode": "Şirket Kodu (opsiyonel)",
       "companyPassword": "Şirket Şifresi (opsiyonel)",
-      "warehouseId": "Depo ID (varsayılan: 3)"
+      "warehouseCode": "Depo Kodu (varsayılan: 3)"
     },
     "boxModeDesc": {
       "title": "Mevcut Açık Koliye Ekle",
@@ -54,7 +54,7 @@
     "welcome": "Hoş Geldiniz",
     "subtitle": "Hesap Girişi",
     "labels": {
-      "user": "Kullanıcı",
+      "user": "Kullanıcı Adı",
       "password": "Şifre"
     },
     "placeholders": {

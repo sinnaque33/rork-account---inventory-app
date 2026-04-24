@@ -13,6 +13,7 @@ import {
   Platform,
   Animated,
   Easing,
+  ScrollView,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -199,19 +200,20 @@ export default function BarcodeScannerScreen() {
             credentials.password,
             koliIdNum,
             scannedBarcode,
-            undefined,
+            parseInt(params.orderReceiptId!),
             controlType,
           );
           return { ...addResult, mode: "add", scannedBarcode };
-        } else if (params.mode === "delete") {
-          const deleteResult = await api.koliListesi.deleteItemByBarcode(
-            credentials.userCode,
-            credentials.password,
-            koliIdNum,
-            scannedBarcode,
-          );
-          return { ...deleteResult, mode: "delete", scannedBarcode };
         }
+        // else if (params.mode === "delete") {
+        //   const deleteResult = await api.koliListesi.deleteItemByBarcode(
+        //     credentials.userCode,
+        //     credentials.password,
+        //     koliIdNum,
+        //     scannedBarcode,
+        //   );
+        //   return { ...deleteResult, mode: "delete", scannedBarcode };
+        // }
       }
 
       // DURUM 3: VARSAYILAN (KOLİ ARAMA) MODU
@@ -285,9 +287,11 @@ export default function BarcodeScannerScreen() {
                 name: "koli-detay",
                 params: {
                   id: data.resultBoxId?.toString(),
+                  recId: params.orderReceiptId,
                   packageNo: extractedBoxCode,
                   boxCode: extractedBoxCode,
                   receiptNo: params.receiptNo,
+
                   initialSuccessMsg: explanation,
                   alwaysIgnoreLimit: alwaysIgnoreLimit ? "true" : "false",
                 },
@@ -309,6 +313,7 @@ export default function BarcodeScannerScreen() {
                       id: data.resultBoxId?.toString(),
                       packageNo: extractedBoxCode,
                       boxCode: extractedBoxCode,
+                      recId: params.orderReceiptId,
                       receiptNo: params.receiptNo,
                       initialSuccessMsg: explanation,
                       alwaysIgnoreLimit: alwaysIgnoreLimit ? "true" : "false",
@@ -378,6 +383,7 @@ export default function BarcodeScannerScreen() {
                 name: "koli-detay",
                 params: {
                   id: data.recId,
+                  recId: params.orderReceiptId,
                   packageNo: cleanPackageNo,
                   receiptNo: data.receiptNo || "",
                   sipExp: data.sipExp || "",
@@ -398,6 +404,7 @@ export default function BarcodeScannerScreen() {
                     name: "koli-detay",
                     params: {
                       id: data.recId,
+                      recId: params.orderReceiptId,
                       packageNo: cleanPackageNo,
                       receiptNo: data.receiptNo || "",
                       sipExp: data.sipExp || "",
@@ -492,221 +499,229 @@ export default function BarcodeScannerScreen() {
   const { title, subtitle } = getTitles();
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-        >
-          <X size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t("scanner.headerTitle")}</Text>
-        <TouchableOpacity
-          style={[
-            styles.headerButton,
-            { backgroundColor: colors.button.primary },
-          ]}
-          onPress={() => router.replace("/(app)/dashboard")}
-        >
-          <CheckCircle size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* İÇERİK */}
-      <View style={styles.content}>
-        <View
-          style={[
-            styles.iconCircle,
-            params.mode === "delete" && { borderColor: "#e74c3c" },
-          ]}
-        >
-          <ScanBarcode
-            size={64}
-            color={params.mode === "delete" ? "#e74c3c" : colors.button.primary}
-          />
-        </View>
-
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
-
-        <View style={styles.inputSection}>
-          <TextInput
-            ref={inputRef}
-            style={styles.barcodeInput}
-            value={barcode}
-            onChangeText={(text) => {
-              setBarcode(text);
-              barcodeValueRef.current = text;
-            }}
-            onSubmitEditing={handleBarcodeSubmit}
-            placeholder={t("scanner.placeholder")}
-            placeholderTextColor={colors.text.secondary}
-            autoFocus
-            blurOnSubmit={false}
-            showSoftInputOnFocus={true}
-            selectTextOnFocus={true}
-          />
-          {successMessage && (
-            <View style={styles.resultExplanationBox}>
-              <CheckCircle size={18} color="#2E7D32" />
-              <Text style={styles.resultExplanationText}>{successMessage}</Text>
-            </View>
-          )}
-
+    <View style={{ flex: 1, backgroundColor: colors.background.dark }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.container}
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => router.back()}
+          >
+            <X size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t("scanner.headerTitle")}</Text>
           <TouchableOpacity
             style={[
-              styles.submitButton,
-              params.mode === "delete" && { backgroundColor: "#e74c3c" },
-              (!barcode.trim() || barcodeMutation.isPending) && {
-                opacity: 0.5,
-              },
+              styles.headerButton,
+              { backgroundColor: colors.button.primary },
             ]}
-            onPress={handleBarcodeSubmit}
-            disabled={!barcode.trim() || barcodeMutation.isPending}
+            onPress={() => router.replace("/(app)/dashboard")}
           >
-            {barcodeMutation.isPending ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.submitButtonText}>
-                {t("scanner.submitButton")}
-              </Text>
-            )}
+            <CheckCircle size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* SONUÇ (HATA) MODALI */}
-      <ResultModal
-        visible={resultModalVisible}
-        onClose={() => {
-          setResultModalVisible(false);
-          inputRef.current?.focus();
-        }}
-        title={resultData.title}
-        message={resultData.message}
-        type={resultData.type as "success" | "error" | "warning"}
-      />
+        {/* İÇERİK */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.content, { flex: undefined, flexGrow: 1 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          <View
+            style={[
+              styles.iconCircle,
+              params.mode === "delete" && { borderColor: "#e74c3c" },
+            ]}
+          >
+            <ScanBarcode
+              size={64}
+              color={params.mode === "delete" ? "#e74c3c" : colors.button.primary}
+            />
+          </View>
 
-      {/* BAŞARI BİLDİRİMİ */}
-      <Animated.View
-        style={[
-          styles.toastContainer,
-          {
-            opacity: toastOpacity,
-            transform: [{ translateY: toastTranslateY }],
-          },
-        ]}
-        pointerEvents="none"
-      >
-        <View
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
+
+          <View style={styles.inputSection}>
+            <TextInput
+              ref={inputRef}
+              style={styles.barcodeInput}
+              value={barcode}
+              onChangeText={(text) => {
+                setBarcode(text);
+                barcodeValueRef.current = text;
+              }}
+              onSubmitEditing={handleBarcodeSubmit}
+              placeholder={t("scanner.placeholder")}
+              placeholderTextColor={colors.text.secondary}
+              autoFocus
+              blurOnSubmit={false}
+              showSoftInputOnFocus={true}
+              selectTextOnFocus={true}
+            />
+            {successMessage && (
+              <View style={styles.resultExplanationBox}>
+                <CheckCircle size={18} color="#2E7D32" />
+                <Text style={styles.resultExplanationText}>{successMessage}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                params.mode === "delete" && { backgroundColor: "#e74c3c" },
+                (!barcode.trim() || barcodeMutation.isPending) && {
+                  opacity: 0.5,
+                },
+              ]}
+              onPress={handleBarcodeSubmit}
+              disabled={!barcode.trim() || barcodeMutation.isPending}
+            >
+              {barcodeMutation.isPending ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {t("scanner.submitButton")}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* SONUÇ (HATA) MODALI */}
+        <ResultModal
+          visible={resultModalVisible}
+          onClose={() => {
+            setResultModalVisible(false);
+            inputRef.current?.focus();
+          }}
+          title={resultData.title}
+          message={resultData.message}
+          type={resultData.type as "success" | "error" | "warning"}
+        />
+
+        {/* BAŞARI BİLDİRİMİ */}
+        <Animated.View
           style={[
-            styles.toastContent,
-            toastContent.type === "error" && {
-              borderColor: "rgba(244, 67, 54, 0.5)",
+            styles.toastContainer,
+            {
+              opacity: toastOpacity,
+              transform: [{ translateY: toastTranslateY }],
             },
           ]}
+          pointerEvents="none"
         >
-          {toastContent.type === "success" ? (
-            <CheckCircle
-              size={24}
-              color="#4CAF50"
-              fill="rgba(76, 175, 80, 0.1)"
-            />
-          ) : (
-            <X size={24} color="#F44336" />
-          )}
+          <View
+            style={[
+              styles.toastContent,
+              toastContent.type === "error" && {
+                borderColor: "rgba(244, 67, 54, 0.5)",
+              },
+            ]}
+          >
+            {toastContent.type === "success" ? (
+              <CheckCircle
+                size={24}
+                color="#4CAF50"
+                fill="rgba(76, 175, 80, 0.1)"
+              />
+            ) : (
+              <X size={24} color="#F44336" />
+            )}
 
-          <View>
-            <Text style={styles.toastTitle}>{toastContent.title}</Text>
-            <Text style={styles.toastSubtitle}>{toastContent.message}</Text>
-          </View>
-        </View>
-      </Animated.View>
-      {/* MİKTAR AŞIMI ONAY MODALI */}
-      <Modal
-        visible={showOverLimitModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          setShowOverLimitModal(false);
-          isProcessingRef.current = false;
-          inputRef.current?.focus();
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View
-              style={[
-                styles.resultIconContainer,
-                { backgroundColor: "rgba(255, 152, 0, 0.1)" },
-              ]}
-            >
-              <AlertTriangle size={48} color="#FF9800" />
+            <View>
+              <Text style={styles.toastTitle}>{toastContent.title}</Text>
+              <Text style={styles.toastSubtitle}>{toastContent.message}</Text>
             </View>
-            <Text style={styles.resultTitle}>
-              {overLimitType === 1
-                ? "Sipariş Dışı Ürün"
-                : t("scanner.overLimit.title")}{" "}
-            </Text>
-            <Text style={styles.resultMessage}>
-              {overLimitType === 1
-                ? "Siparişte olmayan malzeme okutuyorsunuz. Devam etmek istiyor musunuz?"
-                : t("scanner.overLimit.message")}
-            </Text>
-
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-              <TouchableOpacity
+          </View>
+        </Animated.View>
+        {/* MİKTAR AŞIMI ONAY MODALI */}
+        <Modal
+          visible={showOverLimitModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            setShowOverLimitModal(false);
+            isProcessingRef.current = false;
+            inputRef.current?.focus();
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View
                 style={[
-                  styles.resultButton,
-                  { flex: 1, backgroundColor: colors.background.darker },
+                  styles.resultIconContainer,
+                  { backgroundColor: "rgba(255, 152, 0, 0.1)" },
                 ]}
-                onPress={() => {
-                  setShowOverLimitModal(false);
-                  isProcessingRef.current = false;
-                  inputRef.current?.focus();
-                }}
               >
-                <Text
+                <AlertTriangle size={48} color="#FF9800" />
+              </View>
+              <Text style={styles.resultTitle}>
+                {overLimitType === 1
+                  ? "Sipariş Dışı Ürün"
+                  : t("scanner.overLimit.title")}{" "}
+              </Text>
+              <Text style={styles.resultMessage}>
+                {overLimitType === 1
+                  ? "Siparişte olmayan malzeme okutuyorsunuz. Devam etmek istiyor musunuz?"
+                  : t("scanner.overLimit.message")}
+              </Text>
+
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+                <TouchableOpacity
                   style={[
-                    styles.resultButtonText,
-                    { color: colors.text.secondary },
+                    styles.resultButton,
+                    { flex: 1, backgroundColor: colors.background.darker },
                   ]}
+                  onPress={() => {
+                    setShowOverLimitModal(false);
+                    isProcessingRef.current = false;
+                    inputRef.current?.focus();
+                  }}
                 >
-                  {t("scanner.overLimit.cancelBtn")}
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.resultButtonText,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    {t("scanner.overLimit.cancelBtn")}
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.resultButton,
-                  {
-                    flex: 1,
-                    backgroundColor: "#FF9800",
-                    borderColor: "#FF9800",
-                  },
-                ]}
-                onPress={() => {
-                  setShowOverLimitModal(false);
-                  // setAlwaysIgnoreLimit(true);
-                  barcodeMutation.mutate({
-                    scannedBarcode: pendingOverLimitBarcode,
-                    controlType: -1,
-                  });
-                }}
-              >
-                <Text style={[styles.resultButtonText, { color: "#fff" }]}>
-                  {t("scanner.overLimit.confirmBtn")}
-                </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.resultButton,
+                    {
+                      flex: 1,
+                      backgroundColor: "#FF9800",
+                      borderColor: "#FF9800",
+                    },
+                  ]}
+                  onPress={() => {
+                    setShowOverLimitModal(false);
+                    // setAlwaysIgnoreLimit(true);
+                    barcodeMutation.mutate({
+                      scannedBarcode: pendingOverLimitBarcode,
+                      controlType: -1,
+                    });
+                  }}
+                >
+                  <Text style={[styles.resultButtonText, { color: "#fff" }]}>
+                    {t("scanner.overLimit.confirmBtn")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </KeyboardAvoidingView>
+        </Modal>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 

@@ -60,6 +60,7 @@ export default function KoliDetayScreen() {
     id: string;
     packageNo?: string;
     receiptNo?: string;
+    recId?: string;
     sipExp?: string;
     boxCode?: string;
     alwaysIgnoreLimit?: string;
@@ -115,8 +116,6 @@ export default function KoliDetayScreen() {
     initialIgnoreLimit === "true",
   );
   const [overLimitType, setOverLimitType] = useState<number>(2);
-  // const [activeReceiptNo, setActiveReceiptNo] = useState(receiptNo || "");
-  // const [activeSipExp, setActiveSipExp] = useState(sipExp || "");
 
   // --- BİLDİRİM VE HATA MODAL STATE'LERİ ---
   const [resultModalVisible, setResultModalVisible] = useState(false);
@@ -201,13 +200,14 @@ export default function KoliDetayScreen() {
           "*****************koli detayda gönderilen controlType: ",
           controlType,
         );
+        console.log("****** id", id);
 
         return await api.koliListesi.addItemByBarcode(
           credentials.userCode,
           credentials.password,
           koliIdNum,
           scannedBarcode,
-          undefined,
+          id ? parseInt(id, 10) : undefined,
           controlType,
         );
       } else {
@@ -216,6 +216,7 @@ export default function KoliDetayScreen() {
           credentials.password,
           koliIdNum,
           scannedBarcode,
+          id
         );
       }
     },
@@ -370,7 +371,7 @@ export default function KoliDetayScreen() {
       return api.koliListesi.createReceipt(
         credentials.userCode,
         credentials.password,
-        parseInt(id, 10),
+        parseInt(id, 10)
       );
     },
     onSuccess: (data) => {
