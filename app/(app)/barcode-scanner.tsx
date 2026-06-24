@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import {
@@ -24,7 +24,8 @@ import {
   AlertTriangle,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 import { api } from "@/services/api";
 import { Audio } from "expo-av";
 import { Vibration } from "react-native";
@@ -36,6 +37,8 @@ export default function BarcodeScannerScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { errorSound, useExistingBox } = useApiConfig();
   const playErrorSignal = async () => {
     try {
@@ -499,7 +502,7 @@ export default function BarcodeScannerScreen() {
   const { title, subtitle } = getTitles();
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background.dark }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.canvas }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.container}
@@ -510,17 +513,17 @@ export default function BarcodeScannerScreen() {
             style={styles.headerButton}
             onPress={() => router.back()}
           >
-            <X size={24} color="#fff" />
+            <X size={24} color={theme.colors.ink} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t("scanner.headerTitle")}</Text>
           <TouchableOpacity
             style={[
               styles.headerButton,
-              { backgroundColor: colors.button.primary },
+              { backgroundColor: theme.colors.primary },
             ]}
             onPress={() => router.replace("/(app)/dashboard")}
           >
-            <CheckCircle size={24} color="#fff" />
+            <CheckCircle size={24} color={theme.colors.onPrimary} />
           </TouchableOpacity>
         </View>
 
@@ -535,12 +538,12 @@ export default function BarcodeScannerScreen() {
           <View
             style={[
               styles.iconCircle,
-              params.mode === "delete" && { borderColor: "#e74c3c" },
+              params.mode === "delete" && { borderColor: theme.colors.error },
             ]}
           >
             <ScanBarcode
               size={64}
-              color={params.mode === "delete" ? "#e74c3c" : colors.button.primary}
+              color={params.mode === "delete" ? theme.colors.error : theme.colors.primary}
             />
           </View>
 
@@ -558,7 +561,7 @@ export default function BarcodeScannerScreen() {
               }}
               onSubmitEditing={handleBarcodeSubmit}
               placeholder={t("scanner.placeholder")}
-              placeholderTextColor={colors.text.secondary}
+              placeholderTextColor={theme.colors.inkSubtle}
               autoFocus
               blurOnSubmit={false}
               showSoftInputOnFocus={true}
@@ -566,7 +569,7 @@ export default function BarcodeScannerScreen() {
             />
             {successMessage && (
               <View style={styles.resultExplanationBox}>
-                <CheckCircle size={18} color="#2E7D32" />
+                <CheckCircle size={18} color={theme.colors.success} />
                 <Text style={styles.resultExplanationText}>{successMessage}</Text>
               </View>
             )}
@@ -574,7 +577,7 @@ export default function BarcodeScannerScreen() {
             <TouchableOpacity
               style={[
                 styles.submitButton,
-                params.mode === "delete" && { backgroundColor: "#e74c3c" },
+                params.mode === "delete" && { backgroundColor: theme.colors.error },
                 (!barcode.trim() || barcodeMutation.isPending) && {
                   opacity: 0.5,
                 },
@@ -583,7 +586,7 @@ export default function BarcodeScannerScreen() {
               disabled={!barcode.trim() || barcodeMutation.isPending}
             >
               {barcodeMutation.isPending ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={theme.colors.onPrimary} size="small" />
               ) : (
                 <Text style={styles.submitButtonText}>
                   {t("scanner.submitButton")}
@@ -620,18 +623,14 @@ export default function BarcodeScannerScreen() {
             style={[
               styles.toastContent,
               toastContent.type === "error" && {
-                borderColor: "rgba(244, 67, 54, 0.5)",
+                borderLeftColor: theme.colors.error,
               },
             ]}
           >
             {toastContent.type === "success" ? (
-              <CheckCircle
-                size={24}
-                color="#4CAF50"
-                fill="rgba(76, 175, 80, 0.1)"
-              />
+              <CheckCircle size={24} color={theme.colors.success} />
             ) : (
-              <X size={24} color="#F44336" />
+              <X size={24} color={theme.colors.error} />
             )}
 
             <View>
@@ -656,10 +655,10 @@ export default function BarcodeScannerScreen() {
               <View
                 style={[
                   styles.resultIconContainer,
-                  { backgroundColor: "rgba(255, 152, 0, 0.1)" },
+                  { backgroundColor: theme.colors.warningTint },
                 ]}
               >
-                <AlertTriangle size={48} color="#FF9800" />
+                <AlertTriangle size={48} color={theme.colors.warning} />
               </View>
               <Text style={styles.resultTitle}>
                 {overLimitType === 1
@@ -676,7 +675,7 @@ export default function BarcodeScannerScreen() {
                 <TouchableOpacity
                   style={[
                     styles.resultButton,
-                    { flex: 1, backgroundColor: colors.background.darker },
+                    { flex: 1, backgroundColor: theme.colors.surface2 },
                   ]}
                   onPress={() => {
                     setShowOverLimitModal(false);
@@ -687,7 +686,7 @@ export default function BarcodeScannerScreen() {
                   <Text
                     style={[
                       styles.resultButtonText,
-                      { color: colors.text.secondary },
+                      { color: theme.colors.inkMuted },
                     ]}
                   >
                     {t("scanner.overLimit.cancelBtn")}
@@ -699,8 +698,8 @@ export default function BarcodeScannerScreen() {
                     styles.resultButton,
                     {
                       flex: 1,
-                      backgroundColor: "#FF9800",
-                      borderColor: "#FF9800",
+                      backgroundColor: theme.colors.warning,
+                      borderColor: theme.colors.warning,
                     },
                   ]}
                   onPress={() => {
@@ -712,7 +711,7 @@ export default function BarcodeScannerScreen() {
                     });
                   }}
                 >
-                  <Text style={[styles.resultButtonText, { color: "#fff" }]}>
+                  <Text style={[styles.resultButtonText, { color: theme.colors.onWarning }]}>
                     {t("scanner.overLimit.confirmBtn")}
                   </Text>
                 </TouchableOpacity>
@@ -725,184 +724,184 @@ export default function BarcodeScannerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.dark },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: colors.background.card,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: colors.text.primary },
-  content: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 30,
-  },
-  iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.background.card,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 30,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: colors.text.primary,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    textAlign: "center",
-    marginBottom: 40,
-  },
-  inputSection: { width: "100%", position: "relative" },
-  barcodeInput: {
-    width: "100%",
-    backgroundColor: colors.background.card,
-    borderRadius: 12,
-    padding: 18,
-    fontSize: 18,
-    color: colors.text.primary,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    textAlign: "center",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  modalContent: {
-    width: "100%",
-    maxWidth: 320,
-    backgroundColor: colors.background.card,
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  resultIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-    alignSelf: "center",
-  },
-  resultTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.text.primary,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  resultMessage: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  resultButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  resultButtonText: { fontSize: 16, fontWeight: "600" },
-  submitButton: {
-    marginTop: 16,
-    backgroundColor: colors.button.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  submitButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  toastContainer: {
-    position: "absolute",
-    bottom: 40,
-    left: 20,
-    right: 20,
-    alignItems: "center",
-    zIndex: 999,
-  },
-  toastContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.background.card,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: "rgba(76, 175, 80, 0.5)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 6,
-    gap: 12,
-  },
-  toastTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.text.primary,
-  },
-  toastSubtitle: {
-    fontSize: 12,
-    color: colors.text.secondary,
-  },
-  resultExplanationBox: {
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
-    padding: 12,
-    borderRadius: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: "rgba(76, 175, 80, 0.3)",
-    gap: 10,
-  },
-  resultExplanationText: {
-    color: "#2E7D32",
-    fontSize: 13,
-    fontWeight: "600",
-    flex: 1,
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.canvas },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingTop: 60,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.lg,
+      backgroundColor: colors.surface1,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.hairline,
+    },
+    headerButton: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface2,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    headerTitle: { ...type.screenTitle, color: colors.ink },
+    content: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: spacing.xl,
+    },
+    iconCircle: {
+      width: 120,
+      height: 120,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface1,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.xl,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    title: {
+      ...type.displayLg,
+      fontSize: 24,
+      color: colors.ink,
+      marginBottom: spacing.xs,
+      textAlign: "center",
+    },
+    subtitle: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: "center",
+      marginBottom: spacing.xxl,
+    },
+    inputSection: { width: "100%", position: "relative" },
+    barcodeInput: {
+      ...type.bodyLg,
+      width: "100%",
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      padding: 18,
+      fontSize: 18,
+      color: colors.ink,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+      textAlign: "center",
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.lg,
+    },
+    modalContent: {
+      width: "100%",
+      maxWidth: 320,
+      backgroundColor: colors.surface1,
+      borderRadius: radius.xxl,
+      padding: spacing.xl,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    resultIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.md,
+      alignSelf: "center",
+    },
+    resultTitle: {
+      ...type.headline,
+      color: colors.ink,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    resultMessage: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: "center",
+      marginBottom: spacing.xl,
+    },
+    resultButton: {
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      width: "100%",
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    resultButtonText: { ...type.button },
+    submitButton: {
+      marginTop: spacing.md,
+      backgroundColor: colors.primary,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: "center",
+      justifyContent: "center",
+      width: "100%",
+      minHeight: 56,
+    },
+    submitButtonText: {
+      ...type.button,
+      color: colors.onPrimary,
+    },
+    toastContainer: {
+      position: "absolute",
+      bottom: spacing.xxl,
+      left: spacing.lg,
+      right: spacing.lg,
+      alignItems: "center",
+      zIndex: 999,
+    },
+    toastContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface3,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.success,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
+      elevation: 6,
+      gap: spacing.sm,
+    },
+    toastTitle: {
+      ...type.bodySm,
+      fontWeight: "700",
+      color: colors.ink,
+    },
+    toastSubtitle: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+    },
+    resultExplanationBox: {
+      backgroundColor: colors.successTint,
+      padding: spacing.sm,
+      borderRadius: radius.md,
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.success,
+      gap: spacing.xs,
+    },
+    resultExplanationText: {
+      ...type.bodySm,
+      color: colors.success,
+      fontWeight: "600",
+      flex: 1,
+    },
+  });
+};

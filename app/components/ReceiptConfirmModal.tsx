@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Modal,
   View,
@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { FileText } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 
 interface ReceiptConfirmModalProps {
   visible: boolean;
@@ -26,6 +28,8 @@ export default function ReceiptConfirmModal({
   itemCount = 1,
 }: ReceiptConfirmModalProps) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <Modal
@@ -37,7 +41,7 @@ export default function ReceiptConfirmModal({
       <View style={styles.receiptModalOverlay}>
         <View style={styles.receiptModalContent}>
           <View style={styles.receiptIconContainer}>
-            <FileText size={48} color="#DC143C" />
+            <FileText size={48} color={theme.colors.primary} />
           </View>
           <Text style={styles.receiptModalTitle}>
             {t("koliDetay.modals.receiptTitle")}
@@ -68,7 +72,7 @@ export default function ReceiptConfirmModal({
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={theme.colors.onPrimary} />
               ) : (
                 <Text style={styles.receiptConfirmText}>
                   {t("koliDetay.create")}
@@ -82,83 +86,82 @@ export default function ReceiptConfirmModal({
   );
 }
 
-const styles = StyleSheet.create({
-  receiptModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  receiptModalContent: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 20,
-    padding: 28,
-    width: "100%",
-    maxWidth: 340,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#DC143C",
-  },
-  receiptIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(220, 20, 60, 0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  receiptModalTitle: {
-    fontSize: 22,
-    fontFamily: "Segoe UI",
-    fontWeight: "700",
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  receiptModalSubtitle: {
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    color: "#aaa",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  receiptModalButtons: {
-    flexDirection: "row",
-    gap: 12,
-    width: "100%",
-  },
-  receiptCancelButton: {
-    flex: 1,
-    backgroundColor: "#333",
-    borderRadius: 12,
-    padding: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  receiptCancelText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "600",
-    color: "#fff",
-  },
-  receiptConfirmButton: {
-    flex: 1,
-    backgroundColor: "#DC143C",
-    borderRadius: 12,
-    padding: 14,
-    alignItems: "center",
-  },
-  receiptConfirmText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "600",
-    color: "#fff",
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    receiptModalOverlay: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    receiptModalContent: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.xxl,
+      padding: spacing.xl,
+      width: "100%",
+      maxWidth: 340,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    receiptIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primaryTint,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.lg,
+    },
+    receiptModalTitle: {
+      ...type.headline,
+      color: colors.ink,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    receiptModalSubtitle: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: "center",
+      marginBottom: spacing.xl,
+    },
+    receiptModalButtons: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      width: "100%",
+    },
+    receiptCancelButton: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      padding: 14,
+      minHeight: 48,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    receiptCancelText: {
+      ...type.button,
+      color: colors.ink,
+    },
+    receiptConfirmButton: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: radius.md,
+      padding: 14,
+      minHeight: 48,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    receiptConfirmText: {
+      ...type.button,
+      color: colors.onPrimary,
+    },
+    disabledButton: {
+      opacity: 0.6,
+    },
+  });
+};

@@ -30,7 +30,8 @@ import * as Haptics from "expo-haptics";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/services/api";
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 import ReceiptConfirmModal from "../components/ReceiptConfirmModal";
 import ResultModal from "../components/ResultModal"; // SENİN HAZIR MODALIN
 
@@ -38,6 +39,8 @@ export default function IrsKoliListesiScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { credentials } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const queryClient = useQueryClient();
 
   // --- STATE'LER ---
@@ -247,7 +250,7 @@ export default function IrsKoliListesiScreen() {
           <View style={styles.cardTitleContainer}>
             <Package
               size={24}
-              color={isSelected ? colors.button.primary : colors.text.secondary}
+              color={isSelected ? theme.colors.primary : theme.colors.inkSubtle}
             />
             <View style={{ marginLeft: 12 }}>
               <Text style={styles.cardTitle}>
@@ -268,9 +271,9 @@ export default function IrsKoliListesiScreen() {
 
           <View>
             {isSelected ? (
-              <CheckSquare size={24} color={colors.button.primary} />
+              <CheckSquare size={24} color={theme.colors.primary} />
             ) : (
-              <Square size={24} color={colors.text.secondary} opacity={0.5} />
+              <Square size={24} color={theme.colors.inkSubtle} opacity={0.5} />
             )}
           </View>
         </View>
@@ -294,7 +297,7 @@ export default function IrsKoliListesiScreen() {
                 onPress={handleClearSelection}
                 style={{ marginRight: 16 }}
               >
-                <X size={24} color={colors.text.primary} />
+                <X size={24} color={theme.colors.ink} />
               </TouchableOpacity>
             ) : null,
         }}
@@ -302,17 +305,17 @@ export default function IrsKoliListesiScreen() {
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Search size={20} color={colors.text.secondary} />
+          <Search size={20} color={theme.colors.inkSubtle} />
           <TextInput
             style={styles.searchInput}
             placeholder="Koli No ile ara..."
-            placeholderTextColor={colors.text.secondary}
+            placeholderTextColor={theme.colors.inkSubtle}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <X size={20} color={colors.text.secondary} />
+              <X size={20} color={theme.colors.inkSubtle} />
             </TouchableOpacity>
           )}
         </View>
@@ -320,7 +323,7 @@ export default function IrsKoliListesiScreen() {
 
       {isLoading && !isRefetching ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.button.primary} />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Koliler Yükleniyor...</Text>
         </View>
       ) : isError ? (
@@ -342,8 +345,8 @@ export default function IrsKoliListesiScreen() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={refetch}
-              tintColor={colors.button.primary}
-              colors={[colors.button.primary]}
+              tintColor={theme.colors.primary}
+              colors={[theme.colors.primary]}
             />
           }
           onEndReached={() => {
@@ -356,14 +359,14 @@ export default function IrsKoliListesiScreen() {
             isFetchingNextPage ? (
               <ActivityIndicator
                 size="small"
-                color={colors.button.primary}
+                color={theme.colors.primary}
                 style={{ margin: 16 }}
               />
             ) : null
           }
           ListEmptyComponent={
             <View style={styles.centerContainer}>
-              <Package size={48} color={colors.text.secondary} opacity={0.5} />
+              <Package size={48} color={theme.colors.inkSubtle} opacity={0.5} />
               <Text style={styles.emptyText}>Hiç koli bulunamadı.</Text>
             </View>
           }
@@ -384,7 +387,7 @@ export default function IrsKoliListesiScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Truck size={24} color="#fff" />
+                <Truck size={24} color={theme.colors.onInfo} />
                 <Text style={styles.submitButtonText}>
                   Seçilenleri İrsaliye Yap ({selectedIds.size})
                 </Text>
@@ -415,121 +418,118 @@ export default function IrsKoliListesiScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.dark,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  loadingText: {
-    marginTop: 12,
-    color: colors.text.secondary,
-    fontSize: 16,
-  },
-  errorText: {
-    color: colors.border.error,
-    fontSize: 16,
-    textAlign: "center",
-  },
-  emptyText: {
-    marginTop: 12,
-    color: colors.text.secondary,
-    fontSize: 16,
-  },
-  searchContainer: {
-    padding: 16,
-    backgroundColor: colors.background.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.default,
-  },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.background.darker,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 46,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    color: colors.text.primary,
-    fontSize: 16,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  card: {
-    backgroundColor: colors.background.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: colors.border.default,
-  },
-  cardSelected: {
-    borderColor: colors.button.primary,
-    backgroundColor: "rgba(220, 20, 60, 0.05)",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  cardTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: colors.text.primary,
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    marginTop: 4,
-  },
-  bottomPanel: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    paddingBottom: Platform.OS === "ios" ? 32 : 16,
-    backgroundColor: colors.background.card,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.default,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  submitButton: {
-    backgroundColor: "#1976D2",
-    borderRadius: 12,
-    height: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    centerContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: spacing.xl,
+    },
+    loadingText: {
+      ...type.body,
+      marginTop: spacing.sm,
+      color: colors.inkMuted,
+    },
+    errorText: {
+      ...type.body,
+      color: colors.error,
+      textAlign: "center",
+    },
+    emptyText: {
+      ...type.body,
+      marginTop: spacing.sm,
+      color: colors.inkMuted,
+    },
+    searchContainer: {
+      padding: spacing.md,
+      backgroundColor: colors.canvas,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.hairline,
+    },
+    searchBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface2,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.md,
+      height: 46,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    searchInput: {
+      ...type.body,
+      flex: 1,
+      marginLeft: spacing.xs,
+      color: colors.ink,
+    },
+    listContent: {
+      padding: spacing.md,
+      paddingBottom: 100,
+    },
+    card: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    cardSelected: {
+      borderColor: colors.primary,
+      borderWidth: 2,
+      backgroundColor: colors.primaryTint,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    cardTitleContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    cardTitle: {
+      ...type.cardTitle,
+      color: colors.ink,
+    },
+    cardSubtitle: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      marginTop: spacing.xxs,
+    },
+    bottomPanel: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: spacing.md,
+      paddingBottom: Platform.OS === "ios" ? spacing.xxl : spacing.md,
+      backgroundColor: colors.surface1,
+      borderTopWidth: 1,
+      borderTopColor: colors.hairline,
+    },
+    submitButton: {
+      backgroundColor: colors.info,
+      borderRadius: radius.md,
+      height: 54,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+    },
+    submitButtonDisabled: {
+      opacity: 0.6,
+    },
+    submitButtonText: {
+      ...type.button,
+      color: colors.onInfo,
+    },
+  });
+};

@@ -20,13 +20,16 @@ import {
 import { useRouter, Stack } from "expo-router";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 import { OrderReceipt } from "@/services/types";
 
 export default function OrderReceiptsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { credentials } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -91,7 +94,7 @@ export default function OrderReceiptsScreen() {
     return (
       <View style={styles.centerContainer}>
         <Stack.Screen options={{ title: t("orderReceipts.headerTitle") }} />
-        <ActivityIndicator size="large" color={colors.button.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>{t("orderReceipts.loading")}</Text>
       </View>
     );
@@ -101,7 +104,7 @@ export default function OrderReceiptsScreen() {
     return (
       <View style={styles.centerContainer}>
         <Stack.Screen options={{ title: t("orderReceipts.headerTitle") }} />
-        <AlertCircle size={48} color={colors.border.error} />
+        <AlertCircle size={48} color={theme.colors.error} />
         <Text style={styles.errorTitle}>{t("orderReceipts.errorTitle")}</Text>
         <Text style={styles.errorText}>
           {orderReceiptsQuery.error instanceof Error
@@ -121,7 +124,7 @@ export default function OrderReceiptsScreen() {
     >
       <View style={styles.cardHeader}>
         <View style={styles.iconContainer}>
-          <FileText size={22} color={colors.button.primary} />
+          <FileText size={22} color={theme.colors.primary} />
         </View>
         <View style={styles.itemInfo}>
           <Text style={styles.receiptNo}>
@@ -132,7 +135,7 @@ export default function OrderReceiptsScreen() {
             {item.CurrentAccountName}
           </Text>
         </View>
-        <ChevronRight size={20} color={colors.text.secondary} />
+        <ChevronRight size={20} color={theme.colors.inkSubtle} />
       </View>
     </TouchableOpacity>
   );
@@ -142,11 +145,11 @@ export default function OrderReceiptsScreen() {
       <Stack.Screen options={{ title: t("orderReceipts.headerTitle") }} />
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <Search size={20} color={colors.text.secondary} />
+          <Search size={20} color={theme.colors.inkSubtle} />
           <TextInput
             style={styles.searchInput}
             placeholder={t("orderReceipts.searchPlaceholder")}
-            placeholderTextColor={colors.text.secondary}
+            placeholderTextColor={theme.colors.inkSubtle}
             value={searchQuery}
             onChangeText={setSearchQuery}
             testID="search-input"
@@ -163,7 +166,8 @@ export default function OrderReceiptsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[colors.button.primary]}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
           />
         }
         ListHeaderComponent={
@@ -171,7 +175,7 @@ export default function OrderReceiptsScreen() {
             style={[
               styles.card,
               {
-                borderColor: colors.button.primary,
+                borderColor: theme.colors.primary,
                 borderWidth: 2,
                 marginBottom: 20,
               },
@@ -183,10 +187,10 @@ export default function OrderReceiptsScreen() {
               <View
                 style={[
                   styles.iconContainer,
-                  { backgroundColor: colors.button.primary },
+                  { backgroundColor: theme.colors.primary },
                 ]}
               >
-                <FileText size={22} color="#fff" />
+                <FileText size={22} color={theme.colors.onPrimary} />
               </View>
               <View style={styles.itemInfo}>
                 <Text style={styles.receiptNo}>
@@ -202,13 +206,13 @@ export default function OrderReceiptsScreen() {
                   )}
                 </Text>
               </View>
-              <ChevronRight size={20} color={colors.button.primary} />
+              <ChevronRight size={20} color={theme.colors.primary} />
             </View>
           </TouchableOpacity>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <FileText size={48} color={colors.text.secondary} />
+            <FileText size={48} color={theme.colors.inkSubtle} />
             <Text style={styles.emptyText}>
               {searchQuery
                 ? t("orderReceipts.emptySearch")
@@ -222,134 +226,120 @@ export default function OrderReceiptsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.dark,
-  },
-  searchContainer: {
-    backgroundColor: colors.background.card,
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.default,
-  },
-  searchInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.background.darker,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    color: colors.text.primary,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.background.dark,
-    gap: 12,
-    padding: 24,
-  },
-  loadingText: {
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    marginTop: 8,
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontFamily: "Segoe UI",
-    fontWeight: "700" as const,
-    color: colors.text.primary,
-    marginTop: 8,
-  },
-  errorText: {
-    fontSize: 14,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 64,
-    gap: 16,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  card: {
-    backgroundColor: colors.background.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  iconContainer: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: "rgba(33, 150, 243, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  itemInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  receiptNo: {
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    fontWeight: "700" as const,
-    color: colors.text.primary,
-    lineHeight: 20,
-  },
-  accountName: {
-    fontSize: 13,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    lineHeight: 18,
-  },
-  loadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  loadingOverlayText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    color: "#fff",
-    marginTop: 12,
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    searchContainer: {
+      backgroundColor: colors.canvas,
+      padding: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.hairline,
+    },
+    searchInputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface2,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.md,
+      gap: spacing.sm,
+    },
+    searchInput: {
+      ...type.body,
+      flex: 1,
+      paddingVertical: spacing.sm,
+      color: colors.ink,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xxl,
+    },
+    centerContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.canvas,
+      gap: spacing.sm,
+      padding: spacing.xl,
+    },
+    loadingText: {
+      ...type.body,
+      color: colors.inkMuted,
+      marginTop: spacing.xs,
+    },
+    errorTitle: {
+      ...type.cardTitle,
+      color: colors.ink,
+      marginTop: spacing.xs,
+    },
+    errorText: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      textAlign: "center",
+    },
+    emptyContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 64,
+      gap: spacing.md,
+    },
+    emptyText: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: "center",
+    },
+    card: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    iconContainer: {
+      width: 46,
+      height: 46,
+      borderRadius: radius.md,
+      backgroundColor: colors.primaryTint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    itemInfo: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    receiptNo: {
+      ...type.cardTitle,
+      color: colors.ink,
+    },
+    accountName: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+    },
+    loadingOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.scrim,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10,
+    },
+    loadingOverlayText: {
+      ...type.body,
+      fontWeight: "600" as const,
+      color: "#fff",
+      marginTop: spacing.sm,
+    },
+  });
+};

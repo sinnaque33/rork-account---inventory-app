@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { CheckCircle2, AlertCircle } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 
 interface ResultModalProps {
   visible: boolean;
@@ -20,14 +21,15 @@ export default function ResultModal({
   type,
 }: ResultModalProps) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  const getThemeColor = () => {
-    if (type === "success") return "#4CAF50";
-    if (type === "warning") return "#FF9800";
-    return "#F44336";
-  };
-
-  const themeColor = getThemeColor();
+  const themeColor =
+    type === "success"
+      ? theme.colors.success
+      : type === "warning"
+        ? theme.colors.warning
+        : theme.colors.error;
 
   return (
     <Modal
@@ -37,7 +39,7 @@ export default function ResultModal({
       onRequestClose={onClose}
     >
       <View style={styles.resultModalOverlay}>
-        <View style={styles.resultModalContent}>
+        <View style={[styles.resultModalContent, { borderTopColor: themeColor }]}>
           <View
             style={[
               styles.resultIconContainer,
@@ -70,71 +72,61 @@ export default function ResultModal({
   );
 }
 
-const styles = StyleSheet.create({
-  resultModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.90)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  resultModalContent: {
-    backgroundColor: colors.background.card,
-    borderRadius: 20,
-    paddingHorizontal: 28,
-    paddingTop: 32,
-    paddingBottom: 28,
-    width: "100%",
-    maxWidth: 360,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-  },
-  resultIconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  resultTitle: {
-    fontSize: 20,
-    fontFamily: "Segoe UI",
-    fontWeight: "700",
-    color: colors.text.primary,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  resultMessage: {
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    textAlign: "center",
-    marginBottom: 30,
-    lineHeight: 22,
-  },
-  resultCancelButton: {
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    alignItems: "center",
-    width: "100%",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  resultCancelText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "700",
-    color: "#ffffff",
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    resultModalOverlay: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    resultModalContent: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.xxl,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xxl,
+      paddingBottom: spacing.xl,
+      width: "100%",
+      maxWidth: 360,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.hairline,
+      borderTopWidth: 4,
+    },
+    resultIconContainer: {
+      width: 72,
+      height: 72,
+      borderRadius: radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.lg,
+    },
+    resultTitle: {
+      ...type.headline,
+      color: colors.ink,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    resultMessage: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: "center",
+      marginBottom: spacing.xl,
+    },
+    resultCancelButton: {
+      borderRadius: radius.md,
+      paddingVertical: 14,
+      paddingHorizontal: spacing.xxl,
+      alignItems: "center",
+      width: "100%",
+      minHeight: 48,
+      justifyContent: "center",
+    },
+    resultCancelText: {
+      ...type.button,
+      color: "#ffffff",
+    },
+  });
+};

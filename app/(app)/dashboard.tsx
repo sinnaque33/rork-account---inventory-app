@@ -17,11 +17,15 @@ import {
   ScrollView,
 } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
+import { useMemo } from "react";
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const router = useRouter();
 
   const handleNavigation = (route: string) => {
@@ -41,7 +45,7 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.background.darker, colors.background.dark]}
+        colors={[theme.colors.surface1, theme.colors.canvas]}
         style={styles.header}
       >
         <View style={styles.headerContent}>
@@ -60,7 +64,7 @@ export default function DashboardScreen() {
               onPress={handleLogout}
               testID="logout-button"
             >
-              <LogOut size={20} color="#fff" />
+              <LogOut size={20} color={theme.colors.ink} />
             </Pressable>
           </View>
         </View>
@@ -85,7 +89,7 @@ export default function DashboardScreen() {
               testID="koli-listesi-card"
             >
               <LinearGradient
-                colors={["#B71C1C", "#8B0000"]}
+                colors={[theme.colors.primary, theme.colors.primaryDeep]}
                 style={styles.cardGradient}
               >
                 <View style={styles.cardIcon}>
@@ -113,7 +117,7 @@ export default function DashboardScreen() {
               testID="irsaliye-olustur-card"
             >
               <LinearGradient
-                colors={["#1976D2", "#0D47A1"]}
+                colors={[theme.colors.info, theme.colors.infoDeep]}
                 style={styles.cardGradient}
               >
                 <View style={styles.cardIcon}>
@@ -138,104 +142,102 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.dark,
-  },
-  header: {
-    paddingBottom: 32,
-  },
-  headerContent: {
-    paddingHorizontal: 24,
-    paddingTop: 64,
-  },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  greeting: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: "700" as const,
-    color: colors.text.primary,
-  },
-  logoutButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.button.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoutButtonPressed: {
-    opacity: 0.7,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700" as const,
-    color: colors.text.primary,
-    marginBottom: 16,
-  },
-  cardGrid: {
-    gap: 16,
-  },
-  card: {
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  cardPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
-  },
-  cardGradient: {
-    padding: 20,
-    minHeight: 120,
-    justifyContent: "space-between",
-  },
-  cardIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: colors.text.primary,
-    marginBottom: 4,
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    color: colors.text.primary,
-    opacity: 0.8,
-  },
-  cardArrow: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    header: {
+      paddingBottom: spacing.xxl,
+    },
+    headerContent: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: 64,
+    },
+    headerTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    greeting: {
+      ...type.body,
+      color: colors.inkMuted,
+      marginBottom: spacing.xxs,
+    },
+    userName: {
+      ...type.displayLg,
+      color: colors.ink,
+    },
+    logoutButton: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    logoutButtonPressed: {
+      backgroundColor: colors.surface3,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: spacing.xl,
+    },
+    content: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xl,
+    },
+    sectionTitle: {
+      ...type.screenTitle,
+      color: colors.ink,
+      marginBottom: spacing.md,
+    },
+    cardGrid: {
+      gap: spacing.md,
+    },
+    card: {
+      borderRadius: radius.lg,
+      overflow: "hidden",
+    },
+    cardPressed: {
+      opacity: 0.92,
+      transform: [{ scale: 0.98 }],
+    },
+    cardGradient: {
+      padding: spacing.lg,
+      minHeight: 120,
+      justifyContent: "space-between",
+    },
+    cardIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.md,
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.sm,
+    },
+    cardTitle: {
+      ...type.cardTitle,
+      fontSize: 18,
+      color: "#FFFFFF",
+      marginBottom: spacing.xxs,
+    },
+    cardSubtitle: {
+      ...type.bodySm,
+      color: "#FFFFFF",
+      opacity: 0.85,
+    },
+    cardArrow: {
+      position: "absolute",
+      bottom: spacing.lg,
+      right: spacing.lg,
+    },
+  });
+};

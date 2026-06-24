@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { LogIn, Settings } from "lucide-react-native";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Image } from "expo-image";
 import {
   ActivityIndicator,
@@ -15,16 +14,22 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { login, loginError, loginMsg, isLoggingIn } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const router = useRouter();
   const [userCode, setUserCode] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [userCodeError, setUserCodeError] = useState<string>("");
   const [passwordError, setPasswordError] = useState<string>("");
+  const [focusedField, setFocusedField] = useState<"user" | "password" | null>(
+    null,
+  );
 
   const validateUserCode = (text: string): boolean => {
     if (!text) {
@@ -60,21 +65,22 @@ export default function LoginScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient
-        colors={[colors.background.darker, colors.background.dark]}
-        style={styles.container}
-      >
+      <View style={styles.container}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
           <View style={styles.content}>
             <Pressable
-              style={styles.settingsButton}
+              style={({ pressed }) => [
+                styles.settingsButton,
+                pressed && styles.settingsButtonPressed,
+              ]}
               onPress={() => router.push("/settings" as any)}
               testID="settings-button"
+              hitSlop={8}
             >
-              <Settings size={24} color="#fff" />
+              <Settings size={22} color={theme.colors.inkMuted} />
             </Pressable>
 
             <View style={styles.header}>
@@ -98,15 +104,18 @@ export default function LoginScreen() {
                 <TextInput
                   style={[
                     styles.input,
+                    focusedField === "user" && styles.inputFocused,
                     userCodeError ? styles.inputError : null,
                   ]}
                   placeholder={t("login.placeholders.user")}
-                  placeholderTextColor={colors.input.placeholder}
+                  placeholderTextColor={theme.colors.inkSubtle}
                   value={userCode}
                   onChangeText={(text) => {
                     setUserCode(text);
                     if (userCodeError) validateUserCode(text);
                   }}
+                  onFocus={() => setFocusedField("user")}
+                  onBlur={() => setFocusedField(null)}
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoggingIn}
@@ -122,15 +131,18 @@ export default function LoginScreen() {
                 <TextInput
                   style={[
                     styles.input,
+                    focusedField === "password" && styles.inputFocused,
                     passwordError ? styles.inputError : null,
                   ]}
                   placeholder={t("login.placeholders.password")}
-                  placeholderTextColor={colors.input.placeholder}
+                  placeholderTextColor={theme.colors.inkSubtle}
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
                     if (passwordError) validatePassword(text);
                   }}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField(null)}
                   secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -159,13 +171,13 @@ export default function LoginScreen() {
                 testID="login-button"
               >
                 {isLoggingIn ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={theme.colors.onPrimary} />
                 ) : (
                   <>
                     <Text style={styles.buttonText}>
                       {t("login.buttons.login")}
                     </Text>
-                    <LogIn size={20} color="#fff" />
+                    <LogIn size={20} color={theme.colors.onPrimary} />
                   </>
                 )}
               </Pressable>
@@ -174,121 +186,136 @@ export default function LoginScreen() {
             <Text style={styles.footer}>{t("login.footer")}</Text>
           </View>
         </KeyboardAvoidingView>
-      </LinearGradient>
+      </View>
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  settingsButton: {
-    position: "absolute",
-    top: 48,
-    right: 24,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.button.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 48,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "700" as const,
-    color: colors.text.primary,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    marginBottom: 8,
-  },
-  loginMsgText: {
-    color: colors.error.text,
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: "center",
-  },
-  form: {
-    gap: 24,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: colors.text.primary,
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: colors.input.background,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.input.text,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  inputError: {
-    borderColor: colors.border.error,
-  },
-  errorContainer: {
-    backgroundColor: colors.error.background,
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.error.border,
-  },
-  errorText: {
-    color: colors.error.text,
-    fontSize: 14,
-  },
-  button: {
-    backgroundColor: colors.button.primary,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 8,
-  },
-  buttonPressed: {
-    opacity: 0.8,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600" as const,
-  },
-  footer: {
-    textAlign: "center",
-    color: colors.text.muted,
-    fontSize: 12,
-    marginTop: 32,
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    content: {
+      flex: 1,
+      justifyContent: "center",
+      paddingHorizontal: spacing.xl,
+    },
+    settingsButton: {
+      position: "absolute",
+      top: spacing.xxl,
+      right: spacing.xl,
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10,
+    },
+    settingsButtonPressed: {
+      backgroundColor: colors.surface3,
+    },
+    header: {
+      alignItems: "center",
+      marginBottom: spacing.xxxl,
+    },
+    logo: {
+      width: 120,
+      height: 120,
+      marginBottom: spacing.xxl,
+    },
+    title: {
+      ...type.displayXl,
+      color: colors.ink,
+      marginBottom: spacing.xs,
+      textAlign: "center",
+    },
+    subtitle: {
+      ...type.body,
+      color: colors.inkMuted,
+      marginBottom: spacing.xs,
+    },
+    loginMsgText: {
+      ...type.bodySm,
+      color: colors.error,
+      marginTop: spacing.xs,
+      textAlign: "center",
+    },
+    form: {
+      gap: spacing.lg,
+    },
+    inputGroup: {
+      gap: spacing.xs,
+    },
+    label: {
+      ...type.label,
+      color: colors.inkMuted,
+      textTransform: "uppercase",
+    },
+    input: {
+      ...type.body,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      minHeight: 50,
+      color: colors.ink,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    inputFocused: {
+      borderWidth: 2,
+      borderColor: colors.primaryRing,
+    },
+    inputError: {
+      borderWidth: 2,
+      borderColor: colors.error,
+    },
+    errorContainer: {
+      backgroundColor: colors.errorTint,
+      padding: spacing.sm,
+      borderRadius: radius.md,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.error,
+    },
+    errorText: {
+      ...type.bodySm,
+      color: colors.error,
+    },
+    button: {
+      backgroundColor: colors.primary,
+      borderRadius: radius.md,
+      paddingVertical: 14,
+      paddingHorizontal: spacing.lg,
+      minHeight: 48,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+    },
+    buttonPressed: {
+      backgroundColor: colors.primaryPress,
+    },
+    buttonDisabled: {
+      backgroundColor: colors.surface2,
+    },
+    buttonText: {
+      ...type.button,
+      color: colors.onPrimary,
+    },
+    footer: {
+      ...type.caption,
+      textAlign: "center",
+      color: colors.inkSubtle,
+      marginTop: spacing.xxl,
+    },
+  });
+};

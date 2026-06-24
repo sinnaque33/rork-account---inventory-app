@@ -14,11 +14,15 @@ import {
 } from 'react-native';
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import type { Theme } from '@/constants/theme';
 import { InventoryItem } from '@/services/types';
 
 export default function InventoryScreen() {
   const { t } = useTranslation();
   const { credentials } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState<number>(1);
@@ -79,7 +83,7 @@ export default function InventoryScreen() {
   if (inventoryQuery.isLoading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>{t('inventory.loading')}</Text>
       </View>
     );
@@ -88,7 +92,7 @@ export default function InventoryScreen() {
   if (inventoryQuery.isError) {
     return (
       <View style={styles.centerContainer}>
-        <AlertCircle size={48} color="#ef4444" />
+        <AlertCircle size={48} color={theme.colors.error} />
         <Text style={styles.errorTitle}>{t('inventory.errorTitle')}</Text>
         <Text style={styles.errorText}>
           {inventoryQuery.error instanceof Error
@@ -110,7 +114,7 @@ export default function InventoryScreen() {
           />
         ) : (
           <View style={styles.iconContainer}>
-            <Package size={32} color="#3b82f6" />
+            <Package size={32} color={theme.colors.primary} />
           </View>
         )}
         <View style={styles.itemInfo}>
@@ -129,7 +133,7 @@ export default function InventoryScreen() {
     }
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#3b82f6" />
+        <ActivityIndicator size="small" color={theme.colors.primary} />
       </View>
     );
   };
@@ -138,11 +142,11 @@ export default function InventoryScreen() {
     <View style={styles.container}>
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <Search size={20} color="#94a3b8" />
+          <Search size={20} color={theme.colors.inkSubtle} />
           <TextInput
             style={styles.searchInput}
             placeholder={t('inventory.searchPlaceholder')}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={theme.colors.inkSubtle}
             value={searchQuery}
             onChangeText={setSearchQuery}
             testID="search-input"
@@ -156,14 +160,19 @@ export default function InventoryScreen() {
         keyExtractor={(item, index) => `${item.InventoryCode}-${index}`}
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3b82f6']} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Package size={48} color="#cbd5e1" />
+            <Package size={48} color={theme.colors.inkTertiary} />
             <Text style={styles.emptyText}>
               {searchQuery ? t('inventory.emptySearch') : t('inventory.emptyList')}
             </Text>
@@ -174,116 +183,112 @@ export default function InventoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  searchContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1e293b',
-  },
-  content: {
-    padding: 16,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f8fafc',
-    gap: 12,
-    padding: 24,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#64748b',
-    marginTop: 8,
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: '#1e293b',
-    marginTop: 8,
-  },
-  errorText: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-    gap: 12,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#64748b',
-    textAlign: 'center',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  thumbnail: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: '#f1f5f9',
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: '#eff6ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  itemInfo: {
-    flex: 1,
-    gap: 6,
-  },
-  itemCode: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#3b82f6',
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#1e293b',
-    lineHeight: 22,
-  },
-  footerLoader: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    searchContainer: {
+      backgroundColor: colors.canvas,
+      padding: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.hairline,
+    },
+    searchInputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface2,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.md,
+      gap: spacing.sm,
+    },
+    searchInput: {
+      ...type.body,
+      flex: 1,
+      paddingVertical: spacing.sm,
+      color: colors.ink,
+    },
+    content: {
+      padding: spacing.md,
+    },
+    centerContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.canvas,
+      gap: spacing.sm,
+      padding: spacing.xl,
+    },
+    loadingText: {
+      ...type.body,
+      color: colors.inkMuted,
+      marginTop: spacing.xs,
+    },
+    errorTitle: {
+      ...type.cardTitle,
+      color: colors.ink,
+      marginTop: spacing.xs,
+    },
+    errorText: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      textAlign: 'center',
+    },
+    emptyContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xxxl,
+      gap: spacing.sm,
+    },
+    emptyText: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: 'center',
+    },
+    card: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    thumbnail: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.md,
+      backgroundColor: colors.surface2,
+    },
+    iconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.md,
+      backgroundColor: colors.primaryTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    itemInfo: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    itemCode: {
+      ...type.mono,
+      color: colors.primary,
+    },
+    itemName: {
+      ...type.cardTitle,
+      color: colors.ink,
+    },
+    footerLoader: {
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+    },
+  });
+};

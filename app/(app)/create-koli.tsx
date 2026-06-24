@@ -10,11 +10,15 @@ import {
   ScrollView,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import colors from '@/constants/colors';
+import { useMemo } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
+import type { Theme } from '@/constants/theme';
 
 export default function CreateKoliScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <>
@@ -46,7 +50,7 @@ export default function CreateKoliScreen() {
                 testID="receipt-barcode-button"
               >
                 <View style={styles.iconCircle}>
-                  <ShoppingCart size={32} color={colors.text.primary} />
+                  <ShoppingCart size={32} color={theme.colors.onPrimary} />
                 </View>
                 <Text style={styles.optionTitle}>{t('createKoli.orderOptionTitle')}</Text>
                 <Text style={styles.optionDescription}>
@@ -61,61 +65,61 @@ export default function CreateKoliScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.dark,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    color: colors.text.primary,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    marginBottom: 32,
-  },
-  buttonsContainer: {
-    gap: 16,
-    marginBottom: 24,
-  },
-  optionButton: {
-    backgroundColor: colors.background.card,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.border.default,
-  },
-
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.background.darker,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  optionTitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: colors.text.primary,
-    marginBottom: 8,
-  },
-  optionDescription: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    scrollContent: {
+      flexGrow: 1,
+    },
+    content: {
+      flex: 1,
+      padding: spacing.lg,
+    },
+    title: {
+      ...type.displayLg,
+      color: colors.ink,
+      marginBottom: spacing.xs,
+    },
+    subtitle: {
+      ...type.body,
+      color: colors.inkMuted,
+      marginBottom: spacing.xxl,
+    },
+    buttonsContainer: {
+      gap: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    optionButton: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.lg,
+      padding: spacing.xl,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    iconCircle: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.md,
+    },
+    optionTitle: {
+      ...type.cardTitle,
+      color: colors.ink,
+      marginBottom: spacing.xs,
+    },
+    optionDescription: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+  });
+};

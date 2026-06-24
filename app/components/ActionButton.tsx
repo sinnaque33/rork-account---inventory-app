@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 
 interface ActionButtonProps {
   text: string;
@@ -20,6 +21,9 @@ export function ActionButton({
   onPress,
   isLoading = false,
 }: ActionButtonProps) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
   return (
     <TouchableOpacity
       style={[styles.actionButton, isLoading && styles.disabledButton]}
@@ -27,41 +31,39 @@ export function ActionButton({
       disabled={isLoading}
       activeOpacity={0.7}
     >
-      {isLoading ? <ActivityIndicator size="small" color="#000" /> : icon}
-      <Text style={styles.buttonText}>
-        {text}
-      </Text>
+      {isLoading ? (
+        <ActivityIndicator size="small" color={theme.colors.ink} />
+      ) : (
+        icon
+      )}
+      <Text style={styles.buttonText}>{text}</Text>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  actionButton: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    paddingVertical: 22,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  buttonText: {
-    fontSize: 12,
-    fontFamily: "Segoe UI",
-    fontWeight: "700",
-    color: "#000",
-    textAlign: "center",
-    lineHeight: 14,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, radius, type } = theme;
+  return StyleSheet.create({
+    actionButton: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      paddingVertical: 18,
+      paddingHorizontal: 4,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    buttonText: {
+      ...type.caption,
+      fontWeight: "700",
+      color: colors.ink,
+      textAlign: "center",
+    },
+    disabledButton: {
+      opacity: 0.6,
+    },
+  });
+};

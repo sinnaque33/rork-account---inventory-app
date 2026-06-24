@@ -10,15 +10,17 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/services/api";
 import { AlertCircle, Building2 } from "lucide-react-native";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import colors from "@/constants/colors";
-import { Stack } from "expo-router";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 import { CurrentAccount } from "@/services/types";
 
 export default function AccountsScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
 
@@ -48,7 +50,7 @@ export default function AccountsScreen() {
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.iconContainer}>
-            <Building2 size={24} color={colors.button.primary} />
+            <Building2 size={24} color={theme.colors.primary} />
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.accountName}>{item.CurrentAccountName}</Text>
@@ -57,14 +59,14 @@ export default function AccountsScreen() {
         </View>
       </View>
     ),
-    [],
+    [styles, theme.colors.primary],
   );
 
   const renderFooter = () => {
     if (!accountsQuery.isFetching || refreshing) return null;
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={colors.button.primary} />
+        <ActivityIndicator size="small" color={theme.colors.primary} />
       </View>
     );
   };
@@ -73,7 +75,7 @@ export default function AccountsScreen() {
     if (accountsQuery.isLoading) {
       return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.button.primary} />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>{t("accounts.loading")}</Text>
         </View>
       );
@@ -82,7 +84,7 @@ export default function AccountsScreen() {
     if (accountsQuery.isError) {
       return (
         <View style={styles.centerContainer}>
-          <AlertCircle size={48} color={colors.border.error} />
+          <AlertCircle size={48} color={theme.colors.error} />
           <Text style={styles.errorTitle}>{t("accounts.errorTitle")}</Text>
           <Text style={styles.errorText}>
             {accountsQuery.error instanceof Error
@@ -123,90 +125,83 @@ export default function AccountsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.dark,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  emptyListContent: {
-    flexGrow: 1,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 48,
-    gap: 12,
-    padding: 24,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    fontFamily: "Segoe UI",
-    marginTop: 12,
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: "600" as const,
-    color: colors.text.primary,
-    marginTop: 8,
-  },
-  errorText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.text.secondary,
-  },
-  card: {
-    backgroundColor: colors.background.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(220, 20, 60, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardContent: {
-    flex: 1,
-    gap: 4,
-  },
-  accountName: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: colors.text.primary,
-    lineHeight: 22,
-  },
-  accountCode: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    lineHeight: 20,
-  },
-  footerLoader: {
-    paddingVertical: 20,
-    alignItems: "center",
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    listContent: {
+      padding: spacing.gutter,
+      paddingBottom: spacing.xxl,
+    },
+    emptyListContent: {
+      flexGrow: 1,
+    },
+    centerContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: spacing.xxxl,
+      gap: spacing.sm,
+      padding: spacing.xl,
+    },
+    loadingText: {
+      ...type.body,
+      color: colors.inkMuted,
+      marginTop: spacing.sm,
+    },
+    errorTitle: {
+      ...type.cardTitle,
+      color: colors.ink,
+      marginTop: spacing.xs,
+    },
+    errorText: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      textAlign: "center",
+    },
+    emptyText: {
+      ...type.body,
+      color: colors.inkMuted,
+    },
+    card: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.md,
+      backgroundColor: colors.primaryTint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cardContent: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    accountName: {
+      ...type.cardTitle,
+      color: colors.ink,
+    },
+    accountCode: {
+      ...type.mono,
+      color: colors.inkMuted,
+    },
+    footerLoader: {
+      paddingVertical: spacing.lg,
+      alignItems: "center",
+    },
+  });
+};

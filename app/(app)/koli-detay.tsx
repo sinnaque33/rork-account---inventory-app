@@ -35,13 +35,14 @@ import {
   Platform,
   Vibration,
 } from "react-native";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useLocalSearchParams, Stack } from "expo-router";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { byteArrayToBase64 } from "@/utils/imageUtils";
 
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 import PrintBarcodeModal from "../components/PrintBarcodeModal";
 import { ActionButton } from "../components/ActionButton";
 import ReceiptConfirmModal from "../components/ReceiptConfirmModal";
@@ -49,6 +50,8 @@ import ResultModal from "../components/ResultModal";
 
 export default function KoliDetayScreen() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const {
     id,
     packageNo,
@@ -67,6 +70,7 @@ export default function KoliDetayScreen() {
   }>();
 
   const { errorSound } = useApiConfig();
+  const { skipWeightInput } = useApiConfig();
 
   const playErrorSignal = async () => {
     try {
@@ -300,9 +304,9 @@ export default function KoliDetayScreen() {
       grossWeight,
       netWeight,
     }: {
-      grossWeight: string;
-      netWeight: string;
-    }) => {
+      grossWeight?: string;
+      netWeight?: string;
+    } = {}) => {
       if (!credentials || !id) {
         throw new Error(t("koliDetay.missingInfo"));
       }
@@ -433,7 +437,7 @@ export default function KoliDetayScreen() {
     return (
       <View style={styles.centerContainer}>
         <Stack.Screen options={{ title: t("koliDetay.headerFallback") }} />
-        <ActivityIndicator size="large" color={colors.button.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>{t("koliDetay.loading")}</Text>
       </View>
     );
@@ -443,7 +447,7 @@ export default function KoliDetayScreen() {
     return (
       <View style={styles.centerContainer}>
         <Stack.Screen options={{ title: t("koliDetay.headerFallback") }} />
-        <AlertCircle size={48} color={colors.border.error} />
+        <AlertCircle size={48} color={theme.colors.error} />
         <Text style={styles.errorTitle}>{t("koliDetay.loadErrorTitle")}</Text>
         <Text style={styles.errorText}>
           {koliDetailQuery.error instanceof Error
@@ -504,7 +508,7 @@ export default function KoliDetayScreen() {
             />
           ) : (
             <View style={styles.iconContainer}>
-              <Package size={24} color={colors.button.primary} />
+              <Package size={24} color={theme.colors.primary} />
             </View>
           )}
 
@@ -532,7 +536,7 @@ export default function KoliDetayScreen() {
                       <Text
                         style={[
                           styles.fieldValue,
-                          { color: colors.status.success, fontWeight: "700" },
+                          { color: theme.colors.success, fontWeight: "700" },
                         ]}
                         numberOfLines={1}
                       >
@@ -595,12 +599,12 @@ export default function KoliDetayScreen() {
           >
             <Plus
               size={18}
-              color={scanMode === "add" ? "#fff" : colors.text.secondary}
+              color={scanMode === "add" ? theme.colors.onPrimary : theme.colors.inkSubtle}
             />
             <Text
               style={[
                 styles.toggleText,
-                scanMode === "add" && { color: "#fff" },
+                scanMode === "add" && { color: theme.colors.onPrimary },
               ]}
             >
               {t("koliDetay.addMaterial")}
@@ -620,12 +624,12 @@ export default function KoliDetayScreen() {
           >
             <Trash2
               size={18}
-              color={scanMode === "delete" ? "#fff" : colors.text.secondary}
+              color={scanMode === "delete" ? theme.colors.onError : theme.colors.inkSubtle}
             />
             <Text
               style={[
                 styles.toggleText,
-                scanMode === "delete" && { color: "#fff" },
+                scanMode === "delete" && { color: theme.colors.onError },
               ]}
             >
               {t("koliDetay.deleteMaterial")}
@@ -636,12 +640,12 @@ export default function KoliDetayScreen() {
         <View
           style={[
             styles.barcodeInputWrapper,
-            scanMode === "delete" && { borderColor: "rgba(244, 67, 54, 0.5)" },
+            scanMode === "delete" && { borderColor: theme.colors.error },
           ]}
         >
           <ScanBarcode
             size={22}
-            color={scanMode === "delete" ? "#F44336" : colors.button.primary}
+            color={scanMode === "delete" ? theme.colors.error : theme.colors.primary}
           />
           <TextInput
             ref={inputRef}
@@ -657,12 +661,12 @@ export default function KoliDetayScreen() {
                 ? t("koliDetay.placeholderAdd")
                 : t("koliDetay.placeholderDelete")
             }
-            placeholderTextColor={colors.text.secondary}
+            placeholderTextColor={theme.colors.inkSubtle}
             autoFocus
             blurOnSubmit={false}
           />
           {barcodeMutation.isPending && (
-            <ActivityIndicator size="small" color={colors.button.primary} />
+            <ActivityIndicator size="small" color={theme.colors.primary} />
           )}
         </View>
       </View>
@@ -675,7 +679,7 @@ export default function KoliDetayScreen() {
         contentContainerStyle={styles.content}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Package size={48} color={colors.text.secondary} />
+            <Package size={48} color={theme.colors.inkSubtle} />
             <Text style={styles.emptyText}>{t("koliDetay.emptyBox")}</Text>
           </View>
         }
@@ -685,28 +689,34 @@ export default function KoliDetayScreen() {
       <View style={styles.buttonContainer}>
         <ActionButton
           text="Yazdır"
-          icon={<Printer size={20} color="#000" />}
+          icon={<Printer size={20} color={theme.colors.ink} />}
           onPress={() => setShowPrintModal(true)}
         />
 
         <ActionButton
           text={t("koliDetay.btnCreateReceipt")}
-          icon={<FileText size={20} color="#000" />}
+          icon={<FileText size={20} color={theme.colors.ink} />}
           onPress={() => setShowReceiptConfirm(true)}
           isLoading={createReceiptMutation.isPending}
         />
 
         <ActionButton
           text={t("koliDetay.btnOpenBox")}
-          icon={<Unlock size={20} color="#000" />}
+          icon={<Unlock size={20} color={theme.colors.success} />}
           onPress={() => setShowOpenBoxConfirm(true)}
           isLoading={openBoxMutation.isPending}
         />
 
         <ActionButton
           text={t("koliDetay.btnCloseBox")}
-          icon={<Lock size={20} color="#000" />}
-          onPress={() => setShowCloseBoxModal(true)}
+          icon={<Lock size={20} color={theme.colors.primary} />}
+          onPress={() => {
+            if (skipWeightInput) {
+              closeBoxMutation.mutate({});
+            } else {
+              setShowCloseBoxModal(true);
+            }
+          }}
           isLoading={closeBoxMutation.isPending}
         />
       </View>
@@ -749,7 +759,7 @@ export default function KoliDetayScreen() {
         <View style={styles.receiptModalOverlay}>
           <View style={styles.closeBoxModalContent}>
             <View style={styles.receiptIconContainer}>
-              <Lock size={48} color="#DC143C" />
+              <Lock size={48} color={theme.colors.primary} />
             </View>
             <Text style={styles.receiptModalTitle}>
               {t("koliDetay.modals.closeTitle")}
@@ -765,7 +775,7 @@ export default function KoliDetayScreen() {
               <TextInput
                 style={styles.weightInput}
                 placeholder="0.00"
-                placeholderTextColor={colors.text.secondary}
+                placeholderTextColor={theme.colors.inkSubtle}
                 value={grossWeight}
                 onChangeText={(text) => {
                   setGrossWeight(text);
@@ -782,7 +792,7 @@ export default function KoliDetayScreen() {
               <TextInput
                 style={styles.weightInput}
                 placeholder="0.00"
-                placeholderTextColor={colors.text.secondary}
+                placeholderTextColor={theme.colors.inkSubtle}
                 value={netWeight}
                 onChangeText={(text) => {
                   setNetWeight(text);
@@ -794,7 +804,7 @@ export default function KoliDetayScreen() {
 
             {weightError && (
               <View style={styles.errorBox}>
-                <AlertCircle size={16} color="#F44336" />
+                <AlertCircle size={16} color={theme.colors.error} />
                 <Text style={styles.weightErrorMessage}>{weightError}</Text>
               </View>
             )}
@@ -837,7 +847,7 @@ export default function KoliDetayScreen() {
                 disabled={closeBoxMutation.isPending}
               >
                 {closeBoxMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={theme.colors.onPrimary} />
                 ) : (
                   <Text style={styles.receiptConfirmText}>
                     {t("koliDetay.continue")}
@@ -860,10 +870,10 @@ export default function KoliDetayScreen() {
             <View
               style={[
                 styles.receiptIconContainer,
-                { backgroundColor: "rgba(76, 175, 80, 0.15)" },
+                { backgroundColor: theme.colors.successTint },
               ]}
             >
-              <Unlock size={48} color="#4CAF50" />
+              <Unlock size={48} color={theme.colors.success} />
             </View>
             <Text style={styles.receiptModalTitle}>
               {t("koliDetay.modals.openTitle")}
@@ -883,14 +893,14 @@ export default function KoliDetayScreen() {
               <TouchableOpacity
                 style={[
                   styles.receiptConfirmButton,
-                  { backgroundColor: "#4CAF50" },
+                  { backgroundColor: theme.colors.success },
                   openBoxMutation.isPending && styles.disabledButton,
                 ]}
                 onPress={() => openBoxMutation.mutate()}
                 disabled={openBoxMutation.isPending}
               >
                 {openBoxMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={theme.colors.onSuccess} />
                 ) : (
                   <Text style={styles.receiptConfirmText}>
                     {t("koliDetay.continue")}
@@ -916,22 +926,14 @@ export default function KoliDetayScreen() {
           style={[
             styles.toastContent,
             toastContent.type === "error" && {
-              borderColor: "rgba(244, 67, 54, 0.5)",
+              borderLeftColor: theme.colors.error,
             },
           ]}
         >
           {toastContent.type === "success" ? (
-            <CheckCircle
-              size={24}
-              color="#4CAF50"
-              fill="rgba(76, 175, 80, 0.1)"
-            />
+            <CheckCircle size={24} color={theme.colors.success} />
           ) : (
-            <AlertCircle
-              size={24}
-              color="#F44336"
-              fill="rgba(244, 67, 54, 0.1)"
-            />
+            <AlertCircle size={24} color={theme.colors.error} />
           )}
 
           <View style={{ flex: 1 }}>
@@ -956,10 +958,10 @@ export default function KoliDetayScreen() {
             <View
               style={[
                 styles.resultIconContainer,
-                { backgroundColor: "rgba(255, 152, 0, 0.1)" },
+                { backgroundColor: theme.colors.warningTint },
               ]}
             >
-              <AlertTriangle size={48} color="#FF9800" />
+              <AlertTriangle size={48} color={theme.colors.warning} />
             </View>
             <Text style={styles.resultTitle}>
               {overLimitType === 1
@@ -976,7 +978,7 @@ export default function KoliDetayScreen() {
               <TouchableOpacity
                 style={[
                   styles.resultButton,
-                  { flex: 1, backgroundColor: colors.background.darker },
+                  { flex: 1, backgroundColor: theme.colors.surface2 },
                 ]}
                 onPress={() => {
                   setShowOverLimitModal(false);
@@ -987,7 +989,7 @@ export default function KoliDetayScreen() {
                 <Text
                   style={[
                     styles.resultButtonText,
-                    { color: colors.text.secondary },
+                    { color: theme.colors.inkMuted },
                   ]}
                 >
                   {t("scanner.overLimit.cancelBtn")}
@@ -999,8 +1001,8 @@ export default function KoliDetayScreen() {
                   styles.resultButton,
                   {
                     flex: 1,
-                    backgroundColor: "#FF9800",
-                    borderColor: "#FF9800",
+                    backgroundColor: theme.colors.warning,
+                    borderColor: theme.colors.warning,
                   },
                 ]}
                 onPress={() => {
@@ -1012,7 +1014,7 @@ export default function KoliDetayScreen() {
                   });
                 }}
               >
-                <Text style={[styles.resultButtonText, { color: "#fff" }]}>
+                <Text style={[styles.resultButtonText, { color: theme.colors.onWarning }]}>
                   {t("scanner.overLimit.confirmBtn")}
                 </Text>
               </TouchableOpacity>
@@ -1035,447 +1037,408 @@ export default function KoliDetayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.dark,
-  },
-  topSection: {
-    backgroundColor: colors.background.card,
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.default,
-    gap: 12,
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    backgroundColor: colors.background.darker,
-    borderRadius: 10,
-    padding: 4,
-  },
-  toggleBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
-  },
-  toggleBtnActiveAdd: {
-    backgroundColor: colors.button.primary,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  toggleBtnActiveDelete: {
-    backgroundColor: "#E53935",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  toggleText: {
-    fontSize: 14,
-    fontFamily: "Segoe UI",
-    fontWeight: "600",
-    color: colors.text.secondary,
-  },
-  barcodeInputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.background.darker,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    height: 50,
-    gap: 12,
-  },
-  barcodeInputTop: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "600",
-    color: colors.text.primary,
-  },
-  content: {
-    padding: 16,
-  },
-  receiptBanner: {
-    backgroundColor: "rgba(220, 20, 60, 0.15)",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.default,
-  },
-  receiptBannerText: {
-    fontSize: 14,
-    fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    color: colors.button.primary,
-    textAlign: "center",
-  },
-  sipExpBannerText: {
-    fontSize: 13,
-    fontFamily: "Segoe UI",
-    fontWeight: "500" as const,
-    color: "#4CAF50",
-    textAlign: "center",
-    marginTop: 4,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.background.dark,
-    gap: 12,
-    padding: 24,
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    marginTop: 8,
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    color: colors.text.primary,
-    marginTop: 8,
-  },
-  errorText: {
-    fontSize: 14,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 48,
-    gap: 12,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  card: {
-    backgroundColor: colors.background.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  cardContent: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(220, 20, 60, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  thumbnailImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: colors.background.dark,
-  },
-  itemInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  itemName: {
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    color: colors.text.primary,
-    lineHeight: 20,
-  },
-  quantityContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-  },
-  quantityLabel: {
-    fontSize: 13,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    lineHeight: 18,
-  },
-  quantityValue: {
-    fontSize: 13,
-    fontFamily: "Segoe UI",
-    fontWeight: "700" as const,
-    color: colors.status.success,
-    lineHeight: 18,
-  },
-  dynamicFieldsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 6,
-    gap: 4,
-  },
-  dynamicFieldRow: {
-    width: "48%",
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 2,
-  },
-  fieldLabel: {
-    fontSize: 11,
-    fontFamily: "Segoe UI",
-    fontWeight: "700",
-    color: colors.text.secondary,
-    marginRight: 4,
-  },
-  fieldValue: {
-    fontSize: 11,
-    fontFamily: "Segoe UI",
-    color: colors.text.primary,
-    flexShrink: 1,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    padding: 18,
-    paddingBottom: 36,
-    gap: 12,
-    backgroundColor: colors.background.dark,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.default,
-  },
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    topSection: {
+      backgroundColor: colors.canvas,
+      padding: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.hairline,
+      gap: spacing.sm,
+    },
+    toggleContainer: {
+      flexDirection: "row",
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      padding: spacing.xxs,
+    },
+    toggleBtn: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: spacing.sm,
+      borderRadius: radius.sm,
+      gap: spacing.xxs,
+    },
+    toggleBtnActiveAdd: {
+      backgroundColor: colors.primary,
+    },
+    toggleBtnActiveDelete: {
+      backgroundColor: colors.error,
+    },
+    toggleText: {
+      ...type.button,
+      color: colors.inkSubtle,
+    },
+    barcodeInputWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      height: 50,
+      gap: spacing.sm,
+    },
+    barcodeInputTop: {
+      ...type.bodyLg,
+      flex: 1,
+      fontWeight: "600",
+      color: colors.ink,
+    },
+    content: {
+      padding: spacing.md,
+    },
+    receiptBanner: {
+      backgroundColor: colors.primaryTint,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.hairline,
+    },
+    receiptBannerText: {
+      ...type.bodySm,
+      fontWeight: "600" as const,
+      color: colors.primary,
+      textAlign: "center",
+    },
+    sipExpBannerText: {
+      ...type.bodySm,
+      fontWeight: "500" as const,
+      color: colors.success,
+      textAlign: "center",
+      marginTop: spacing.xxs,
+    },
+    centerContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.canvas,
+      gap: spacing.sm,
+      padding: spacing.xl,
+    },
+    loadingText: {
+      ...type.body,
+      color: colors.inkMuted,
+      marginTop: spacing.xs,
+    },
+    errorTitle: {
+      ...type.cardTitle,
+      color: colors.ink,
+      marginTop: spacing.xs,
+    },
+    errorText: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      textAlign: "center",
+    },
+    emptyContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: spacing.xxxl,
+      gap: spacing.sm,
+    },
+    emptyText: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: "center",
+    },
+    card: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    cardContent: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+    },
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.md,
+      backgroundColor: colors.primaryTint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    thumbnailImage: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface2,
+    },
+    itemInfo: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    itemName: {
+      ...type.cardTitle,
+      fontSize: 15,
+      color: colors.ink,
+    },
+    quantityContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 2,
+    },
+    quantityLabel: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+    },
+    quantityValue: {
+      ...type.mono,
+      fontWeight: "700" as const,
+      color: colors.success,
+    },
+    dynamicFieldsContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginTop: spacing.xxs,
+      gap: spacing.xxs,
+    },
+    dynamicFieldRow: {
+      width: "48%",
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 2,
+    },
+    fieldLabel: {
+      ...type.caption,
+      fontWeight: "700",
+      color: colors.inkSubtle,
+      marginRight: spacing.xxs,
+    },
+    fieldValue: {
+      ...type.caption,
+      color: colors.ink,
+      flexShrink: 1,
+    },
+    buttonContainer: {
+      flexDirection: "row",
+      padding: spacing.md,
+      paddingBottom: spacing.xxl,
+      gap: spacing.sm,
+      backgroundColor: colors.canvas,
+      borderTopWidth: 1,
+      borderTopColor: colors.hairline,
+    },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  resultIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  resultTitle: {
-    fontSize: 18,
-    fontFamily: "Segoe UI",
-    fontWeight: "700",
-    color: colors.text.primary,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  resultMessage: {
-    fontSize: 14,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  receiptModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  receiptModalContent: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 20,
-    padding: 28,
-    width: "100%",
-    maxWidth: 340,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#DC143C",
-  },
-  receiptIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(220, 20, 60, 0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  receiptModalTitle: {
-    fontSize: 22,
-    fontFamily: "Segoe UI",
-    fontWeight: "700" as const,
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  receiptModalSubtitle: {
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    color: "#aaa",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  receiptModalButtons: {
-    flexDirection: "row" as const,
-    gap: 12,
-    width: "100%",
-  },
-  receiptCancelButton: {
-    flex: 1,
-    backgroundColor: "#333",
-    borderRadius: 12,
-    padding: 14,
-    alignItems: "center" as const,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  receiptCancelText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    color: "#fff",
-  },
-  receiptConfirmButton: {
-    flex: 1,
-    backgroundColor: "#DC143C",
-    borderRadius: 12,
-    padding: 14,
-    alignItems: "center" as const,
-  },
-  receiptConfirmText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    color: "#fff",
-  },
-  closeBoxModalContent: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 20,
-    padding: 28,
-    width: "100%",
-    maxWidth: 340,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#DC143C",
-  },
-  weightInputContainer: {
-    width: "100%",
-    marginBottom: 16,
-  },
-  weightLabel: {
-    fontSize: 14,
-    fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    color: "#aaa",
-    marginBottom: 8,
-  },
-  weightInput: {
-    backgroundColor: "#333",
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    color: "#fff",
-    borderWidth: 1,
-    borderColor: "#444",
-    width: "100%",
-  },
-  toastContainer: {
-    position: "absolute",
-    bottom: 120,
-    left: 20,
-    right: 20,
-    alignItems: "center",
-    zIndex: 999,
-  },
-  toastContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.background.card,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: "rgba(76, 175, 80, 0.5)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 6,
-    gap: 12,
-  },
-  toastTitle: {
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    fontWeight: "700" as const,
-    color: colors.text.primary,
-  },
-  toastSubtitle: {
-    fontSize: 13,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    flexWrap: "wrap",
-  },
-  errorBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(244, 67, 54, 0.1)",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(244, 67, 54, 0.3)",
-    gap: 8,
-    width: "100%",
-  },
-  weightErrorMessage: {
-    color: "#F44336",
-    fontSize: 13,
-    fontFamily: "Segoe UI",
-    fontWeight: "600" as const,
-    flex: 1,
-  },
-  modalContent: {
-    width: "100%",
-    maxWidth: 320,
-    backgroundColor: colors.background.card,
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  resultButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  resultButtonText: { fontSize: 16, fontWeight: "600" },
-});
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    resultIconContainer: {
+      width: 64,
+      height: 64,
+      borderRadius: radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.md,
+    },
+    resultTitle: {
+      ...type.cardTitle,
+      fontSize: 18,
+      color: colors.ink,
+      textAlign: "center",
+      marginBottom: spacing.xs,
+    },
+    resultMessage: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      textAlign: "center",
+      marginBottom: spacing.xl,
+      lineHeight: 20,
+    },
+    disabledButton: {
+      opacity: 0.6,
+    },
+    receiptModalOverlay: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    receiptModalContent: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.xxl,
+      padding: spacing.xl,
+      width: "100%",
+      maxWidth: 340,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    receiptIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primaryTint,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.lg,
+    },
+    receiptModalTitle: {
+      ...type.headline,
+      color: colors.ink,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    receiptModalSubtitle: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: "center",
+      marginBottom: spacing.xl,
+    },
+    receiptModalButtons: {
+      flexDirection: "row" as const,
+      gap: spacing.sm,
+      width: "100%",
+    },
+    receiptCancelButton: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      padding: 14,
+      minHeight: 48,
+      alignItems: "center" as const,
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    receiptCancelText: {
+      ...type.button,
+      color: colors.ink,
+    },
+    receiptConfirmButton: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: radius.md,
+      padding: 14,
+      minHeight: 48,
+      alignItems: "center" as const,
+      justifyContent: "center",
+    },
+    receiptConfirmText: {
+      ...type.button,
+      color: colors.onPrimary,
+    },
+    closeBoxModalContent: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.xxl,
+      padding: spacing.xl,
+      width: "100%",
+      maxWidth: 340,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    weightInputContainer: {
+      width: "100%",
+      marginBottom: spacing.md,
+    },
+    weightLabel: {
+      ...type.label,
+      textTransform: "uppercase",
+      color: colors.inkMuted,
+      marginBottom: spacing.xs,
+      alignSelf: "flex-start",
+    },
+    weightInput: {
+      ...type.body,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      padding: 14,
+      color: colors.ink,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+      width: "100%",
+    },
+    toastContainer: {
+      position: "absolute",
+      bottom: 120,
+      left: spacing.lg,
+      right: spacing.lg,
+      alignItems: "center",
+      zIndex: 999,
+    },
+    toastContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface3,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.success,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
+      elevation: 6,
+      gap: spacing.sm,
+    },
+    toastTitle: {
+      ...type.bodySm,
+      fontWeight: "700" as const,
+      color: colors.ink,
+    },
+    toastSubtitle: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      flexWrap: "wrap",
+    },
+    errorBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.errorTint,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.sm,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.error,
+      gap: spacing.xs,
+      width: "100%",
+    },
+    weightErrorMessage: {
+      ...type.bodySm,
+      color: colors.error,
+      fontWeight: "600" as const,
+      flex: 1,
+    },
+    modalContent: {
+      width: "100%",
+      maxWidth: 320,
+      backgroundColor: colors.surface1,
+      borderRadius: radius.xxl,
+      padding: spacing.xl,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    resultButton: {
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      width: "100%",
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    resultButtonText: { ...type.button },
+  });
+};

@@ -1060,10 +1060,9 @@ export const api = {
       userName: string,
       password: string,
       boxId: number,
-      grossWeight: string,
-      netWeight: string,
+      grossWeight?: string,
+      netWeight?: string,
     ): Promise<{ success: string; msg: string }> {
-      // 1. Fonksiyonun tetiklendiğini ve aldığı parametreleri gösteren log
       console.log("API: Closing box", boxId, "with weights", {
         grossWeight,
         netWeight,
@@ -1073,14 +1072,20 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
+      const boxFieldsValue: { name: string; value: string }[] = [
+        { name: "Status", value: "2" },
+      ];
+      if (grossWeight !== undefined) {
+        boxFieldsValue.push({ name: "GrossWeight", value: grossWeight });
+      }
+      if (netWeight !== undefined) {
+        boxFieldsValue.push({ name: "NetWeight", value: netWeight });
+      }
+
       const dataPayload = {
         serviceType: 2,
         boxId: boxId,
-        boxFieldsValue: [
-          { name: "GrossWeight", value: grossWeight },
-          { name: "NetWeight", value: netWeight },
-          { name: "Status", value: "2" },
-        ],
+        boxFieldsValue,
         orderConnection: 1,
         orderShipmentControlType: 3,
       };

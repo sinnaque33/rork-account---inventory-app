@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import {
   Settings,
@@ -9,7 +8,7 @@ import {
   CheckSquare,
   Square,
 } from "lucide-react-native";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Audio, InterruptionModeAndroid } from "expo-av";
 import {
   ActivityIndicator,
@@ -27,12 +26,15 @@ import {
   Vibration,
 } from "react-native";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme, ThemeMode } from "@/constants/theme";
 import { SOUND_OPTIONS } from "@/constants/sounds";
 import i18n from "../locales/i18n";
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
+  const { theme, themeMode, setThemeMode } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const {
     apiBaseUrl,
     companyCode,
@@ -40,12 +42,14 @@ export default function SettingsScreen() {
     warehouseCode,
     errorSound,
     useExistingBox,
+    skipWeightInput,
     updateApiUrl,
     updateCompanyCode,
     updateCompanyPassword,
     updateWarehouseCode,
     updateErrorSound,
     updateUseExistingBox,
+    updateSkipWeightInput,
     resetToDefault,
     isLoading,
     isSaving,
@@ -63,6 +67,10 @@ export default function SettingsScreen() {
   const [existingBoxMode, setExistingBoxMode] = useState<boolean>(
     useExistingBox || false,
   );
+  const [skipWeightMode, setSkipWeightMode] = useState<boolean>(
+    skipWeightInput || false,
+  );
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const router = useRouter();
 
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -84,6 +92,7 @@ export default function SettingsScreen() {
     setPassword(companyPassword);
     setWhCode(warehouseCode);
     setExistingBoxMode(useExistingBox || false);
+    setSkipWeightMode(skipWeightInput || false);
     if (errorSound) {
       setSelectedSound(errorSound);
     }
@@ -94,6 +103,7 @@ export default function SettingsScreen() {
     warehouseCode,
     errorSound,
     useExistingBox,
+    skipWeightInput,
   ]);
 
   const playErrorSound = async (soundFile: any) => {
@@ -173,6 +183,7 @@ export default function SettingsScreen() {
       await updateWarehouseCode(whCode.trim());
       await updateErrorSound(selectedSound);
       await updateUseExistingBox(existingBoxMode);
+      await updateSkipWeightInput(skipWeightMode);
 
       showSuccessToast();
     } catch {
@@ -184,39 +195,51 @@ export default function SettingsScreen() {
   };
 
   const handleReset = () => {
-    Alert.alert(
-      t("settings.alerts.resetTitle"),
-      t("settings.alerts.resetMsg"),
-      [
-        { text: t("settings.alerts.cancel"), style: "cancel" },
-        {
-          text: t("settings.alerts.resetBtn"),
-          style: "destructive",
-          onPress: async () => {
-            await resetToDefault();
-            setUrl(defaultUrl);
-            setCode("");
-            setPassword("");
-            setWhCode("");
-            setSelectedSound("error_1");
-            setExistingBoxMode(false);
-            Alert.alert(
-              t("settings.alerts.resetSuccessTitle"),
-              t("settings.alerts.resetSuccessMsg"),
-            );
-          },
+    Alert.alert(t("settings.alerts.resetTitle"), t("settings.alerts.resetMsg"), [
+      { text: t("settings.alerts.cancel"), style: "cancel" },
+      {
+        text: t("settings.alerts.resetBtn"),
+        style: "destructive",
+        onPress: async () => {
+          await resetToDefault();
+          setUrl(defaultUrl);
+          setCode("");
+          setPassword("");
+          setWhCode("");
+          setSelectedSound("error_1");
+          setExistingBoxMode(false);
+          setSkipWeightMode(false);
+          Alert.alert(
+            t("settings.alerts.resetSuccessTitle"),
+            t("settings.alerts.resetSuccessMsg"),
+          );
         },
-      ],
-    );
+      },
+    ]);
   };
+
+  const inputStyle = (field: string) => [
+    styles.input,
+    focusedField === field && styles.inputFocused,
+  ];
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
+
+  const languageOptions: { id: string; label: string }[] = [
+    { id: "tr", label: "🇹🇷 Türkçe" },
+    { id: "en", label: "🇬🇧 English" },
+  ];
+
+  const themeOptionsList: { id: ThemeMode; label: string }[] = [
+    { id: "dark", label: t("settings.themeOptions.dark") },
+    { id: "light", label: t("settings.themeOptions.light") },
+  ];
 
   return (
     <>
@@ -225,18 +248,15 @@ export default function SettingsScreen() {
           headerShown: true,
           title: t("settings.headerTitle"),
           headerStyle: {
-            backgroundColor: colors.background.darker,
+            backgroundColor: theme.colors.canvas,
           },
-          headerTintColor: colors.text.primary,
+          headerTintColor: theme.colors.ink,
           headerTitleStyle: {
             fontWeight: "600" as const,
           },
         }}
       />
-      <LinearGradient
-        colors={[colors.background.darker, colors.background.dark]}
-        style={styles.container}
-      >
+      <View style={styles.container}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
@@ -249,7 +269,11 @@ export default function SettingsScreen() {
             <View style={styles.content}>
               <View style={styles.header}>
                 <View style={styles.iconContainer}>
-                  <Settings size={40} color="#fff" strokeWidth={2} />
+                  <Settings
+                    size={36}
+                    color={theme.colors.primary}
+                    strokeWidth={2}
+                  />
                 </View>
                 <Text style={styles.title}>{t("settings.pageTitle")}</Text>
                 <Text style={styles.subtitle}>
@@ -258,83 +282,83 @@ export default function SettingsScreen() {
               </View>
 
               <View style={styles.form}>
+                {/* Theme selector */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
-                    {t("settings.language") || "Dil / Language"}
-                  </Text>
-                  <View style={{ flexDirection: "row", gap: 12 }}>
-                    <Pressable
-                      style={[
-                        styles.button,
-                        {
-                          flex: 1,
-                          backgroundColor:
-                            i18n.language === "tr"
-                              ? colors.button.primary
-                              : colors.background.darker,
-                          borderWidth: 1,
-                          borderColor: colors.border.default,
-                        },
-                      ]}
-                      onPress={() => i18n.changeLanguage("tr")}
-                    >
-                      <Text
-                        style={[
-                          styles.buttonText,
-                          {
-                            color:
-                              i18n.language === "tr"
-                                ? "#fff"
-                                : colors.text.secondary,
-                          },
-                        ]}
-                      >
-                        🇹🇷 Türkçe
-                      </Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={[
-                        styles.button,
-                        {
-                          flex: 1,
-                          backgroundColor:
-                            i18n.language === "en"
-                              ? colors.button.primary
-                              : colors.background.darker,
-                          borderWidth: 1,
-                          borderColor: colors.border.default,
-                        },
-                      ]}
-                      onPress={() => i18n.changeLanguage("en")}
-                    >
-                      <Text
-                        style={[
-                          styles.buttonText,
-                          {
-                            color:
-                              i18n.language === "en"
-                                ? "#fff"
-                                : colors.text.secondary,
-                          },
-                        ]}
-                      >
-                        🇬🇧 English
-                      </Text>
-                    </Pressable>
+                  <Text style={styles.label}>{t("settings.theme")}</Text>
+                  <View style={styles.segment}>
+                    {themeOptionsList.map((option) => {
+                      const active = themeMode === option.id;
+                      return (
+                        <Pressable
+                          key={option.id}
+                          style={[
+                            styles.segmentOption,
+                            active && styles.segmentOptionActive,
+                          ]}
+                          onPress={() => setThemeMode(option.id)}
+                        >
+                          <Text
+                            style={[
+                              styles.segmentText,
+                              active && styles.segmentTextActive,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
+                </View>
+
+                {/* Language selector */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>{t("settings.language")}</Text>
+                  <View style={styles.segment}>
+                    {languageOptions.map((option) => {
+                      const active = i18n.language === option.id;
+                      return (
+                        <Pressable
+                          key={option.id}
+                          style={[
+                            styles.segmentOption,
+                            active && styles.segmentOptionActive,
+                          ]}
+                          onPress={() => i18n.changeLanguage(option.id)}
+                        >
+                          <Text
+                            style={[
+                              styles.segmentText,
+                              active && styles.segmentTextActive,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
                   <Text style={styles.label}>
                     {t("settings.labels.apiUrl")}
                   </Text>
                   <TextInput
-                    style={[styles.input, error ? styles.inputError : null]}
+                    style={[
+                      inputStyle("url"),
+                      styles.multilineInput,
+                      error ? styles.inputError : null,
+                    ]}
                     placeholder={t("settings.placeholders.apiUrl")}
-                    placeholderTextColor={colors.input.placeholder}
+                    placeholderTextColor={theme.colors.inkSubtle}
                     value={url}
                     onChangeText={(text) => {
                       setUrl(text);
                       if (error) validateUrl(text);
                     }}
+                    onFocus={() => setFocusedField("url")}
+                    onBlur={() => setFocusedField(null)}
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="url"
@@ -350,11 +374,13 @@ export default function SettingsScreen() {
                     {t("settings.labels.companyCode")}
                   </Text>
                   <TextInput
-                    style={styles.input}
+                    style={inputStyle("code")}
                     placeholder={t("settings.placeholders.companyCode")}
-                    placeholderTextColor={colors.input.placeholder}
+                    placeholderTextColor={theme.colors.inkSubtle}
                     value={code}
                     onChangeText={setCode}
+                    onFocus={() => setFocusedField("code")}
+                    onBlur={() => setFocusedField(null)}
                     autoCapitalize="none"
                     autoCorrect={false}
                     editable={!isSaving}
@@ -367,11 +393,13 @@ export default function SettingsScreen() {
                     {t("settings.labels.companyPassword")}
                   </Text>
                   <TextInput
-                    style={styles.input}
+                    style={inputStyle("password")}
                     placeholder={t("settings.placeholders.companyPassword")}
-                    placeholderTextColor={colors.input.placeholder}
+                    placeholderTextColor={theme.colors.inkSubtle}
                     value={password}
                     onChangeText={setPassword}
+                    onFocus={() => setFocusedField("password")}
+                    onBlur={() => setFocusedField(null)}
                     autoCapitalize="none"
                     autoCorrect={false}
                     secureTextEntry
@@ -385,11 +413,13 @@ export default function SettingsScreen() {
                     {t("settings.labels.warehouseCode")}
                   </Text>
                   <TextInput
-                    style={styles.input}
+                    style={inputStyle("whCode")}
                     placeholder={t("settings.placeholders.warehouseCode")}
-                    placeholderTextColor={colors.input.placeholder}
+                    placeholderTextColor={theme.colors.inkSubtle}
                     value={whCode}
                     onChangeText={setWhCode}
+                    onFocus={() => setFocusedField("whCode")}
+                    onBlur={() => setFocusedField(null)}
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="numeric"
@@ -397,37 +427,39 @@ export default function SettingsScreen() {
                     testID="warehouse-id-input"
                   />
                 </View>
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>
                     {t("settings.labels.errorSound")}
                   </Text>
                   <View style={styles.soundSelectorContainer}>
-                    {SOUND_OPTIONS.map((option) => (
-                      <Pressable
-                        key={option.id}
-                        style={[
-                          styles.soundOption,
-                          selectedSound === option.id &&
-                            styles.soundOptionSelected,
-                        ]}
-                        onPress={() => {
-                          setSelectedSound(option.id);
-                          playErrorSound(option.file);
-                        }}
-                      >
-                        <Text
+                    {SOUND_OPTIONS.map((option) => {
+                      const active = selectedSound === option.id;
+                      return (
+                        <Pressable
+                          key={option.id}
                           style={[
-                            styles.soundOptionText,
-                            selectedSound === option.id &&
-                              styles.soundOptionTextSelected,
+                            styles.soundOption,
+                            active && styles.soundOptionSelected,
                           ]}
+                          onPress={() => {
+                            setSelectedSound(option.id);
+                            playErrorSound(option.file);
+                          }}
                         >
-                          {t(`settings.sounds.${option.id}`, {
-                            defaultValue: option.name,
-                          })}
-                        </Text>
-                      </Pressable>
-                    ))}
+                          <Text
+                            style={[
+                              styles.soundOptionText,
+                              active && styles.soundOptionTextSelected,
+                            ]}
+                          >
+                            {t(`settings.sounds.${option.id}`, {
+                              defaultValue: option.name,
+                            })}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 </View>
 
@@ -440,9 +472,9 @@ export default function SettingsScreen() {
                     onPress={() => setExistingBoxMode(!existingBoxMode)}
                   >
                     {existingBoxMode ? (
-                      <CheckSquare size={24} color={colors.button.primary} />
+                      <CheckSquare size={24} color={theme.colors.primary} />
                     ) : (
-                      <Square size={24} color={colors.text.secondary} />
+                      <Square size={24} color={theme.colors.inkSubtle} />
                     )}
                     <View style={styles.checkboxTextContainer}>
                       <Text style={styles.checkboxTitle}>
@@ -455,12 +487,36 @@ export default function SettingsScreen() {
                   </Pressable>
                 </View>
 
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>
+                    {t("settings.labels.skipWeightMode")}
+                  </Text>
+                  <Pressable
+                    style={styles.checkboxContainer}
+                    onPress={() => setSkipWeightMode(!skipWeightMode)}
+                  >
+                    {skipWeightMode ? (
+                      <CheckSquare size={24} color={theme.colors.primary} />
+                    ) : (
+                      <Square size={24} color={theme.colors.inkSubtle} />
+                    )}
+                    <View style={styles.checkboxTextContainer}>
+                      <Text style={styles.checkboxTitle}>
+                        {t("settings.weightModeDesc.title")}
+                      </Text>
+                      <Text style={styles.checkboxSubtitle}>
+                        {t("settings.weightModeDesc.subtitle")}
+                      </Text>
+                    </View>
+                  </Pressable>
+                </View>
+
                 <View style={styles.buttonGroup}>
                   <Pressable
                     style={({ pressed }) => [
                       styles.button,
                       styles.primaryButton,
-                      pressed && styles.buttonPressed,
+                      pressed && styles.primaryButtonPressed,
                       isSaving && styles.buttonDisabled,
                     ]}
                     onPress={handleSave}
@@ -468,11 +524,14 @@ export default function SettingsScreen() {
                     testID="save-button"
                   >
                     {isSaving ? (
-                      <ActivityIndicator color="#fff" size="small" />
+                      <ActivityIndicator
+                        color={theme.colors.onPrimary}
+                        size="small"
+                      />
                     ) : (
                       <>
-                        <Save size={20} color="#fff" />
-                        <Text style={styles.buttonText}>
+                        <Save size={20} color={theme.colors.onPrimary} />
+                        <Text style={styles.primaryButtonText}>
                           {t("settings.buttons.save")}
                         </Text>
                       </>
@@ -483,15 +542,15 @@ export default function SettingsScreen() {
                     style={({ pressed }) => [
                       styles.button,
                       styles.secondaryButton,
-                      pressed && styles.buttonPressed,
+                      pressed && styles.secondaryButtonPressed,
                       isSaving && styles.buttonDisabled,
                     ]}
                     onPress={handleReset}
                     disabled={isSaving}
                     testID="reset-button"
                   >
-                    <RefreshCw size={20} color="#fff" />
-                    <Text style={styles.buttonText}>
+                    <RefreshCw size={20} color={theme.colors.ink} />
+                    <Text style={styles.secondaryButtonText}>
                       {t("settings.buttons.reset")}
                     </Text>
                   </Pressable>
@@ -506,7 +565,6 @@ export default function SettingsScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
 
-        {/* Yeni Eklenen Toast Animasyonu */}
         <Animated.View
           style={[
             styles.toastContainer,
@@ -518,225 +576,268 @@ export default function SettingsScreen() {
           pointerEvents="none"
         >
           <View style={styles.toastContent}>
-            <CheckCircle size={22} color="#4CAF50" />
+            <CheckCircle size={22} color={theme.colors.success} />
             <Text style={styles.toastText}>
               {t("settings.alerts.toastSuccess")}
             </Text>
           </View>
         </Animated.View>
-      </LinearGradient>
+      </View>
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.background.darker,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.button.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700" as const,
-    color: colors.text.primary,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  form: {
-    gap: 20,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: colors.text.primary,
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: colors.input.background,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 14,
-    color: colors.input.text,
-    borderWidth: 1,
-    borderColor: "transparent",
-    textAlignVertical: "top",
-  },
-  inputError: {
-    borderColor: colors.border.error,
-  },
-  errorText: {
-    color: colors.error.text,
-    fontSize: 14,
-  },
-  buttonGroup: {
-    gap: 12,
-    marginTop: 8,
-  },
-  button: {
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  primaryButton: {
-    backgroundColor: colors.button.primary,
-  },
-  secondaryButton: {
-    backgroundColor: colors.button.secondary,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  buttonPressed: {
-    opacity: 0.8,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600" as const,
-  },
-  helpBox: {
-    marginTop: 24,
-    padding: 16,
-    backgroundColor: "rgba(220, 20, 60, 0.1)",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(220, 20, 60, 0.3)",
-  },
-  helpTitle: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: colors.button.primary,
-    marginBottom: 8,
-  },
-  helpText: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    lineHeight: 20,
-  },
-  // Yeni eklenen stiller
-  toastContainer: {
-    position: "absolute",
-    bottom: 50,
-    left: 20,
-    right: 20,
-    alignItems: "center",
-    zIndex: 99,
-  },
-  toastContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.background.card,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "rgba(76, 175, 80, 0.4)",
-    elevation: 5,
-    gap: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  toastText: {
-    color: colors.text.primary,
-    fontWeight: "600",
-  },
-  soundSelectorContainer: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 5,
-  },
-  soundOption: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-    backgroundColor: colors.input.background,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  soundOptionSelected: {
-    backgroundColor: colors.button.primary,
-    borderColor: colors.button.primary,
-  },
-  soundOptionText: {
-    color: colors.text.secondary,
-    fontSize: 12,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  soundOptionTextSelected: {
-    color: "#fff",
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(33, 150, 243, 0.05)",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(33, 150, 243, 0.2)",
-    gap: 12,
-    marginTop: 4,
-  },
-  checkboxTextContainer: {
-    flex: 1,
-  },
-  checkboxTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.text.primary,
-    marginBottom: 2,
-  },
-  checkboxSubtitle: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    lineHeight: 16,
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.canvas,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.xxl,
+    },
+    header: {
+      alignItems: "center",
+      marginBottom: spacing.xxl,
+    },
+    iconContainer: {
+      width: 72,
+      height: 72,
+      borderRadius: radius.xl,
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.md,
+    },
+    title: {
+      ...type.displayLg,
+      color: colors.ink,
+      marginBottom: spacing.xs,
+    },
+    subtitle: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: "center",
+    },
+    form: {
+      gap: spacing.lg,
+    },
+    inputGroup: {
+      gap: spacing.xs,
+    },
+    label: {
+      ...type.label,
+      color: colors.inkMuted,
+      textTransform: "uppercase",
+    },
+    segment: {
+      flexDirection: "row",
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      padding: spacing.xxs,
+      gap: spacing.xxs,
+    },
+    segmentOption: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.sm,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    segmentOptionActive: {
+      backgroundColor: colors.surface4,
+    },
+    segmentText: {
+      ...type.button,
+      color: colors.inkSubtle,
+    },
+    segmentTextActive: {
+      color: colors.ink,
+    },
+    input: {
+      ...type.body,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      minHeight: 50,
+      color: colors.ink,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    multilineInput: {
+      paddingTop: spacing.md,
+      textAlignVertical: "top",
+    },
+    inputFocused: {
+      borderWidth: 2,
+      borderColor: colors.primaryRing,
+    },
+    inputError: {
+      borderWidth: 2,
+      borderColor: colors.error,
+    },
+    errorText: {
+      ...type.bodySm,
+      color: colors.error,
+    },
+    buttonGroup: {
+      gap: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    button: {
+      borderRadius: radius.md,
+      paddingVertical: 14,
+      paddingHorizontal: spacing.lg,
+      minHeight: 48,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+    },
+    primaryButtonPressed: {
+      backgroundColor: colors.primaryPress,
+    },
+    primaryButtonText: {
+      ...type.button,
+      color: colors.onPrimary,
+    },
+    secondaryButton: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    secondaryButtonPressed: {
+      backgroundColor: colors.surface3,
+    },
+    secondaryButtonText: {
+      ...type.button,
+      color: colors.ink,
+    },
+    buttonDisabled: {
+      opacity: 0.5,
+    },
+    helpBox: {
+      marginTop: spacing.xl,
+      padding: spacing.md,
+      backgroundColor: colors.primaryTint,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    helpTitle: {
+      ...type.label,
+      textTransform: "uppercase",
+      color: colors.primary,
+      marginBottom: spacing.xs,
+    },
+    helpText: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      lineHeight: 20,
+    },
+    toastContainer: {
+      position: "absolute",
+      bottom: spacing.xxl,
+      left: spacing.lg,
+      right: spacing.lg,
+      alignItems: "center",
+      zIndex: 99,
+    },
+    toastContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface3,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.success,
+      gap: spacing.sm,
+      elevation: 5,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    toastText: {
+      ...type.body,
+      color: colors.ink,
+      fontWeight: "600",
+    },
+    soundSelectorContainer: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    soundOption: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xxs,
+      borderRadius: radius.md,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    soundOptionSelected: {
+      backgroundColor: colors.primaryTint,
+      borderColor: colors.primary,
+    },
+    soundOptionText: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    soundOptionTextSelected: {
+      color: colors.ink,
+    },
+    checkboxContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface1,
+      padding: spacing.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+      gap: spacing.sm,
+    },
+    checkboxTextContainer: {
+      flex: 1,
+    },
+    checkboxTitle: {
+      ...type.body,
+      fontWeight: "600",
+      color: colors.ink,
+      marginBottom: 2,
+    },
+    checkboxSubtitle: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      lineHeight: 16,
+    },
+  });
+};

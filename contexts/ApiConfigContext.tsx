@@ -10,6 +10,7 @@ const COMPANY_PASSWORD_KEY = "company_password";
 const WAREHOUSE_CODE_KEY = "warehouse_code";
 const ERROR_SOUND_KEY = "error_sound";
 const USE_EXISTING_BOX_KEY = "use_existing_box";
+const SKIP_WEIGHT_INPUT_KEY = "skip_weight_input";
 const PRINTER_NAME_KEY = "preferred_printer_name";
 
 export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
@@ -19,13 +20,14 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
   const [warehouseCode, setWarehouseCode] = useState<string>("");
   const [errorSound, setErrorSound] = useState<string>("error_1");
   const [useExistingBox, setUseExistingBox] = useState<boolean>(false);
+  const [skipWeightInput, setSkipWeightInput] = useState<boolean>(false);
   const [printerName, setPrinterName] = useState<string>("VARSAYILAN YAZICI ADINI GİRİN");
 
   const loadUrlQuery = useQuery({
     queryKey: ["api-config"],
     queryFn: async () => {
       console.log("ApiConfigContext: Loading API config from storage");
-      const [url, code, pwd, whCode, eSound, existingBox, pName] =
+      const [url, code, pwd, whCode, eSound, existingBox, skipWt, pName] =
         await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(COMPANY_CODE_KEY),
@@ -33,6 +35,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
           AsyncStorage.getItem(WAREHOUSE_CODE_KEY),
           AsyncStorage.getItem(ERROR_SOUND_KEY),
           AsyncStorage.getItem(USE_EXISTING_BOX_KEY),
+          AsyncStorage.getItem(SKIP_WEIGHT_INPUT_KEY),
           AsyncStorage.getItem(PRINTER_NAME_KEY),
         ]);
       return {
@@ -42,6 +45,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
         warehouseCode: whCode || "",
         errorSound: eSound || "error_1",
         useExistingBox: existingBox === "true",
+        skipWeightInput: skipWt === "true",
         printerName: pName || "EPSON",
       };
     },
@@ -57,6 +61,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       setWarehouseCode(loadUrlQuery.data.warehouseCode);
       setErrorSound(loadUrlQuery.data.errorSound);
       setUseExistingBox(loadUrlQuery.data.useExistingBox);
+      setSkipWeightInput(loadUrlQuery.data.skipWeightInput);
       setPrinterName(loadUrlQuery.data.printerName);
     }
   }, [loadUrlQuery.data]);
@@ -69,6 +74,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       warehouseCode?: string;
       errorSound?: string;
       useExistingBox?: boolean;
+      skipWeightInput?: boolean;
       printerName?: string;
     }) => {
       console.log("ApiConfigContext: Saving API config to storage", params);
@@ -109,6 +115,14 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
           ),
         );
       }
+      if (params.skipWeightInput !== undefined) {
+        promises.push(
+          AsyncStorage.setItem(
+            SKIP_WEIGHT_INPUT_KEY,
+            String(params.skipWeightInput),
+          ),
+        );
+      }
       await Promise.all(promises);
       clearApiUrlCache();
       return params;
@@ -123,6 +137,8 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       if (params.errorSound !== undefined) setErrorSound(params.errorSound);
       if (params.useExistingBox !== undefined)
         setUseExistingBox(params.useExistingBox);
+      if (params.skipWeightInput !== undefined)
+        setSkipWeightInput(params.skipWeightInput);
       if (params.printerName !== undefined) setPrinterName(params.printerName);
     },
   });
@@ -169,6 +185,13 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     [saveMutateAsync],
   );
 
+  const updateSkipWeightInput = useCallback(
+    async (value: boolean) => {
+      await saveMutateAsync({ skipWeightInput: value });
+    },
+    [saveMutateAsync],
+  );
+
   const updatePrinterName = useCallback(
     async (name: string) => {
       await saveMutateAsync({ printerName: name });
@@ -184,6 +207,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       AsyncStorage.removeItem(WAREHOUSE_CODE_KEY),
       AsyncStorage.removeItem(ERROR_SOUND_KEY),
       AsyncStorage.removeItem(USE_EXISTING_BOX_KEY),
+      AsyncStorage.removeItem(SKIP_WEIGHT_INPUT_KEY),
       AsyncStorage.removeItem(PRINTER_NAME_KEY),
     ]);
     clearApiUrlCache();
@@ -193,6 +217,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     setWarehouseCode("");
     setErrorSound("error_1");
     setUseExistingBox(false);
+    setSkipWeightInput(false);
     setPrinterName("EPSON");
   }, []);
 
@@ -204,9 +229,11 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       warehouseCode,
       errorSound,
       useExistingBox,
+      skipWeightInput,
       printerName,
       updatePrinterName,
       updateUseExistingBox,
+      updateSkipWeightInput,
       updateApiUrl,
       updateCompanyCode,
       updateCompanyPassword,
@@ -224,9 +251,11 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       warehouseCode,
       errorSound,
       useExistingBox,
+      skipWeightInput,
       printerName,
       updatePrinterName,
       updateUseExistingBox,
+      updateSkipWeightInput,
       updateApiUrl,
       updateCompanyCode,
       updateCompanyPassword,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Modal,
   View,
@@ -14,7 +14,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
-import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 
 interface PrintBarcodeModalProps {
@@ -35,6 +36,8 @@ export default function PrintBarcodeModal({
   const { printerName, updatePrinterName } = useApiConfig();
   const { t } = useTranslation();
   const { credentials } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [localPrinter, setLocalPrinter] = useState(printerName);
   const [selectedForm, setSelectedForm] = useState<string | null>(null);
@@ -114,7 +117,7 @@ export default function PrintBarcodeModal({
       <View style={styles.printModalOverlay}>
         <View style={styles.printModalContent}>
           <View style={styles.printModalHeader}>
-            <Printer size={28} color={colors.button.primary} />
+            <Printer size={28} color={theme.colors.primary} />
             <Text style={styles.printModalTitle}>{t("printModal.title")}</Text>
           </View>
 
@@ -129,7 +132,7 @@ export default function PrintBarcodeModal({
                 value={localPrinter}
                 onChangeText={setLocalPrinter}
                 placeholder={t("printModal.printerPlaceholder")}
-                placeholderTextColor={colors.text.secondary}
+                placeholderTextColor={theme.colors.inkSubtle}
               />
               <TouchableOpacity
                 style={[
@@ -140,11 +143,11 @@ export default function PrintBarcodeModal({
                 disabled={!isModified || isSavingPrinter}
               >
                 {isSavingPrinter ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={theme.colors.onPrimary} />
                 ) : (
                   <Save
                     size={20}
-                    color={isModified ? "#fff" : colors.text.secondary}
+                    color={isModified ? theme.colors.onPrimary : theme.colors.inkSubtle}
                   />
                 )}
               </TouchableOpacity>
@@ -156,13 +159,13 @@ export default function PrintBarcodeModal({
           {formsQuery.isLoading ? (
             <ActivityIndicator
               size="large"
-              color={colors.button.primary}
+              color={theme.colors.primary}
               style={{ marginVertical: 20 }}
             />
           ) : formsQuery.isError ? (
             <Text
               style={{
-                color: "#F44336",
+                color: theme.colors.error,
                 textAlign: "center",
                 marginVertical: 10,
               }}
@@ -186,8 +189,8 @@ export default function PrintBarcodeModal({
                     size={20}
                     color={
                       selectedForm === item.Name
-                        ? "#fff"
-                        : colors.text.secondary
+                        ? theme.colors.onPrimary
+                        : theme.colors.inkSubtle
                     }
                   />
                   <Text
@@ -200,13 +203,13 @@ export default function PrintBarcodeModal({
                     {item.Name}
                   </Text>
                   {selectedForm === item.Name && (
-                    <CheckCircle size={20} color="#fff" />
+                    <CheckCircle size={20} color={theme.colors.onPrimary} />
                   )}
                 </TouchableOpacity>
               )}
               ListEmptyComponent={
                 <Text
-                  style={{ textAlign: "center", color: colors.text.secondary }}
+                  style={{ textAlign: "center", color: theme.colors.inkSubtle }}
                 >
                   {t("printModal.noActiveFormError")}
                 </Text>
@@ -233,7 +236,7 @@ export default function PrintBarcodeModal({
               disabled={!selectedForm || printMutation.isPending}
             >
               {printMutation.isPending ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={theme.colors.onPrimary} />
               ) : (
                 <Text style={styles.receiptConfirmText}>
                   {t("printModal.printButton")}
@@ -247,126 +250,122 @@ export default function PrintBarcodeModal({
   );
 }
 
-const styles = StyleSheet.create({
-  printModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "flex-end",
-  },
-  printModalContent: {
-    backgroundColor: colors.background.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: "80%",
-    borderTopWidth: 1,
-    borderColor: colors.border.default,
-  },
-  printModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
-  },
-  printModalTitle: {
-    fontSize: 20,
-    fontFamily: "Segoe UI",
-    fontWeight: "700",
-    color: colors.text.primary,
-  },
-  printerInputContainer: { marginBottom: 16 },
-  printerInputLabel: {
-    fontSize: 13,
-    fontFamily: "Segoe UI",
-    color: colors.text.secondary,
-    marginBottom: 6,
-  },
-  printerInputRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  printerInput: {
-    flex: 1,
-    backgroundColor: colors.background.darker,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    color: colors.text.primary,
-    fontFamily: "Segoe UI",
-    fontSize: 15,
-  },
-  savePrinterButton: {
-    backgroundColor: colors.button.primary,
-    borderRadius: 10,
-    width: 48,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  savePrinterButtonDisabled: {
-    backgroundColor: colors.background.darker,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  formListTitle: {
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    fontWeight: "600",
-    color: colors.text.primary,
-    marginBottom: 10,
-  },
-  formList: { marginBottom: 20 },
-  formListItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.background.darker,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    gap: 12,
-  },
-  formListItemSelected: {
-    backgroundColor: colors.button.primary,
-    borderColor: colors.button.primary,
-  },
-  formListItemText: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Segoe UI",
-    color: colors.text.primary,
-    fontWeight: "500",
-  },
-  formListItemTextSelected: { color: "#fff", fontWeight: "700" },
-  receiptModalButtons: { flexDirection: "row", gap: 12, width: "100%" },
-  receiptCancelButton: {
-    flex: 1,
-    backgroundColor: "#333",
-    borderRadius: 12,
-    padding: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  receiptCancelText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "600",
-    color: "#fff",
-  },
-  receiptConfirmButton: {
-    flex: 1,
-    backgroundColor: colors.button.primary,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: "center",
-  },
-  receiptConfirmText: {
-    fontSize: 16,
-    fontFamily: "Segoe UI",
-    fontWeight: "600",
-    color: "#fff",
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    printModalOverlay: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: "flex-end",
+    },
+    printModalContent: {
+      backgroundColor: colors.surface1,
+      borderTopLeftRadius: radius.xxl,
+      borderTopRightRadius: radius.xxl,
+      padding: spacing.xl,
+      maxHeight: "80%",
+      borderTopWidth: 1,
+      borderColor: colors.hairline,
+    },
+    printModalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
+    },
+    printModalTitle: {
+      ...type.headline,
+      color: colors.ink,
+    },
+    printerInputContainer: { marginBottom: spacing.md },
+    printerInputLabel: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      marginBottom: spacing.xxs,
+    },
+    printerInputRow: {
+      flexDirection: "row",
+      gap: spacing.xs,
+    },
+    printerInput: {
+      ...type.body,
+      flex: 1,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      color: colors.ink,
+    },
+    savePrinterButton: {
+      backgroundColor: colors.primary,
+      borderRadius: radius.md,
+      width: 48,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    savePrinterButtonDisabled: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    formListTitle: {
+      ...type.cardTitle,
+      color: colors.ink,
+      marginBottom: spacing.sm,
+    },
+    formList: { marginBottom: spacing.lg },
+    formListItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface2,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      marginBottom: spacing.xs,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+      gap: spacing.sm,
+    },
+    formListItemSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    formListItemText: {
+      ...type.body,
+      flex: 1,
+      color: colors.ink,
+      fontWeight: "500",
+    },
+    formListItemTextSelected: { color: colors.onPrimary, fontWeight: "700" },
+    receiptModalButtons: { flexDirection: "row", gap: spacing.sm, width: "100%" },
+    receiptCancelButton: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      padding: 14,
+      minHeight: 48,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+    },
+    receiptCancelText: {
+      ...type.button,
+      color: colors.ink,
+    },
+    receiptConfirmButton: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: radius.md,
+      padding: 14,
+      minHeight: 48,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    receiptConfirmText: {
+      ...type.button,
+      color: colors.onPrimary,
+    },
+  });
+};

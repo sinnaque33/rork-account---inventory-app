@@ -1,19 +1,23 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function AppLayout() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   return (
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: colors.background.darker,
+          backgroundColor: theme.colors.canvas,
         },
-        headerTintColor: colors.text.primary,
+        headerTintColor: theme.colors.ink,
         headerTitleStyle: {
           fontWeight: '600' as const,
+        },
+        contentStyle: {
+          backgroundColor: theme.colors.canvas,
         },
       }}
     >

@@ -6,6 +6,11 @@
       "vibration": "Vibration Only"
     },
     "language": "App Language",
+    "theme": "Appearance Theme",
+    "themeOptions": {
+      "dark": "Dark",
+      "light": "Light"
+    },
     "headerTitle": "API Settings",
     "pageTitle": "API Settings",
     "pageSubtitle": "Configure your API Settings",
@@ -15,7 +20,8 @@
       "companyPassword": "Company Password",
       "warehouseCode": "Warehouse Code",
       "errorSound": "Error Sound Type",
-      "boxMode": "Box Creation Mode"
+      "boxMode": "Box Creation Mode",
+      "skipWeightMode": "Box Closing Mode"
     },
     "placeholders": {
       "apiUrl": "https://example.com/api",
@@ -26,6 +32,10 @@
     "boxModeDesc": {
       "title": "Add to Existing Open Box",
       "subtitle": "If there is an open box for the same order, it adds to it instead of opening a new one."
+    },
+    "weightModeDesc": {
+      "title": "Skip Weight When Closing Box",
+      "subtitle": "Skips the gross/net weight modal and closes the box directly."
     },
     "buttons": {
       "save": "Save",

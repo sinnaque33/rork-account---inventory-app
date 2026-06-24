@@ -6,6 +6,11 @@
       "vibration": "Sadece Titreşim"
     },
     "language": "Uygulama Dili",
+    "theme": "Görünüm Teması",
+    "themeOptions": {
+      "dark": "Koyu",
+      "light": "Aydınlık"
+    },
     "headerTitle": "API Ayarları",
     "pageTitle": "API Ayarları",
     "pageSubtitle": "API Ayarlarını yapınız",
@@ -15,7 +20,8 @@
       "companyPassword": "Şirket Şifresi",
       "warehouseCode": "Depo Kodu",
       "errorSound": "Hata Uyarı Tipi",
-      "boxMode": "Koli Oluşturma Modu"
+      "boxMode": "Koli Oluşturma Modu",
+      "skipWeightMode": "Koli Kapatma Modu"
     },
     "placeholders": {
       "apiUrl": "https://example.com/api",
@@ -26,6 +32,10 @@
     "boxModeDesc": {
       "title": "Mevcut Açık Koliye Ekle",
       "subtitle": "Aynı siparişin açık kolisi varsa yeni açmak yerine ona ekler."
+    },
+    "weightModeDesc": {
+      "title": "Koli Kapatırken Ağırlık Sorma",
+      "subtitle": "Kapama butonuna basınca brüt/net kg modalını atlayıp doğrudan kapatır."
     },
     "buttons": {
       "save": "Kaydet",
