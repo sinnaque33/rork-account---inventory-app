@@ -1,28 +1,35 @@
 import { useTranslation } from "react-i18next";
-import { Stack, useRouter } from "expo-router";
-import { LogIn, Settings } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { Stack } from "expo-router";
+import { LogIn, Settings, Eye, EyeOff } from "lucide-react-native";
+import { useMemo, useRef, useState } from "react";
 import { Image } from "expo-image";
+
+const logoOnDark = require("../assets/extreme-logo-on-dark.png");
+const logoOnLight = require("../assets/Extreme-Logo-Ana.png");
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
+import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { login, loginError, loginMsg, isLoggingIn } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const router = useRouter();
+  const { push } = useSafeNavigation();
   const [userCode, setUserCode] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [userCodeError, setUserCodeError] = useState<string>("");
@@ -30,6 +37,8 @@ export default function LoginScreen() {
   const [focusedField, setFocusedField] = useState<"user" | "password" | null>(
     null,
   );
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const passwordRef = useRef<TextInput>(null);
 
   const validateUserCode = (text: string): boolean => {
     if (!text) {
@@ -66,28 +75,32 @@ export default function LoginScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.settingsButton,
+            { top: insets.top + theme.spacing.sm },
+            pressed && styles.settingsButtonPressed,
+          ]}
+          onPress={() => push("/settings" as any)}
+          testID="settings-button"
+          hitSlop={8}
+        >
+          <Settings size={22} color={theme.colors.inkMuted} />
+        </Pressable>
+
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
-          <View style={styles.content}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.settingsButton,
-                pressed && styles.settingsButtonPressed,
-              ]}
-              onPress={() => router.push("/settings" as any)}
-              testID="settings-button"
-              hitSlop={8}
-            >
-              <Settings size={22} color={theme.colors.inkMuted} />
-            </Pressable>
-
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.content}>
             <View style={styles.header}>
               <Image
-                source={{
-                  uri: "https://cdn.rork.app/user-content/46e4cfe3-6f33-48fb-ac89-c7b0e1a6ce6e.png",
-                }}
+                source={theme.isDark ? logoOnDark : logoOnLight}
                 style={styles.logo}
                 contentFit="contain"
               />
@@ -119,6 +132,9 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoggingIn}
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => passwordRef.current?.focus()}
                   testID="usercode-input"
                 />
                 {userCodeError ? (
@@ -128,27 +144,46 @@ export default function LoginScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>{t("login.labels.password")}</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    focusedField === "password" && styles.inputFocused,
-                    passwordError ? styles.inputError : null,
-                  ]}
-                  placeholder={t("login.placeholders.password")}
-                  placeholderTextColor={theme.colors.inkSubtle}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (passwordError) validatePassword(text);
-                  }}
-                  onFocus={() => setFocusedField("password")}
-                  onBlur={() => setFocusedField(null)}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoggingIn}
-                  testID="password-input"
-                />
+                <View style={styles.passwordWrapper}>
+                  <TextInput
+                    ref={passwordRef}
+                    style={[
+                      styles.input,
+                      styles.passwordInput,
+                      focusedField === "password" && styles.inputFocused,
+                      passwordError ? styles.inputError : null,
+                    ]}
+                    placeholder={t("login.placeholders.password")}
+                    placeholderTextColor={theme.colors.inkSubtle}
+                    value={password}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      if (passwordError) validatePassword(text);
+                    }}
+                    onFocus={() => setFocusedField("password")}
+                    onBlur={() => setFocusedField(null)}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoggingIn}
+                    returnKeyType="go"
+                    onSubmitEditing={handleLogin}
+                    testID="password-input"
+                  />
+                  <Pressable
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword((prev) => !prev)}
+                    hitSlop={8}
+                    disabled={isLoggingIn}
+                    testID="toggle-password-visibility"
+                  >
+                    {showPassword ? (
+                      <EyeOff size={20} color={theme.colors.inkMuted} />
+                    ) : (
+                      <Eye size={20} color={theme.colors.inkMuted} />
+                    )}
+                  </Pressable>
+                </View>
                 {passwordError ? (
                   <Text style={styles.errorText}>{passwordError}</Text>
                 ) : null}
@@ -184,7 +219,8 @@ export default function LoginScreen() {
             </View>
 
             <Text style={styles.footer}>{t("login.footer")}</Text>
-          </View>
+            </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </View>
     </>
@@ -201,10 +237,16 @@ const makeStyles = (theme: Theme) => {
     keyboardView: {
       flex: 1,
     },
-    content: {
-      flex: 1,
+    scrollContent: {
+      flexGrow: 1,
       justifyContent: "center",
       paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.xxl,
+    },
+    content: {
+      width: "100%",
+      maxWidth: 440,
+      alignSelf: "center",
     },
     settingsButton: {
       position: "absolute",
@@ -225,23 +267,24 @@ const makeStyles = (theme: Theme) => {
     },
     header: {
       alignItems: "center",
-      marginBottom: spacing.xxxl,
-    },
-    logo: {
-      width: 120,
-      height: 120,
       marginBottom: spacing.xxl,
     },
+    logo: {
+      width: 240,
+      height: 72,
+      marginBottom: spacing.lg,
+    },
     title: {
-      ...type.displayXl,
+      ...type.headline,
       color: colors.ink,
-      marginBottom: spacing.xs,
+      marginBottom: spacing.xxs,
       textAlign: "center",
     },
     subtitle: {
-      ...type.body,
+      ...type.bodySm,
       color: colors.inkMuted,
       marginBottom: spacing.xs,
+      textAlign: "center",
     },
     loginMsgText: {
       ...type.bodySm,
@@ -269,6 +312,22 @@ const makeStyles = (theme: Theme) => {
       color: colors.ink,
       borderWidth: 1,
       borderColor: colors.hairlineStrong,
+    },
+    passwordWrapper: {
+      position: "relative",
+      justifyContent: "center",
+    },
+    passwordInput: {
+      paddingRight: 48,
+    },
+    eyeButton: {
+      position: "absolute",
+      right: spacing.xs,
+      top: 0,
+      bottom: 0,
+      width: 40,
+      alignItems: "center",
+      justifyContent: "center",
     },
     inputFocused: {
       borderWidth: 2,

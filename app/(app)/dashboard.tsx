@@ -1,9 +1,9 @@
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 import { useTranslation } from "react-i18next";
 import {
-  FileText,
+  ArrowUpRight,
   LogOut,
   Boxes,
   Truck,
@@ -12,27 +12,40 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  StyleProp,
   Text,
   View,
+  ViewStyle,
   ScrollView,
 } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
 import { useMemo } from "react";
+
+/** Faint brand chevron (the logo X) — decorative watermark, never interactive. */
+function ChevronWatermark({ style }: { style?: StyleProp<ViewStyle> }) {
+  return (
+    <Svg width={220} height={300} viewBox="0 0 95 100" style={style} pointerEvents="none">
+      <Path d="M0,0 L28,0 L50,50 L28,100 L0,100 L22,50 Z" fill="#DA2128" />
+      <Path d="M40,0 L68,0 L90,50 L68,100 L40,100 L62,50 Z" fill="#DA2128" />
+    </Svg>
+  );
+}
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const router = useRouter();
+  const { push } = useSafeNavigation();
 
   const handleNavigation = (route: string) => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    router.push(route as any);
+    push(route as any);
   };
 
   const handleLogout = async () => {
@@ -44,15 +57,20 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
+      {/* faint brand watermark in the empty canvas below the cards */}
+      <ChevronWatermark style={styles.watermark} />
+
       <LinearGradient
         colors={[theme.colors.surface1, theme.colors.canvas]}
         style={styles.header}
       >
         <View style={styles.headerContent}>
           <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.greeting}>{t("dashboard.greeting")}</Text>
-              <Text style={styles.userName}>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.greeting} numberOfLines={1}>
+                {t("dashboard.greeting")}
+              </Text>
+              <Text style={styles.userName} numberOfLines={2}>
                 {user?.firstName || user?.userName}
               </Text>
             </View>
@@ -102,7 +120,7 @@ export default function DashboardScreen() {
                   {t("dashboard.boxListSubtitle")}
                 </Text>
                 <View style={styles.cardArrow}>
-                  <FileText size={16} color="#fff" opacity={0.6} />
+                  <ArrowUpRight size={18} color="#fff" opacity={0.6} />
                 </View>
               </LinearGradient>
             </Pressable>
@@ -131,7 +149,7 @@ export default function DashboardScreen() {
                     "Kolileri seçerek yeni irsaliye oluşturun"}
                 </Text>
                 <View style={styles.cardArrow}>
-                  <FileText size={16} color="#fff" opacity={0.6} />
+                  <ArrowUpRight size={18} color="#fff" opacity={0.6} />
                 </View>
               </LinearGradient>
             </Pressable>
@@ -149,6 +167,13 @@ const makeStyles = (theme: Theme) => {
       flex: 1,
       backgroundColor: colors.canvas,
     },
+    watermark: {
+      position: "absolute",
+      bottom: -30,
+      left: -70,
+      opacity: 0.04,
+      zIndex: 0,
+    },
     header: {
       paddingBottom: spacing.xxl,
     },
@@ -160,6 +185,11 @@ const makeStyles = (theme: Theme) => {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
+      gap: spacing.md,
+    },
+    headerTextContainer: {
+      flex: 1,
+      minWidth: 0,
     },
     greeting: {
       ...type.body,
@@ -173,6 +203,7 @@ const makeStyles = (theme: Theme) => {
     logoutButton: {
       width: 44,
       height: 44,
+      flexShrink: 0,
       borderRadius: radius.pill,
       backgroundColor: colors.surface2,
       borderWidth: 1,

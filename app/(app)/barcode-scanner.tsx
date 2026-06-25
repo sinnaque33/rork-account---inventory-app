@@ -22,6 +22,7 @@ import {
   ScanBarcode,
   CheckCircle,
   AlertTriangle,
+  Home,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -32,9 +33,11 @@ import { Vibration } from "react-native";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import { SOUND_FILES } from "@/constants/sounds";
 import ResultModal from "../components/ResultModal";
+import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 
 export default function BarcodeScannerScreen() {
   const router = useRouter();
+  const { replace } = useSafeNavigation();
   const navigation = useNavigation();
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -521,9 +524,9 @@ export default function BarcodeScannerScreen() {
               styles.headerButton,
               { backgroundColor: theme.colors.primary },
             ]}
-            onPress={() => router.replace("/(app)/dashboard")}
+            onPress={() => replace("/(app)/dashboard")}
           >
-            <CheckCircle size={24} color={theme.colors.onPrimary} />
+            <Home size={24} color={theme.colors.onPrimary} />
           </TouchableOpacity>
         </View>
 
@@ -643,6 +646,8 @@ export default function BarcodeScannerScreen() {
         <Modal
           visible={showOverLimitModal}
           transparent
+          statusBarTranslucent
+          navigationBarTranslucent
           animationType="fade"
           onRequestClose={() => {
             setShowOverLimitModal(false);

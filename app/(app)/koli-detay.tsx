@@ -36,6 +36,7 @@ import {
   Vibration,
 } from "react-native";
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, Stack } from "expo-router";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,6 +52,7 @@ import ResultModal from "../components/ResultModal";
 export default function KoliDetayScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const {
     id,
@@ -310,15 +312,45 @@ export default function KoliDetayScreen() {
       if (!credentials || !id) {
         throw new Error(t("koliDetay.missingInfo"));
       }
-      return api.koliListesi.closeBox(
+      const result = await api.koliListesi.closeBox(
         credentials.userCode,
         credentials.password,
         parseInt(id, 10),
         grossWeight,
         netWeight,
       );
+      console.log("Koli Kapatma API Yanıtı:", JSON.stringify(result, null, 2));
+      return result;
     },
     onSuccess: (data) => {
+      let parsedData: any = {};
+      const responseData = (data as any).data;
+
+      if (responseData) {
+        try {
+          parsedData =
+            typeof responseData === "string"
+              ? JSON.parse(responseData)
+              : responseData;
+        } catch (e) {
+          console.warn("CloseBox data parse edilemedi", e);
+        }
+      }
+
+      const isError =
+        String(data.success) !== "true" ||
+        ((data as any).err !== undefined && (data as any).err !== 0) ||
+        parsedData.resultError === true ||
+        (parsedData.err !== undefined && parsedData.err !== 0);
+
+      if (isError) {
+        playErrorSignal();
+        const errorMsg =
+          parsedData.resultExplanation || data.msg || t("koliDetay.defaultError");
+        showToast(t("koliDetay.error"), errorMsg, "error");
+        return;
+      }
+
       showToast(
         t("koliDetay.success"),
         data.msg || t("koliDetay.boxClosed"),
@@ -686,9 +718,14 @@ export default function KoliDetayScreen() {
       />
 
       {/* ALT BUTONLAR */}
-      <View style={styles.buttonContainer}>
+      <View
+        style={[
+          styles.buttonContainer,
+          { paddingBottom: insets.bottom + theme.spacing.sm },
+        ]}
+      >
         <ActionButton
-          text="Yazdır"
+          text={t("koliDetay.btnPrint")}
           icon={<Printer size={20} color={theme.colors.ink} />}
           onPress={() => setShowPrintModal(true)}
         />
@@ -748,6 +785,8 @@ export default function KoliDetayScreen() {
       <Modal
         visible={showCloseBoxModal}
         transparent
+        statusBarTranslucent
+        navigationBarTranslucent
         animationType="fade"
         onRequestClose={() => {
           setShowCloseBoxModal(false);
@@ -862,6 +901,8 @@ export default function KoliDetayScreen() {
       <Modal
         visible={showOpenBoxConfirm}
         transparent
+        statusBarTranslucent
+        navigationBarTranslucent
         animationType="fade"
         onRequestClose={() => setShowOpenBoxConfirm(false)}
       >
@@ -946,6 +987,8 @@ export default function KoliDetayScreen() {
       <Modal
         visible={showOverLimitModal}
         transparent
+        statusBarTranslucent
+        navigationBarTranslucent
         animationType="fade"
         onRequestClose={() => {
           setShowOverLimitModal(false);
@@ -965,12 +1008,12 @@ export default function KoliDetayScreen() {
             </View>
             <Text style={styles.resultTitle}>
               {overLimitType === 1
-                ? "Sipariş Dışı Ürün"
+                ? t("koliDetay.outOfOrderTitle")
                 : t("scanner.overLimit.title")}{" "}
             </Text>
             <Text style={styles.resultMessage}>
               {overLimitType === 1
-                ? "Siparişte olmayan malzeme okutuyorsunuz. Devam etmek istiyor musunuz?"
+                ? t("koliDetay.outOfOrderMessage")
                 : t("scanner.overLimit.message")}
             </Text>
 
@@ -1027,10 +1070,10 @@ export default function KoliDetayScreen() {
         visible={showPrintModal}
         onClose={() => setShowPrintModal(false)}
         koliId={id}
-        onSuccess={(msg) => showToast("Başarılı", msg, "success")}
+        onSuccess={(msg) => showToast(t("koliDetay.success"), msg, "success")}
         onError={(msg) => {
           playErrorSignal();
-          showToast("Hata", msg, "error");
+          showToast(t("koliDetay.error"), msg, "error");
         }}
       />
     </KeyboardAvoidingView>

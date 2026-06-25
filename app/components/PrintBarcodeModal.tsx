@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Printer, FileText, CheckCircle, Save } from "lucide-react-native";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,6 +38,7 @@ export default function PrintBarcodeModal({
   const { t } = useTranslation();
   const { credentials } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [localPrinter, setLocalPrinter] = useState(printerName);
@@ -52,20 +54,20 @@ export default function PrintBarcodeModal({
   // --- SADECE YAZICIYI KAYDETME FONKSİYONU ---
   const handleSavePrinter = async () => {
     if (!localPrinter.trim()) {
-      onError(t("printModal.emptyPrinterError"));
+      onError(t("scanner.printModal.emptyPrinterError"));
       return;
     }
     setIsSavingPrinter(true);
     await updatePrinterName(localPrinter.trim());
     setIsSavingPrinter(false);
-    onSuccess(t("printModal.printerSavedSuccess"));
+    onSuccess(t("scanner.printModal.printerSavedSuccess"));
   };
 
   // 1. Form Listesini Getiren Query
   const formsQuery = useQuery({
     queryKey: ["barcode-forms"],
     queryFn: async () => {
-      if (!credentials) throw new Error("Giriş bilgileri eksik");
+      if (!credentials) throw new Error(t("common.credentialsMissing"));
       return api.koliListesi.getBarcodeForms(
         credentials.userCode,
         credentials.password,
@@ -78,8 +80,8 @@ export default function PrintBarcodeModal({
   const printMutation = useMutation({
     mutationFn: async () => {
       if (!credentials || !koliId)
-        throw new Error(t("printModal.missingInfoError"));
-      if (!selectedForm) throw new Error(t("printModal.formNotSelectedError"));
+        throw new Error(t("scanner.printModal.missingInfoError"));
+      if (!selectedForm) throw new Error(t("scanner.printModal.formNotSelectedError"));
 
       await updatePrinterName(localPrinter);
 
@@ -92,12 +94,12 @@ export default function PrintBarcodeModal({
       );
     },
     onSuccess: (data) => {
-      onSuccess(data.msg || t("printModal.printStartedSuccess"));
+      onSuccess(data.msg || t("scanner.printModal.printStartedSuccess"));
       handleClose();
     },
     onError: (error) => {
       onError(
-        error instanceof Error ? error.message : t("printModal.printError"),
+        error instanceof Error ? error.message : t("scanner.printModal.printError"),
       );
     },
   });
@@ -111,27 +113,34 @@ export default function PrintBarcodeModal({
     <Modal
       visible={visible}
       transparent
+      statusBarTranslucent
+      navigationBarTranslucent
       animationType="slide"
       onRequestClose={handleClose}
     >
       <View style={styles.printModalOverlay}>
-        <View style={styles.printModalContent}>
+        <View
+          style={[
+            styles.printModalContent,
+            { paddingBottom: insets.bottom + theme.spacing.lg },
+          ]}
+        >
           <View style={styles.printModalHeader}>
             <Printer size={28} color={theme.colors.primary} />
-            <Text style={styles.printModalTitle}>{t("printModal.title")}</Text>
+            <Text style={styles.printModalTitle}>{t("scanner.printModal.title")}</Text>
           </View>
 
           {/* --- MODERNİZE EDİLMİŞ INPUT VE BUTON SATIRI --- */}
           <View style={styles.printerInputContainer}>
             <Text style={styles.printerInputLabel}>
-              {t("printModal.targetPrinter")}
+              {t("scanner.printModal.targetPrinter")}
             </Text>
             <View style={styles.printerInputRow}>
               <TextInput
                 style={styles.printerInput}
                 value={localPrinter}
                 onChangeText={setLocalPrinter}
-                placeholder={t("printModal.printerPlaceholder")}
+                placeholder={t("scanner.printModal.printerPlaceholder")}
                 placeholderTextColor={theme.colors.inkSubtle}
               />
               <TouchableOpacity
@@ -154,7 +163,7 @@ export default function PrintBarcodeModal({
             </View>
           </View>
 
-          <Text style={styles.formListTitle}>{t("printModal.selectForm")}</Text>
+          <Text style={styles.formListTitle}>{t("scanner.printModal.selectForm")}</Text>
 
           {formsQuery.isLoading ? (
             <ActivityIndicator
@@ -170,7 +179,7 @@ export default function PrintBarcodeModal({
                 marginVertical: 10,
               }}
             >
-              {t("printModal.formsLoadError")}
+              {t("scanner.printModal.formsLoadError")}
             </Text>
           ) : (
             <FlatList
@@ -211,7 +220,7 @@ export default function PrintBarcodeModal({
                 <Text
                   style={{ textAlign: "center", color: theme.colors.inkSubtle }}
                 >
-                  {t("printModal.noActiveFormError")}
+                  {t("scanner.printModal.noActiveFormError")}
                 </Text>
               }
             />
@@ -223,7 +232,7 @@ export default function PrintBarcodeModal({
               onPress={handleClose}
             >
               <Text style={styles.receiptCancelText}>
-                {t("printModal.cancelButton")}
+                {t("scanner.printModal.cancelButton")}
               </Text>
             </TouchableOpacity>
 
@@ -239,7 +248,7 @@ export default function PrintBarcodeModal({
                 <ActivityIndicator size="small" color={theme.colors.onPrimary} />
               ) : (
                 <Text style={styles.receiptConfirmText}>
-                  {t("printModal.printButton")}
+                  {t("scanner.printModal.printButton")}
                 </Text>
               )}
             </TouchableOpacity>

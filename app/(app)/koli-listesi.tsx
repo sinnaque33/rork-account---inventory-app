@@ -26,7 +26,7 @@ import {
   View,
   Vibration,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -39,7 +39,7 @@ const PAGE_LEN = 7 as const;
 
 export default function KoliListesiScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const { push } = useSafeNavigation();
   const { credentials } = useAuth();
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -137,8 +137,8 @@ export default function KoliListesiScreen() {
     },
     onSuccess: (data) => {
       setResultData({
-        title: "Başarılı",
-        message: `Seçilen koliler için ${data.resultReceiptNo} nolu irsaliye başarıyla oluşturuldu.`,
+        title: t("common.success"),
+        message: t("koliListesi.bulkReceiptSuccess", { receiptNo: data.resultReceiptNo }),
         type: "success",
       });
       setResultModalVisible(true);
@@ -148,8 +148,8 @@ export default function KoliListesiScreen() {
     },
     onError: (error) => {
       setResultData({
-        title: "Hata",
-        message: error instanceof Error ? error.message : "Bir hata oluştu.",
+        title: t("common.error"),
+        message: error instanceof Error ? error.message : t("common.defaultError"),
         type: "error",
       });
       setResultModalVisible(true);
@@ -189,7 +189,7 @@ export default function KoliListesiScreen() {
     if (isSelectionMode) {
       toggleSelection(item);
     } else { //todo recId gönder
-      router.push(
+      push(
         `/(app)/koli-detay?id=${item.id}&packageNo=${item.PackageNo || ""}&receiptNo=${item.ReceiptNo || ""}&recId=${item.id || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
       );
     }
@@ -337,7 +337,7 @@ export default function KoliListesiScreen() {
           <TouchableOpacity
             style={styles.fabSecondary}
             onPress={() => {
-              router.push({
+              push({
                 pathname: "/(app)/barcode-scanner",
                 params: { mode: "search" },
               });
@@ -350,7 +350,7 @@ export default function KoliListesiScreen() {
 
           <TouchableOpacity
             style={styles.fab}
-            onPress={() => router.push("/(app)/create-koli")}
+            onPress={() => push("/(app)/create-koli")}
             activeOpacity={0.8}
             testID="create-koli-button"
           >
@@ -369,7 +369,7 @@ export default function KoliListesiScreen() {
           </TouchableOpacity>
 
           <Text style={styles.selectionCountText}>
-            {selectedItems.length} Koli Seçildi
+            {t("koliListesi.selectedCount", { count: selectedItems.length })}
           </Text>
 
           <TouchableOpacity
@@ -385,7 +385,7 @@ export default function KoliListesiScreen() {
             ) : (
               <FileText size={18} color={theme.colors.primary} />
             )}
-            <Text style={styles.bulkActionText}>İrsaliye Oluştur</Text>
+            <Text style={styles.bulkActionText}>{t("koliListesi.createReceipt")}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -533,7 +533,7 @@ const makeStyles = (theme: Theme) => {
     fab: {
       position: "absolute",
       right: spacing.lg,
-      bottom: spacing.lg,
+      bottom: spacing.xxl,
       width: 56,
       height: 56,
       borderRadius: radius.pill,
@@ -549,7 +549,7 @@ const makeStyles = (theme: Theme) => {
     fabSecondary: {
       position: "absolute",
       right: spacing.lg,
-      bottom: 88,
+      bottom: 100,
       width: 52,
       height: 52,
       borderRadius: radius.pill,

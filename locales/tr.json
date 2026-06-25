@@ -1,4 +1,11 @@
 {
+  "common": {
+    "success": "Başarılı",
+    "error": "Hata",
+    "defaultError": "Bir hata oluştu",
+    "credentialsMissing": "Giriş bilgileri bulunamadı."
+  },
+
   "settings": {
     "sounds": {
       "error_1": "Klasik Bip",
@@ -100,7 +107,13 @@
     "receiptNoPrefix": "Sipariş No: ",
     "allLoaded": "Tüm koliler yüklendi",
     "emptySearch": "Aramanızla eşleşen koli bulunamadı",
-    "emptyList": "Koli bulunamadı"
+    "emptyList": "Koli bulunamadı",
+    "newBox": "Yeni Koli",
+    "scan": "Barkod",
+    "selectedCount": "{{count}} Koli Seçildi",
+    "createReceipt": "İrsaliye Oluştur",
+    "bulkReceiptError": "Toplu irsaliye oluşturulurken bir hata oluştu.",
+    "bulkReceiptSuccess": "Seçilen koliler için {{receiptNo}} nolu irsaliye başarıyla oluşturuldu."
   },
   "koliDetay": {
     "headerFallback": "Koli Detay",
@@ -123,6 +136,9 @@
     "itemFallback": "Kalem #",
     "quantity": "Miktar",
     "orderNo": "Sipariş No: ",
+    "btnPrint": "Yazdır",
+    "outOfOrderTitle": "Sipariş Dışı Ürün",
+    "outOfOrderMessage": "Siparişte olmayan malzeme okutuyorsunuz. Devam etmek istiyor musunuz?",
     "addMaterial": "Malzeme Ekle",
     "deleteMaterial": "Malzeme Sil",
     "placeholderAdd": "Eklenecek barkodu okutun...",
@@ -138,6 +154,7 @@
     "modals": {
       "receiptTitle": "İrsaliye Oluştur",
       "receiptSubtitle": "İrsaliye oluşturmak istiyor musunuz?",
+      "receiptSubtitlePlural": "{{count}} adet koli için irsaliye oluşturulacak. Onaylıyor musunuz?",
       "closeTitle": "Koli Kapatma",
       "closeSubtitle": "Ağırlık giriniz",
       "grossWeight": "Brüt Ağırlık",
@@ -160,6 +177,20 @@
     "searchPlaceholder": "İsim veya koda göre ara",
     "emptySearch": "Aramanızla eşleşen ürün bulunamadı",
     "emptyList": "Envanterde ürün bulunamadı"
+  },
+  "irsKoli": {
+    "headerTitle": "İrsaliye Oluştur",
+    "boxPrefix": "Koli #{{id}}",
+    "selectedCount": "{{count}} Koli Seçildi",
+    "searchPlaceholder": "Koli No ile ara...",
+    "loading": "Koliler Yükleniyor...",
+    "emptyList": "Hiç koli bulunamadı.",
+    "statusLabel": "Durum: ",
+    "statusOpen": "Açık",
+    "statusClosed": "Kapalı",
+    "submitButton": "Seçilenleri İrsaliye Yap ({{count}})",
+    "receiptCreateFail": "İrsaliye oluşturulamadı.",
+    "receiptCreateSuccess": "İrsaliye başarıyla oluşturuldu."
   },
   "dashboard": {
     "createWaybillTitle": "İrsaliye Oluştur",
@@ -204,6 +235,8 @@
     "boxNotFoundMsg": "Okutulan barkoda ait koli bulunmuyor.",
     "createBoxError": "Koli oluşturulurken hata meydana geldi.",
     "retry": "Tekrar Dene",
+    "outOfOrderTitle": "Sipariş Dışı Ürün",
+    "outOfOrderMessage": "Siparişte olmayan malzeme okutuyorsunuz. Devam etmek istiyor musunuz?",
     "overLimit": {
       "title": "Miktar Aşımı",
       "message": "Sipariş miktarı aşılıyor, devam etmek istiyor musunuz?",
@@ -223,22 +256,22 @@
       "searchSubtitle": "Koli bilgisini görmek için okutun",
       "accountSelected": "Cari Seçildi",
       "receiptNo": "(Fiş: {{no}})"
+    },
+    "printModal": {
+      "title": "Etiket Yazdır",
+      "targetPrinter": "Hedef Yazıcı:",
+      "printerPlaceholder": "Yazıcı Adı (Örn: EPSON)",
+      "emptyPrinterError": "Yazıcı adı boş olamaz!",
+      "printerSavedSuccess": "Yazıcı varsayılan olarak kaydedildi.",
+      "selectForm": "Form Seçin:",
+      "missingInfoError": "Giriş bilgileri veya Koli ID eksik",
+      "formNotSelectedError": "Lütfen bir form seçin",
+      "formsLoadError": "Formlar yüklenemedi.",
+      "noActiveFormError": "Aktif form bulunamadı.",
+      "printStartedSuccess": "Yazdırma işlemi başlatıldı",
+      "printError": "Yazdırma hatası",
+      "printButton": "Yazdır",
+      "cancelButton": "İptal"
     }
-  },
-  "printModal": {
-    "title": "Etiket Yazdır",
-    "targetPrinter": "Hedef Yazıcı:",
-    "printerPlaceholder": "Yazıcı Adı (Örn: EPSON)",
-    "emptyPrinterError": "Yazıcı adı boş olamaz!",
-    "printerSavedSuccess": "Yazıcı varsayılan olarak kaydedildi.",
-    "selectForm": "Form Seçin:",
-    "missingInfoError": "Giriş bilgileri veya Koli ID eksik",
-    "formNotSelectedError": "Lütfen bir form seçin",
-    "formsLoadError": "Formlar yüklenemedi.",
-    "noActiveFormError": "Aktif form bulunamadı.",
-    "printStartedSuccess": "Yazdırma işlemi başlatıldı",
-    "printError": "Yazdırma hatası",
-    "printButton": "Yazdır",
-    "cancelButton": "İptal"
   }
 }

@@ -9,13 +9,14 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { Theme } from '@/constants/theme';
+import { useSafeNavigation } from '@/hooks/useSafeNavigation';
 
 export default function CreateKoliScreen() {
-  const router = useRouter();
+  const { push } = useSafeNavigation();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -44,7 +45,7 @@ export default function CreateKoliScreen() {
                 style={styles.optionButton}
                 onPress={() => {
                   console.log('CreateKoli: Navigating to order-receipts');
-                  router.push('/(app)/order-receipts');
+                  push('/(app)/order-receipts');
                 }}
                 activeOpacity={0.7}
                 testID="receipt-barcode-button"

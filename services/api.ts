@@ -1003,7 +1003,7 @@ export const api = {
         JSON.stringify(data, null, 2),
       );
 
-      return { success: data.success, msg: data.msg };
+      return data;
     },
 
     async openBox(
@@ -1054,7 +1054,7 @@ export const api = {
       const data = await response.json();
       console.log("API: OpenBox Response:", JSON.stringify(data, null, 2));
 
-      return { success: data.success, msg: data.msg };
+      return data;
     },
     async closeBox(
       userName: string,
@@ -1123,7 +1123,7 @@ export const api = {
       // 3. API'den dönen cevabı (Response) gösteren log
       console.log("API: CloseBox Response:", JSON.stringify(data, null, 2));
 
-      return { success: data.success, msg: data.msg };
+      return data;
     },
 
     async getBarcodeForms(

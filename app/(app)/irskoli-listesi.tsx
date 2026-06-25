@@ -26,6 +26,7 @@ import {
   Square,
 } from "lucide-react-native";
 import { TextInput } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +41,7 @@ export default function IrsKoliListesiScreen() {
   const router = useRouter();
   const { credentials } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const queryClient = useQueryClient();
 
@@ -148,10 +150,10 @@ export default function IrsKoliListesiScreen() {
         }
 
         const errorMessage =
-          parsedData.resultExplanation || res.msg || "İrsaliye oluşturulamadı.";
+          parsedData.resultExplanation || res.msg || t("irsKoli.receiptCreateFail");
 
         setResultData({
-          title: t("common.error", "Hata"),
+          title: t("common.error"),
           message: errorMessage,
           type: "error",
         });
@@ -165,8 +167,8 @@ export default function IrsKoliListesiScreen() {
         handleClearSelection(); // Başarılı olunca seçimi temizle
 
         setResultData({
-          title: t("common.success", "Başarılı"),
-          message: res.msg || "İrsaliye başarıyla oluşturuldu.",
+          title: t("common.success"),
+          message: res.msg || t("irsKoli.receiptCreateSuccess"),
           type: "success",
         });
         setResultModalVisible(true);
@@ -183,7 +185,7 @@ export default function IrsKoliListesiScreen() {
       }
 
       setResultData({
-        title: t("common.error", "Hata"),
+        title: t("common.error"),
         message: err.message,
         type: "error",
       });
@@ -254,16 +256,16 @@ export default function IrsKoliListesiScreen() {
             />
             <View style={{ marginLeft: 12 }}>
               <Text style={styles.cardTitle}>
-                {item.PackageNo || item.boxCode || `Koli #${itemId}`}
-              </Text>
-              {item.Status !== undefined && (
-                <Text style={styles.cardSubtitle}>
-                  Durum:{" "}
-                  {item.Status === 0
-                    ? "Açık"
-                    : item.Status === 2
-                      ? "Kapalı"
-                      : item.Status}
+                  {item.PackageNo || item.boxCode || t("irsKoli.boxPrefix", { id: itemId })}
+                </Text>
+                {item.Status !== undefined && (
+                  <Text style={styles.cardSubtitle}>
+                    {t("irsKoli.statusLabel")}
+                    {item.Status === 0
+                      ? t("irsKoli.statusOpen")
+                      : item.Status === 2
+                        ? t("irsKoli.statusClosed")
+                        : item.Status}
                 </Text>
               )}
             </View>
@@ -289,8 +291,8 @@ export default function IrsKoliListesiScreen() {
       <Stack.Screen
         options={{
           title: isSelectionMode
-            ? `${selectedIds.size} Koli Seçildi`
-            : "İrsaliye Oluştur",
+              ? t("irsKoli.selectedCount", { count: selectedIds.size })
+              : t("irsKoli.headerTitle"),
           headerRight: () =>
             isSelectionMode ? (
               <TouchableOpacity
@@ -308,7 +310,7 @@ export default function IrsKoliListesiScreen() {
           <Search size={20} color={theme.colors.inkSubtle} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Koli No ile ara..."
+            placeholder={t("irsKoli.searchPlaceholder")}
             placeholderTextColor={theme.colors.inkSubtle}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -324,12 +326,12 @@ export default function IrsKoliListesiScreen() {
       {isLoading && !isRefetching ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Koliler Yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t("irsKoli.loading")}</Text>
         </View>
       ) : isError ? (
         <View style={styles.centerContainer}>
           <Text style={styles.errorText}>
-            {error instanceof Error ? error.message : "Bir hata oluştu"}
+            {error instanceof Error ? error.message : t("common.defaultError")}
           </Text>
         </View>
       ) : (
@@ -367,14 +369,19 @@ export default function IrsKoliListesiScreen() {
           ListEmptyComponent={
             <View style={styles.centerContainer}>
               <Package size={48} color={theme.colors.inkSubtle} opacity={0.5} />
-              <Text style={styles.emptyText}>Hiç koli bulunamadı.</Text>
+              <Text style={styles.emptyText}>{t("irsKoli.emptyList")}</Text>
             </View>
           }
         />
       )}
 
       {isSelectionMode && (
-        <View style={styles.bottomPanel}>
+        <View
+          style={[
+            styles.bottomPanel,
+            { paddingBottom: insets.bottom + theme.spacing.md },
+          ]}
+        >
           <TouchableOpacity
             style={[
               styles.submitButton,
@@ -389,7 +396,7 @@ export default function IrsKoliListesiScreen() {
               <>
                 <Truck size={24} color={theme.colors.onInfo} />
                 <Text style={styles.submitButtonText}>
-                  Seçilenleri İrsaliye Yap ({selectedIds.size})
+                  {t("irsKoli.submitButton", { count: selectedIds.size })}
                 </Text>
               </>
             )}
@@ -510,7 +517,6 @@ const makeStyles = (theme: Theme) => {
       left: 0,
       right: 0,
       padding: spacing.md,
-      paddingBottom: Platform.OS === "ios" ? spacing.xxl : spacing.md,
       backgroundColor: colors.surface1,
       borderTopWidth: 1,
       borderTopColor: colors.hairline,

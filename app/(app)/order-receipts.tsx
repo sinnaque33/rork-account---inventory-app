@@ -17,16 +17,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
 import { OrderReceipt } from "@/services/types";
+import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 
 export default function OrderReceiptsScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const { push } = useSafeNavigation();
   const { credentials } = useAuth();
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -49,7 +50,7 @@ export default function OrderReceiptsScreen() {
   });
 
   const handleReceiptSelect = (item: OrderReceipt) => {
-    router.push({
+    push({
       pathname: "/(app)/barcode-scanner",
       params: {
         mode: "create_from_order",
@@ -61,7 +62,7 @@ export default function OrderReceiptsScreen() {
   };
 
   const handleNoOrderSelect = () => {
-    router.push({
+    push({
       pathname: "/(app)/barcode-scanner",
       params: {
         mode: "create_standalone",

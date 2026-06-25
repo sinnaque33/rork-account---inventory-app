@@ -35,6 +35,8 @@ export default function ReceiptConfirmModal({
     <Modal
       visible={visible}
       transparent
+      statusBarTranslucent
+      navigationBarTranslucent
       animationType="fade"
       onRequestClose={onClose}
     >

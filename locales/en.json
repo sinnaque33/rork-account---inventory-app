@@ -1,4 +1,11 @@
 {
+  "common": {
+    "success": "Success",
+    "error": "Error",
+    "defaultError": "An error occurred",
+    "credentialsMissing": "Login credentials not found."
+  },
+
   "settings": {
     "sounds": {
       "error_1": "Classic Beep",
@@ -100,7 +107,13 @@
     "receiptNoPrefix": "Order No: ",
     "allLoaded": "All boxes loaded",
     "emptySearch": "No boxes found matching your search",
-    "emptyList": "No boxes found"
+    "emptyList": "No boxes found",
+    "newBox": "New Box",
+    "scan": "Scan",
+    "selectedCount": "{{count}} Boxes Selected",
+    "createReceipt": "Create Waybill",
+    "bulkReceiptError": "An error occurred while creating bulk waybills.",
+    "bulkReceiptSuccess": "Waybill no {{receiptNo}} was successfully created for the selected boxes."
   },
   "koliDetay": {
     "headerFallback": "Box Details",
@@ -123,6 +136,9 @@
     "itemFallback": "Item #",
     "quantity": "Quantity",
     "orderNo": "Order No: ",
+    "btnPrint": "Print",
+    "outOfOrderTitle": "Out-of-Order Item",
+    "outOfOrderMessage": "You are scanning an item not in the order. Do you want to continue?",
     "addMaterial": "Add Material",
     "deleteMaterial": "Delete Material",
     "placeholderAdd": "Scan barcode to add...",
@@ -138,6 +154,7 @@
     "modals": {
       "receiptTitle": "Create Waybill",
       "receiptSubtitle": "Do you want to create a waybill?",
+      "receiptSubtitlePlural": "A waybill will be created for {{count}} boxes. Do you confirm?",
       "closeTitle": "Close Box",
       "closeSubtitle": "Enter weight",
       "grossWeight": "Gross Weight",
@@ -161,7 +178,23 @@
     "emptySearch": "No items match your search",
     "emptyList": "No inventory items found"
   },
+  "irsKoli": {
+    "headerTitle": "Create Waybill",
+    "boxPrefix": "Box #{{id}}",
+    "selectedCount": "{{count}} Boxes Selected",
+    "searchPlaceholder": "Search by Box No...",
+    "loading": "Loading Boxes...",
+    "emptyList": "No boxes found.",
+    "statusLabel": "Status: ",
+    "statusOpen": "Open",
+    "statusClosed": "Closed",
+    "submitButton": "Create Waybill for Selected ({{count}})",
+    "receiptCreateFail": "Could not create waybill.",
+    "receiptCreateSuccess": "Waybill created successfully."
+  },
   "dashboard": {
+    "createWaybillTitle": "Create Waybill",
+    "createWaybillSubtitle": "Create a new waybill by selecting boxes",
     "greeting": "Welcome,",
     "quickAccess": "Quick Access",
     "boxListTitle": "Box List",
