@@ -2,10 +2,7 @@ import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  AccountsData,
   BarcodeForm,
-  CurrentAccount,
-  InventoryItem,
   KoliDetailItem,
   KoliItem,
   LoginCredentials,
@@ -220,99 +217,6 @@ export const api = {
     async checkAuth(): Promise<boolean> {
       const token = await tokenStorage.getToken();
       return !!token;
-    },
-  },
-
-  accounts: {
-    async getList(
-      userName: string,
-      password: string,
-    ): Promise<CurrentAccount[]> {
-      console.log("API: Fetching current accounts");
-      const apiBaseUrl = await getApiBaseUrl();
-      const companyCode = await getCompanyCode();
-      const companyPassword = await getCompanyPassword();
-
-      const requestBody: Record<string, string | boolean> = {
-        userName,
-        password,
-        licenseKey: "16016923",
-        logout: true,
-        companyCode: companyCode || "",
-        companyPassword: companyPassword || "",
-        data: '{ "name": "accounts"}',
-      };
-
-      const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-      }
-
-      const data: RunJsonServiceResponse<AccountsData> = await response.json();
-      console.log("API: Received accounts response", {
-        success: data.success,
-        itemsCount: data.data?.items?.length,
-      });
-
-      if (data.success !== "true") {
-        throw new Error(data.msg || "Failed to fetch accounts");
-      }
-
-      return data.data?.items || [];
-    },
-  },
-
-  inventory: {
-    async getList(
-      userName: string,
-      password: string,
-    ): Promise<InventoryItem[]> {
-      console.log("API: Fetching inventory items");
-      const apiBaseUrl = await getApiBaseUrl();
-      const companyCode = await getCompanyCode();
-      const companyPassword = await getCompanyPassword();
-
-      const requestBody: Record<string, string | boolean> = {
-        userName,
-        password,
-        licenseKey: "16016923",
-        logout: true,
-        companyCode: companyCode || "",
-        companyPassword: companyPassword || "",
-        data: '{ "name": "inventory"}',
-      };
-
-      const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-      }
-
-      const data: RunJsonServiceResponse<{ items: InventoryItem[] }> =
-        await response.json();
-      console.log("API: Received inventory response", {
-        success: data.success,
-        itemsCount: data.data?.items?.length,
-      });
-
-      if (data.success !== "true") {
-        throw new Error(data.msg || "Failed to fetch inventory");
-      }
-
-      return data.data?.items || [];
     },
   },
 

@@ -29,18 +29,6 @@ export default function AppLayout() {
         }}
       />
       <Stack.Screen
-        name="accounts"
-        options={{
-          title: t('navigation.accounts'),
-        }}
-      />
-      <Stack.Screen
-        name="inventory"
-        options={{
-          title: t('navigation.inventory'),
-        }}
-      />
-      <Stack.Screen
         name="koli-listesi"
         options={{
           title: t('navigation.koliListesi'),

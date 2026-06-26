@@ -43,13 +43,7 @@ export default function SettingsScreen() {
     errorSound,
     useExistingBox,
     skipWeightInput,
-    updateApiUrl,
-    updateCompanyCode,
-    updateCompanyPassword,
-    updateWarehouseCode,
-    updateErrorSound,
-    updateUseExistingBox,
-    updateSkipWeightInput,
+    updateConfig,
     resetToDefault,
     isLoading,
     isSaving,
@@ -86,7 +80,9 @@ export default function SettingsScreen() {
       });
     };
     setupAudio();
+  }, []);
 
+  useEffect(() => {
     setUrl(apiBaseUrl);
     setCode(companyCode);
     setPassword(companyPassword);
@@ -177,13 +173,15 @@ export default function SettingsScreen() {
     }
 
     try {
-      await updateApiUrl(url.trim());
-      await updateCompanyCode(code.trim());
-      await updateCompanyPassword(password.trim());
-      await updateWarehouseCode(whCode.trim());
-      await updateErrorSound(selectedSound);
-      await updateUseExistingBox(existingBoxMode);
-      await updateSkipWeightInput(skipWeightMode);
+      await updateConfig({
+        url: url.trim(),
+        companyCode: code.trim(),
+        companyPassword: password.trim(),
+        warehouseCode: whCode.trim(),
+        errorSound: selectedSound,
+        useExistingBox: existingBoxMode,
+        skipWeightInput: skipWeightMode,
+      });
 
       showSuccessToast();
     } catch {

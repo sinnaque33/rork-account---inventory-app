@@ -1,54 +1,63 @@
 import { Link, Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { AlertCircle } from "lucide-react-native";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
 
 export default function NotFoundScreen() {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
   return (
     <>
-      <Stack.Screen options={{ title: "Not Found" }} />
+      <Stack.Screen options={{ title: t("notFound.headerTitle") }} />
       <View style={styles.container}>
-        <AlertCircle size={64} color="#64748b" />
-        <Text style={styles.title}>Page Not Found</Text>
-        <Text style={styles.subtitle}>This page doesn&apos;t exist.</Text>
+        <AlertCircle size={64} color={theme.colors.inkSubtle} />
+        <Text style={styles.title}>{t("notFound.title")}</Text>
+        <Text style={styles.subtitle}>{t("notFound.subtitle")}</Text>
 
         <Link href="/login" style={styles.link}>
-          <Text style={styles.linkText}>Go to Login</Text>
+          <Text style={styles.linkText}>{t("notFound.goToLogin")}</Text>
         </Link>
       </View>
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#f8fafc",
-    gap: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700" as const,
-    color: "#1e293b",
-    marginTop: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#64748b",
-    textAlign: "center",
-  },
-  link: {
-    marginTop: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    backgroundColor: "#3b82f6",
-    borderRadius: 12,
-  },
-  linkText: {
-    fontSize: 16,
-    color: "#fff",
-    fontWeight: "600" as const,
-  },
-});
+const makeStyles = (theme: Theme) => {
+  const { colors, spacing, radius, type } = theme;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: spacing.lg,
+      backgroundColor: colors.canvas,
+      gap: spacing.sm,
+    },
+    title: {
+      ...type.headline,
+      color: colors.ink,
+      marginTop: spacing.md,
+    },
+    subtitle: {
+      ...type.body,
+      color: colors.inkMuted,
+      textAlign: "center",
+    },
+    link: {
+      marginTop: spacing.xl,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xl,
+      backgroundColor: colors.primary,
+      borderRadius: radius.lg,
+    },
+    linkText: {
+      ...type.button,
+      color: colors.onPrimary,
+    },
+  });
+};

@@ -67,11 +67,6 @@ export interface LoginResponse {
   app: Record<string, any>;
 }
 
-export interface CurrentAccount {
-  CurrentAccountCode: string;
-  CurrentAccountName: string;
-}
-
 export interface RunJsonServiceResponse<T> {
   success: string;
   err: number;
@@ -79,16 +74,6 @@ export interface RunJsonServiceResponse<T> {
   ticket: string;
   version: string;
   data: T;
-}
-
-export interface AccountsData {
-  items: CurrentAccount[];
-}
-
-export interface InventoryItem {
-  InventoryCode: string;
-  InventoryName: string;
-  Thumbnail: string;
 }
 
 export interface KoliItem {

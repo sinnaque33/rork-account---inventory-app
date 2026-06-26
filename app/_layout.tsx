@@ -25,6 +25,14 @@ function NavigationHandler() {
     }
   }, [pendingNavigation, router, clearPendingNavigation]);
 
+  // Splash ekranını yalnızca oturum kontrolü bittiğinde gizle. Böylece
+  // hazır olmadan login ekranının bir an görünmesi (flaş) engellenir.
+  useEffect(() => {
+    if (!isLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [isLoading]);
+
   useEffect(() => {
     if (isLoading) {
       return;
@@ -57,10 +65,6 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>

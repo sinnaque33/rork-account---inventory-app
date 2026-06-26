@@ -13,6 +13,20 @@ const USE_EXISTING_BOX_KEY = "use_existing_box";
 const SKIP_WEIGHT_INPUT_KEY = "skip_weight_input";
 const PRINTER_NAME_KEY = "preferred_printer_name";
 
+const DEFAULT_API_URL =
+  "https://webstreme.uniteks.com.tr:8001/ExtWsLiveV2/Services";
+
+type ConfigParams = {
+  url?: string;
+  companyCode?: string;
+  companyPassword?: string;
+  warehouseCode?: string;
+  errorSound?: string;
+  useExistingBox?: boolean;
+  skipWeightInput?: boolean;
+  printerName?: string;
+};
+
 export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
   const [apiBaseUrl, setApiBaseUrl] = useState<string>("");
   const [companyCode, setCompanyCode] = useState<string>("");
@@ -199,9 +213,20 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     [saveMutateAsync],
   );
 
+  // Birden çok ayarı tek bir kaydetme döngüsünde yazar (tek AsyncStorage
+  // turu + tek clearApiUrlCache). Ayarlar ekranındaki toplu kaydetme için.
+  const updateConfig = useCallback(
+    async (params: ConfigParams) => {
+      await saveMutateAsync(params);
+    },
+    [saveMutateAsync],
+  );
+
   const resetToDefault = useCallback(async () => {
+    // URL için varsayılanı KALICI olarak yaz (boş bırakılırsa API çağrıları
+    // geçersiz base URL'e gider). Diğer alanların varsayılanı boştur.
     await Promise.all([
-      AsyncStorage.removeItem(STORAGE_KEY),
+      AsyncStorage.setItem(STORAGE_KEY, DEFAULT_API_URL),
       AsyncStorage.removeItem(COMPANY_CODE_KEY),
       AsyncStorage.removeItem(COMPANY_PASSWORD_KEY),
       AsyncStorage.removeItem(WAREHOUSE_CODE_KEY),
@@ -211,7 +236,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       AsyncStorage.removeItem(PRINTER_NAME_KEY),
     ]);
     clearApiUrlCache();
-    setApiBaseUrl("");
+    setApiBaseUrl(DEFAULT_API_URL);
     setCompanyCode("");
     setCompanyPassword("");
     setWarehouseCode("");
@@ -239,10 +264,11 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       updateCompanyPassword,
       updateWarehouseCode,
       updateErrorSound,
+      updateConfig,
       resetToDefault,
       isLoading: loadUrlQuery.isLoading,
       isSaving: saveMutation.isPending,
-      defaultUrl: "https://webstreme.uniteks.com.tr:8001/ExtWsLiveV2/Services",
+      defaultUrl: DEFAULT_API_URL,
     }),
     [
       apiBaseUrl,
@@ -261,6 +287,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       updateCompanyPassword,
       updateWarehouseCode,
       updateErrorSound,
+      updateConfig,
       resetToDefault,
       loadUrlQuery.isLoading,
       saveMutation.isPending,

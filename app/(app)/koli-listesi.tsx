@@ -533,7 +533,7 @@ const makeStyles = (theme: Theme) => {
     fab: {
       position: "absolute",
       right: spacing.lg,
-      bottom: spacing.xxl,
+      bottom: 64,
       width: 56,
       height: 56,
       borderRadius: radius.pill,
@@ -549,7 +549,7 @@ const makeStyles = (theme: Theme) => {
     fabSecondary: {
       position: "absolute",
       right: spacing.lg,
-      bottom: 100,
+      bottom: 132,
       width: 52,
       height: 52,
       borderRadius: radius.pill,

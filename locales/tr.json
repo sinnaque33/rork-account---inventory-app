@@ -6,6 +6,13 @@
     "credentialsMissing": "Giriş bilgileri bulunamadı."
   },
 
+  "notFound": {
+    "headerTitle": "Bulunamadı",
+    "title": "Sayfa Bulunamadı",
+    "subtitle": "Bu sayfa mevcut değil.",
+    "goToLogin": "Girişe Dön"
+  },
+
   "settings": {
     "sounds": {
       "error_1": "Klasik Bip",
@@ -170,14 +177,6 @@
       "confirmBtn": "Evet, Ekle"
     }
   },
-  "inventory": {
-    "loading": "Envanter yükleniyor...",
-    "errorTitle": "Envanter Yükleme Hatası",
-    "defaultError": "Bir hata oluştu",
-    "searchPlaceholder": "İsim veya koda göre ara",
-    "emptySearch": "Aramanızla eşleşen ürün bulunamadı",
-    "emptyList": "Envanterde ürün bulunamadı"
-  },
   "irsKoli": {
     "headerTitle": "İrsaliye Oluştur",
     "boxPrefix": "Koli #{{id}}",
@@ -207,17 +206,8 @@
     "orderOptionTitle": "Sipariş",
     "orderOptionDesc": "Siparişten malzeme ekleme"
   },
-  "accounts": {
-    "credentialsMissing": "Kullanıcı bilgileri bulunamadı",
-    "loading": "Cariler yükleniyor...",
-    "errorTitle": "Cari Yükleme Hatası",
-    "defaultError": "Bir hata oluştu",
-    "emptyList": "Cari bulunamadı"
-  },
   "navigation": {
     "dashboard": "Ana Sayfa",
-    "accounts": "Cari Hesaplar",
-    "inventory": "Envanter",
     "koliListesi": "Koli Listesi",
     "createKoli": "Yeni Koli",
     "barcodeScanner": "Barkod Okuyucu"

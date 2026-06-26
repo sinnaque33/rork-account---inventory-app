@@ -6,6 +6,13 @@
     "credentialsMissing": "Login credentials not found."
   },
 
+  "notFound": {
+    "headerTitle": "Not Found",
+    "title": "Page Not Found",
+    "subtitle": "This page doesn't exist.",
+    "goToLogin": "Go to Login"
+  },
+
   "settings": {
     "sounds": {
       "error_1": "Classic Beep",
@@ -170,14 +177,6 @@
       "confirmBtn": "Yes, Add"
     }
   },
-  "inventory": {
-    "loading": "Loading inventory...",
-    "errorTitle": "Error Loading Inventory",
-    "defaultError": "An error occurred",
-    "searchPlaceholder": "Search by name or code",
-    "emptySearch": "No items match your search",
-    "emptyList": "No inventory items found"
-  },
   "irsKoli": {
     "headerTitle": "Create Waybill",
     "boxPrefix": "Box #{{id}}",
@@ -207,17 +206,8 @@
     "orderOptionTitle": "Order",
     "orderOptionDesc": "Add material from an order"
   },
-  "accounts": {
-    "credentialsMissing": "User credentials not available",
-    "loading": "Loading accounts...",
-    "errorTitle": "Error Loading Accounts",
-    "defaultError": "An error occurred",
-    "emptyList": "No accounts found"
-  },
   "navigation": {
     "dashboard": "Home",
-    "accounts": "Current Accounts",
-    "inventory": "Inventory",
     "koliListesi": "Box List",
     "createKoli": "Create Box",
     "barcodeScanner": "Barcode Scanner"

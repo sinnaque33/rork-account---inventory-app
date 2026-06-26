@@ -3,9 +3,6 @@ import { Stack } from "expo-router";
 import { LogIn, Settings, Eye, EyeOff } from "lucide-react-native";
 import { useMemo, useRef, useState } from "react";
 import { Image } from "expo-image";
-
-const logoOnDark = require("../assets/extreme-logo-on-dark.png");
-const logoOnLight = require("../assets/Extreme-Logo-Ana.png");
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -22,6 +19,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
 import { useSafeNavigation } from "@/hooks/useSafeNavigation";
+
+const logoOnDark = require("../assets/extreme-logo-on-dark.png");
+const logoOnLight = require("../assets/Extreme-Logo-Ana.png");
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -59,16 +59,15 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    console.log("LoginScreen: Login button pressed");
-    const isUserCodeValid = validateUserCode(userCode);
+    const trimmedUserCode = userCode.trim();
+    const isUserCodeValid = validateUserCode(trimmedUserCode);
     const isPasswordValid = validatePassword(password);
 
     if (!isUserCodeValid || !isPasswordValid) {
-      console.log("LoginScreen: Validation failed");
       return;
     }
 
-    await login({ userCode, password });
+    await login({ userCode: trimmedUserCode, password });
   };
 
   return (
