@@ -48,6 +48,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
               parsedUser.userName,
             );
             setUser(parsedUser);
+            // Oturum geri yüklenirken credentials'ı da set et; aksi halde
+            // ekranların `enabled: !!credentials` ile koşullu sorguları hiç
+            // çalışmaz ve listeler boş gelir (otomatik giriş senaryosu).
+            setCredentials({
+              userCode: parsedUser.userName,
+              password: parsedUser.password,
+            });
           } else {
             console.log(
               "AuthContext: Token exists but no user data, clearing token",
