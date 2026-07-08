@@ -84,7 +84,9 @@ export default function IrsKoliListesiScreen() {
     refetch,
     isRefetching,
   } = useInfiniteQuery({
-    queryKey: ["irs-koli-listesi", debouncedSearch, credentials],
+    // credentials objesi şifre içerir; cache anahtarına yalnızca kullanıcı
+    // kodu girmeli (kullanıcı değişince cache ayrışması için yeterli).
+    queryKey: ["irs-koli-listesi", debouncedSearch, credentials?.userCode],
     queryFn: async ({ pageParam = 0 }) => {
       if (!credentials) throw new Error("Giriş bilgileri bulunamadı.");
       return api.koliListesi.irsKoliListesi(
@@ -214,12 +216,9 @@ export default function IrsKoliListesiScreen() {
     }
   };
 
+  // Bu ekranda dokunma her durumda seçimi değiştirir (detay ekranı yok).
   const handlePress = (id: number) => {
-    if (isSelectionMode) {
-      toggleSelection(id);
-    } else {
-      toggleSelection(id);
-    }
+    toggleSelection(id);
   };
 
   const handleClearSelection = () => {

@@ -28,10 +28,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
 import { api } from "@/services/api";
-import { Audio } from "expo-av";
-import { Vibration } from "react-native";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
-import { SOUND_FILES } from "@/constants/sounds";
+import { useErrorSignal } from "@/hooks/useErrorSignal";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ResultModal from "../components/ResultModal";
 import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 
@@ -41,26 +40,10 @@ export default function BarcodeScannerScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { errorSound, useExistingBox } = useApiConfig();
-  const playErrorSignal = async () => {
-    try {
-      Vibration.vibrate(500);
-      if (errorSound !== "vibration" && SOUND_FILES[errorSound]) {
-        const { sound } = await Audio.Sound.createAsync(
-          SOUND_FILES[errorSound],
-          { shouldPlay: true },
-        );
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            sound.unloadAsync();
-          }
-        });
-      }
-    } catch (e) {
-      console.log("Ses çalma hatası:", e);
-    }
-  };
+  const { useExistingBox } = useApiConfig();
+  const playErrorSignal = useErrorSignal();
   const params = useLocalSearchParams<{
     mode?: string;
     koliId?: string;
@@ -103,6 +86,14 @@ export default function BarcodeScannerScreen() {
   });
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(50)).current;
+  const toastHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Ekran kapanırken bekleyen toast gizleme zamanlayıcısını iptal et.
+  useEffect(() => {
+    return () => {
+      if (toastHideTimer.current) clearTimeout(toastHideTimer.current);
+    };
+  }, []);
 
   const showSuccessToast = (
     title: string,
@@ -125,7 +116,8 @@ export default function BarcodeScannerScreen() {
       }),
     ]).start();
 
-    setTimeout(() => {
+    if (toastHideTimer.current) clearTimeout(toastHideTimer.current);
+    toastHideTimer.current = setTimeout(() => {
       Animated.parallel([
         Animated.timing(toastOpacity, {
           toValue: 0,
@@ -142,13 +134,10 @@ export default function BarcodeScannerScreen() {
   };
 
   useEffect(() => {
-    const focusInput = () => {
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 300);
-      return () => clearTimeout(timer);
-    };
-    focusInput();
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [resultModalVisible]);
 
   // --- API İŞLEMLERİ (MUTATION) ---
@@ -206,7 +195,10 @@ export default function BarcodeScannerScreen() {
             credentials.password,
             koliIdNum,
             scannedBarcode,
-            parseInt(params.orderReceiptId!),
+            // Param yoksa NaN göndermek yerine undefined bırak (api 0 kullanır).
+            params.orderReceiptId
+              ? parseInt(params.orderReceiptId, 10)
+              : undefined,
             controlType,
           );
           return { ...addResult, mode: "add", scannedBarcode };
@@ -511,7 +503,12 @@ export default function BarcodeScannerScreen() {
         style={styles.container}
       >
         {/* HEADER */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            { paddingTop: insets.top + theme.spacing.sm },
+          ]}
+        >
           <TouchableOpacity
             style={styles.headerButton}
             onPress={() => router.back()}
@@ -667,12 +664,12 @@ export default function BarcodeScannerScreen() {
               </View>
               <Text style={styles.resultTitle}>
                 {overLimitType === 1
-                  ? "Sipariş Dışı Ürün"
+                  ? t("scanner.outOfOrderTitle")
                   : t("scanner.overLimit.title")}{" "}
               </Text>
               <Text style={styles.resultMessage}>
                 {overLimitType === 1
-                  ? "Siparişte olmayan malzeme okutuyorsunuz. Devam etmek istiyor musunuz?"
+                  ? t("scanner.outOfOrderMessage")
                   : t("scanner.overLimit.message")}
               </Text>
 
@@ -737,7 +734,7 @@ const makeStyles = (theme: Theme) => {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingTop: 60,
+      // paddingTop çalışma anında safe-area inset'inden gelir (çentik desteği)
       paddingHorizontal: spacing.lg,
       paddingBottom: spacing.lg,
       backgroundColor: colors.surface1,

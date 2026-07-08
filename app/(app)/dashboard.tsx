@@ -19,6 +19,7 @@ import {
   ScrollView,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
@@ -38,6 +39,7 @@ export default function DashboardScreen() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { push } = useSafeNavigation();
 
@@ -64,7 +66,12 @@ export default function DashboardScreen() {
         colors={[theme.colors.surface1, theme.colors.canvas]}
         style={styles.header}
       >
-        <View style={styles.headerContent}>
+        <View
+          style={[
+            styles.headerContent,
+            { paddingTop: insets.top + theme.spacing.lg },
+          ]}
+        >
           <View style={styles.headerTop}>
             <View style={styles.headerTextContainer}>
               <Text style={styles.greeting} numberOfLines={1}>
@@ -179,7 +186,7 @@ const makeStyles = (theme: Theme) => {
     },
     headerContent: {
       paddingHorizontal: spacing.xl,
-      paddingTop: 64,
+      // paddingTop çalışma anında safe-area inset'inden gelir (çentik desteği)
     },
     headerTop: {
       flexDirection: "row",

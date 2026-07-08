@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Audio, InterruptionModeAndroid } from "expo-av";
 import "../locales/i18n";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ApiConfigProvider } from "@/contexts/ApiConfigContext";
@@ -11,6 +12,17 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+// Hata sesinin iOS sessiz modda da çalabilmesi için audio mode uygulama
+// açılışında bir kez ayarlanır (yalnızca ayarlar ekranına girildiğinde değil).
+Audio.setAudioModeAsync({
+  playsInSilentModeIOS: true,
+  staysActiveInBackground: false,
+  interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+  shouldDuckAndroid: true,
+}).catch((e) => {
+  console.log("RootLayout: Audio mode ayarlanamadı:", e);
+});
 
 function NavigationHandler() {
   const { pendingNavigation, clearPendingNavigation, isAuthenticated, isLoading } = useAuth();

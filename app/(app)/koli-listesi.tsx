@@ -68,7 +68,9 @@ export default function KoliListesiScreen() {
   }, [searchQuery]);
 
   const koliQuery = useInfiniteQuery({
-    queryKey: ["koli-listesi", credentials, debouncedSearchQuery],
+    // credentials objesi şifre içerir; cache anahtarına yalnızca kullanıcı
+    // kodu girmeli (kullanıcı değişince cache ayrışması için yeterli).
+    queryKey: ["koli-listesi", credentials?.userCode, debouncedSearchQuery],
     queryFn: async ({ pageParam = 0 }) => {
       if (!credentials) {
         throw new Error("No credentials available");

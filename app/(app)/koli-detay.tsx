@@ -1,9 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Audio } from "expo-av";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
-
-import { SOUND_FILES } from "@/constants/sounds";
+import { useErrorSignal } from "@/hooks/useErrorSignal";
 import {
   AlertCircle,
   Package,
@@ -33,9 +31,8 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Vibration,
 } from "react-native";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { memo, useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, Stack } from "expo-router";
 import { api } from "@/services/api";
@@ -71,29 +68,8 @@ export default function KoliDetayScreen() {
     alwaysIgnoreLimit?: string;
   }>();
 
-  const { errorSound } = useApiConfig();
   const { skipWeightInput } = useApiConfig();
-
-  const playErrorSignal = async () => {
-    try {
-      Vibration.vibrate(500);
-      if (errorSound !== "vibration" && SOUND_FILES[errorSound]) {
-        const { sound } = await Audio.Sound.createAsync(
-          SOUND_FILES[errorSound],
-          { shouldPlay: true },
-          undefined,
-          true,
-        );
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            sound.unloadAsync();
-          }
-        });
-      }
-    } catch (e) {
-      console.log("Ses çalma hatası:", e);
-    }
-  };
+  const playErrorSignal = useErrorSignal();
 
   const { credentials } = useAuth();
 
@@ -139,17 +115,23 @@ export default function KoliDetayScreen() {
   });
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(50)).current;
+  const toastHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sayfa açıldığında veya modal kapandığında inputa odaklan
   useEffect(() => {
-    const focusInput = () => {
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 300);
-      return () => clearTimeout(timer);
-    };
-    focusInput();
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [resultModalVisible]);
+
+  // Ekran kapanırken bekleyen toast gizleme zamanlayıcısını iptal et;
+  // aksi halde unmount edilmiş component üzerinde animasyon başlatılır.
+  useEffect(() => {
+    return () => {
+      if (toastHideTimer.current) clearTimeout(toastHideTimer.current);
+    };
+  }, []);
 
   const showToast = (
     title: string,
@@ -172,7 +154,8 @@ export default function KoliDetayScreen() {
       }),
     ]).start();
 
-    setTimeout(() => {
+    if (toastHideTimer.current) clearTimeout(toastHideTimer.current);
+    toastHideTimer.current = setTimeout(() => {
       Animated.parallel([
         Animated.timing(toastOpacity, {
           toValue: 0,
@@ -445,7 +428,9 @@ export default function KoliDetayScreen() {
   });
 
   const koliDetailQuery = useQuery({
-    queryKey: ["koli-detay", id, credentials],
+    // credentials objesi şifre içerir; cache anahtarına yalnızca kullanıcı
+    // kodu girmeli (kullanıcı değişince cache ayrışması için yeterli).
+    queryKey: ["koli-detay", id, credentials?.userCode],
     queryFn: async () => {
       if (!credentials || !id) {
         throw new Error(t("koliDetay.missingInfo"));
@@ -459,11 +444,14 @@ export default function KoliDetayScreen() {
     enabled: !!credentials && !!id,
   });
 
-  const getDisplayValue = (item: any, key: string): string => {
-    const val = item[key];
-    if (val === null || val === undefined || val === "") return "";
-    return String(val);
-  };
+  // Satır bileşeni memoize edildiği için barkod inputundaki her tuş vuruşu
+  // artık tüm listeyi yeniden render etmez.
+  const renderItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <KoliDetailRow item={item} index={index} styles={styles} />
+    ),
+    [styles],
+  );
 
   if (koliDetailQuery.isLoading) {
     return (
@@ -491,99 +479,6 @@ export default function KoliDetayScreen() {
   }
 
   const items = koliDetailQuery.data || [];
-
-  const renderItem = ({ item, index }: { item: any; index: number }) => {
-    const base64Thumbnail = byteArrayToBase64(
-      item.Thumbnail as unknown as number[] | Uint8Array | string | null,
-    );
-    const hasValidThumbnail = !!base64Thumbnail;
-
-    const keys = Object.keys(item);
-
-    const h1Key = keys.find((key) => key.startsWith("h1_"));
-    const itemTitle = h1Key
-      ? getDisplayValue(item, h1Key)
-      : item.InventoryName || `${t("koliDetay.itemFallback")}${index + 1}`;
-
-    const h2Key = keys.find((key) => key.startsWith("h2_"));
-    let quantityLabel = t("koliDetay.quantity");
-    let quantityValue = String(item.Quantity || "");
-
-    if (h2Key) {
-      quantityLabel = h2Key.replace("h2_", "");
-      const rawQuantity = item[h2Key];
-
-      const isBarcodeOrSerial = /barkod|seri|kod|no|ean/i.test(quantityLabel);
-      const isVeryLargeNumber = String(rawQuantity).trim().length >= 8;
-
-      quantityValue =
-        rawQuantity &&
-        !isNaN(Number(rawQuantity)) &&
-        !isBarcodeOrSerial &&
-        !isVeryLargeNumber
-          ? Number(rawQuantity).toFixed(2)
-          : String(rawQuantity || "");
-    }
-
-    const dynamicFields = keys
-      .filter((key) => key.startsWith("sh_"))
-      .slice(0, 6);
-
-    return (
-      <View style={styles.card}>
-        <View style={styles.cardContent}>
-          {hasValidThumbnail ? (
-            <Image
-              source={{ uri: `data:image/png;base64,${base64Thumbnail}` }}
-              style={styles.thumbnailImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.iconContainer}>
-              <Package size={24} color={theme.colors.primary} />
-            </View>
-          )}
-
-          <View style={styles.itemInfo}>
-            <Text style={styles.itemName} numberOfLines={3}>
-              {itemTitle}
-            </Text>
-
-            <View style={styles.quantityContainer}>
-              <Text style={styles.quantityLabel}>{quantityLabel}: </Text>
-              <Text style={styles.quantityValue}>{quantityValue}</Text>
-            </View>
-
-            {dynamicFields.length > 0 && (
-              <View style={styles.dynamicFieldsContainer}>
-                {dynamicFields.map((key) => {
-                  const val = getDisplayValue(item, key);
-                  const displayVal = val ? val : " ";
-
-                  return (
-                    <View key={key} style={styles.dynamicFieldRow}>
-                      <Text style={styles.fieldLabel}>
-                        {key.replace("sh_", "")}:
-                      </Text>
-                      <Text
-                        style={[
-                          styles.fieldValue,
-                          { color: theme.colors.success, fontWeight: "700" },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {displayVal}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-        </View>
-      </View>
-    );
-  };
 
   return (
     <KeyboardAvoidingView
@@ -1079,6 +974,130 @@ export default function KoliDetayScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+type KoliDetayStyles = ReturnType<typeof makeStyles>;
+
+function getDisplayValue(item: any, key: string): string {
+  const val = item[key];
+  if (val === null || val === undefined || val === "") return "";
+  return String(val);
+}
+
+// Liste satırı: memo + useMemo sayesinde ekranın diğer state değişimlerinde
+// (örn. barkod inputu) yeniden render edilmez; base64 dönüşümü ve alan
+// çıkarımı yalnızca item değiştiğinde hesaplanır.
+const KoliDetailRow = memo(function KoliDetailRow({
+  item,
+  index,
+  styles,
+}: {
+  item: any;
+  index: number;
+  styles: KoliDetayStyles;
+}) {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+
+  const base64Thumbnail = useMemo(
+    () =>
+      byteArrayToBase64(
+        item.Thumbnail as unknown as number[] | Uint8Array | string | null,
+      ),
+    [item.Thumbnail],
+  );
+  const hasValidThumbnail = !!base64Thumbnail;
+
+  const { itemTitle, quantityLabel, quantityValue, dynamicFields } =
+    useMemo(() => {
+      const keys = Object.keys(item);
+
+      const h1Key = keys.find((key) => key.startsWith("h1_"));
+      const itemTitle = h1Key
+        ? getDisplayValue(item, h1Key)
+        : item.InventoryName || `${t("koliDetay.itemFallback")}${index + 1}`;
+
+      const h2Key = keys.find((key) => key.startsWith("h2_"));
+      let quantityLabel = t("koliDetay.quantity");
+      let quantityValue = String(item.Quantity || "");
+
+      if (h2Key) {
+        quantityLabel = h2Key.replace("h2_", "");
+        const rawQuantity = item[h2Key];
+
+        const isBarcodeOrSerial = /barkod|seri|kod|no|ean/i.test(quantityLabel);
+        const isVeryLargeNumber = String(rawQuantity).trim().length >= 8;
+
+        quantityValue =
+          rawQuantity &&
+          !isNaN(Number(rawQuantity)) &&
+          !isBarcodeOrSerial &&
+          !isVeryLargeNumber
+            ? Number(rawQuantity).toFixed(2)
+            : String(rawQuantity || "");
+      }
+
+      const dynamicFields = keys
+        .filter((key) => key.startsWith("sh_"))
+        .slice(0, 6);
+
+      return { itemTitle, quantityLabel, quantityValue, dynamicFields };
+    }, [item, index, t]);
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardContent}>
+        {hasValidThumbnail ? (
+          <Image
+            source={{ uri: `data:image/png;base64,${base64Thumbnail}` }}
+            style={styles.thumbnailImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.iconContainer}>
+            <Package size={24} color={theme.colors.primary} />
+          </View>
+        )}
+
+        <View style={styles.itemInfo}>
+          <Text style={styles.itemName} numberOfLines={3}>
+            {itemTitle}
+          </Text>
+
+          <View style={styles.quantityContainer}>
+            <Text style={styles.quantityLabel}>{quantityLabel}: </Text>
+            <Text style={styles.quantityValue}>{quantityValue}</Text>
+          </View>
+
+          {dynamicFields.length > 0 && (
+            <View style={styles.dynamicFieldsContainer}>
+              {dynamicFields.map((key) => {
+                const val = getDisplayValue(item, key);
+                const displayVal = val ? val : " ";
+
+                return (
+                  <View key={key} style={styles.dynamicFieldRow}>
+                    <Text style={styles.fieldLabel}>
+                      {key.replace("sh_", "")}:
+                    </Text>
+                    <Text
+                      style={[
+                        styles.fieldValue,
+                        { color: theme.colors.success, fontWeight: "700" },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {displayVal}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+});
 
 const makeStyles = (theme: Theme) => {
   const { colors, spacing, radius, type } = theme;

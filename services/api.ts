@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getWithMigration } from "@/utils/secureStorage";
 import {
   BarcodeForm,
   KoliDetailItem,
@@ -10,6 +11,21 @@ import {
   OrderReceipt,
   RunJsonServiceResponse,
 } from "./types";
+
+// Şifre/bilet gibi alanlar loglara asla düz metin yazılmamalı; release
+// build'de logcat üzerinden okunabilirler. Bu yardımcı yalnızca geliştirme
+// modunda ve hassas alanları maskeleyerek loglar.
+const SENSITIVE_LOG_KEYS = new Set(["password", "companyPassword", "ticket"]);
+
+function logRequest(label: string, body: Record<string, unknown>) {
+  if (!__DEV__) return;
+  const safe = Object.fromEntries(
+    Object.entries(body).map(([key, value]) =>
+      SENSITIVE_LOG_KEYS.has(key) ? [key, "***"] : [key, value],
+    ),
+  );
+  console.log(label, JSON.stringify(safe, null, 2));
+}
 
 const API_URL_STORAGE_KEY = "api_base_url";
 const COMPANY_CODE_KEY = "company_code";
@@ -54,7 +70,9 @@ async function getCompanyPassword(): Promise<string> {
     return cachedCompanyPassword;
   }
   try {
-    const stored = await AsyncStorage.getItem(COMPANY_PASSWORD_KEY);
+    // Şifre SecureStore'da tutulur (bkz. ApiConfigContext); eski AsyncStorage
+    // kaydı varsa ilk okumada güvenli depoya taşınır.
+    const stored = await getWithMigration(COMPANY_PASSWORD_KEY);
     cachedCompanyPassword = stored || "";
     return cachedCompanyPassword;
   } catch (error) {
@@ -150,7 +168,7 @@ export const api = {
           body: JSON.stringify(requestBody),
         });
 
-        console.log("API: Login Request", requestBody);
+        logRequest("API: Login Request", requestBody);
         console.log(
           "API: Response status",
           response.status,
@@ -240,10 +258,13 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
 
-      const dataPayload =
+      // JSON her zaman JSON.stringify ile üretilir; barkod/arama metni tırnak
+      // gibi özel karakter içerirse string interpolasyonu isteği bozar.
+      const dataPayload = JSON.stringify(
         searchId && searchId.trim()
-          ? `{ "name": "koliListesi", "id": "${searchId.trim()}" }`
-          : '{ "name": "koliListesi" }';
+          ? { name: "koliListesi", id: searchId.trim() }
+          : { name: "koliListesi" },
+      );
 
       const requestBody: Record<string, string | number | boolean> = {
         userName,
@@ -257,10 +278,7 @@ export const api = {
         pageLen,
       };
 
-      console.log(
-        "API: koliListesi Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
+      logRequest("API: koliListesi Request:", requestBody);
 
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
         method: "POST",
@@ -310,10 +328,11 @@ export const api = {
       const companyPassword = await getCompanyPassword();
 
       // Servis adını irsKoliListesi olarak güncelledik
-      const dataPayload =
+      const dataPayload = JSON.stringify(
         searchId && searchId.trim()
-          ? `{ "name": "irsKoliListesi", "id": "${searchId.trim()}" }`
-          : '{ "name": "irsKoliListesi" }';
+          ? { name: "irsKoliListesi", id: searchId.trim() }
+          : { name: "irsKoliListesi" },
+      );
 
       const requestBody: Record<string, string | number | boolean> = {
         userName,
@@ -327,10 +346,7 @@ export const api = {
         pageLen,
       };
 
-      console.log(
-        "API: irsKoliListesi Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
+      logRequest("API: irsKoliListesi Request:", requestBody);
 
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
         method: "POST",
@@ -383,7 +399,7 @@ export const api = {
         logout: true,
         companyCode: companyCode || "",
         companyPassword: companyPassword || "",
-        data: `{ "name": "koliDetay", "id": "${id}"}`,
+        data: JSON.stringify({ name: "koliDetay", id: String(id) }),
       };
 
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
@@ -449,7 +465,7 @@ export const api = {
         inventoryReceiptWarehouseCode: warehouseCode || 3,
       };
 
-      console.log(JSON.stringify(dataPayload));
+      logRequest("API: AddItemByBarcode Payload:", dataPayload);
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -463,6 +479,10 @@ export const api = {
           logout: true,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
 
       const resData = await response.json();
 
@@ -543,10 +563,7 @@ export const api = {
         logout: true,
       };
 
-      console.log(
-        "API: CreateKoliFromOrderReceipt Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
+      logRequest("API: CreateKoliFromOrderReceipt Request:", requestBody);
 
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
         method: "POST",
@@ -649,10 +666,7 @@ export const api = {
         logout: true,
       };
 
-      console.log(
-        "API: CreateReceipt Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
+      logRequest("API: CreateReceipt Request:", requestBody);
 
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
         method: "POST",
@@ -742,10 +756,7 @@ export const api = {
         logout: true,
       };
 
-      console.log(
-        "API: CreateReceipt Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
+      logRequest("API: CreateReceipt Request:", requestBody);
 
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
         method: "POST",
@@ -884,10 +895,7 @@ export const api = {
         logout: true,
       };
 
-      console.log(
-        "API: DeleteItemByBarcode Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
+      logRequest("API: DeleteItemByBarcode Request:", requestBody);
 
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
         method: "POST",
@@ -938,10 +946,7 @@ export const api = {
         logout: true,
       };
 
-      console.log(
-        "API: OpenBox Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
+      logRequest("API: OpenBox Request:", requestBody);
 
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
         method: "POST",
@@ -1005,10 +1010,7 @@ export const api = {
       };
 
       // 2. İstek (Request) atılmadan önceki JSON verisini gösteren log
-      console.log(
-        "API: CloseBox Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
+      logRequest("API: CloseBox Request:", requestBody);
 
       const response = await fetch(`${apiBaseUrl}Ex/CreateShipmentBoxService`, {
         method: "POST",
@@ -1116,7 +1118,7 @@ export const api = {
         isDemo: false,
         data: JSON.stringify(dataPayload),
       };
-      console.log(meta);
+      logRequest("API: PrintBarcode Meta:", meta);
 
       const baseUrl = apiBaseUrl.endsWith("/")
         ? apiBaseUrl.slice(0, -1)
@@ -1169,13 +1171,10 @@ export const api = {
         companyCode: companyCode || "",
 
         companyPassword: companyPassword || "",
-        data: `{ "name": "koliDetayWithBarcode", "val": "${barcode}"}`,
+        data: JSON.stringify({ name: "koliDetayWithBarcode", val: barcode }),
       };
 
-      console.log(
-        "API: getKoliDetailByBarcode Request:",
-        JSON.stringify(requestBody, null, 2),
-      );
+      logRequest("API: getKoliDetailByBarcode Request:", requestBody);
 
       const response = await fetch(`${apiBaseUrl}/RunJsonService`, {
         method: "POST",

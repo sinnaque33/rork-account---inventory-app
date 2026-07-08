@@ -35,7 +35,9 @@ export default function OrderReceiptsScreen() {
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const orderReceiptsQuery = useQuery({
-    queryKey: ["order-receipts", credentials],
+    // credentials objesi şifre içerir; cache anahtarına yalnızca kullanıcı
+    // kodu girmeli (kullanıcı değişince cache ayrışması için yeterli).
+    queryKey: ["order-receipts", credentials?.userCode],
     queryFn: async () => {
       console.log("OrderReceiptsScreen: Fetching order receipts");
       if (!credentials) {

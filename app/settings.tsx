@@ -69,6 +69,16 @@ export default function SettingsScreen() {
 
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(50)).current;
+  const toastHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Ekran kapanırken bekleyen toast zamanlayıcısını iptal et; aksi halde
+  // kullanıcı kendisi geri döndükten sonra timer dolunca router.back()
+  // ikinci kez tetiklenip bir ekran daha geri gider.
+  useEffect(() => {
+    return () => {
+      if (toastHideTimer.current) clearTimeout(toastHideTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     const setupAudio = async () => {
@@ -156,13 +166,17 @@ export default function SettingsScreen() {
       }),
     ]).start();
 
-    setTimeout(() => {
+    if (toastHideTimer.current) clearTimeout(toastHideTimer.current);
+    toastHideTimer.current = setTimeout(() => {
       Animated.timing(toastOpacity, {
         toValue: 0,
         duration: 300,
         useNativeDriver: true,
-      }).start(() => {
-        router.back();
+      }).start(({ finished }) => {
+        // Animasyon yarıda kesildiyse (ekran kapanıyorsa) tekrar geri gitme.
+        if (finished) {
+          router.back();
+        }
       });
     }, 1500);
   };

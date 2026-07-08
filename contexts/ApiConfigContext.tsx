@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { clearApiUrlCache } from "@/services/api";
+import { getWithMigration, secureStorage } from "@/utils/secureStorage";
 
 const STORAGE_KEY = "api_base_url";
 const COMPANY_CODE_KEY = "company_code";
@@ -15,6 +16,7 @@ const PRINTER_NAME_KEY = "preferred_printer_name";
 
 const DEFAULT_API_URL =
   "https://webstreme.uniteks.com.tr:8001/ExtWsLiveV2/Services";
+const DEFAULT_PRINTER_NAME = "EPSON";
 
 type ConfigParams = {
   url?: string;
@@ -35,7 +37,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
   const [errorSound, setErrorSound] = useState<string>("error_1");
   const [useExistingBox, setUseExistingBox] = useState<boolean>(false);
   const [skipWeightInput, setSkipWeightInput] = useState<boolean>(false);
-  const [printerName, setPrinterName] = useState<string>("VARSAYILAN YAZICI ADINI GİRİN");
+  const [printerName, setPrinterName] = useState<string>(DEFAULT_PRINTER_NAME);
 
   const loadUrlQuery = useQuery({
     queryKey: ["api-config"],
@@ -45,7 +47,9 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
         await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(COMPANY_CODE_KEY),
-          AsyncStorage.getItem(COMPANY_PASSWORD_KEY),
+          // Şifre hassas veri: SecureStore'da tutulur, eski AsyncStorage
+          // kaydı varsa ilk okumada oraya taşınır.
+          getWithMigration(COMPANY_PASSWORD_KEY),
           AsyncStorage.getItem(WAREHOUSE_CODE_KEY),
           AsyncStorage.getItem(ERROR_SOUND_KEY),
           AsyncStorage.getItem(USE_EXISTING_BOX_KEY),
@@ -60,7 +64,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
         errorSound: eSound || "error_1",
         useExistingBox: existingBox === "true",
         skipWeightInput: skipWt === "true",
-        printerName: pName || "EPSON",
+        printerName: pName || DEFAULT_PRINTER_NAME,
       };
     },
     retry: false,
@@ -110,7 +114,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
       }
       if (params.companyPassword !== undefined) {
         promises.push(
-          AsyncStorage.setItem(COMPANY_PASSWORD_KEY, params.companyPassword),
+          secureStorage.setItem(COMPANY_PASSWORD_KEY, params.companyPassword),
         );
       }
       if (params.warehouseCode !== undefined) {
@@ -228,7 +232,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     await Promise.all([
       AsyncStorage.setItem(STORAGE_KEY, DEFAULT_API_URL),
       AsyncStorage.removeItem(COMPANY_CODE_KEY),
-      AsyncStorage.removeItem(COMPANY_PASSWORD_KEY),
+      secureStorage.removeItem(COMPANY_PASSWORD_KEY),
       AsyncStorage.removeItem(WAREHOUSE_CODE_KEY),
       AsyncStorage.removeItem(ERROR_SOUND_KEY),
       AsyncStorage.removeItem(USE_EXISTING_BOX_KEY),
@@ -243,7 +247,7 @@ export const [ApiConfigProvider, useApiConfig] = createContextHook(() => {
     setErrorSound("error_1");
     setUseExistingBox(false);
     setSkipWeightInput(false);
-    setPrinterName("EPSON");
+    setPrinterName(DEFAULT_PRINTER_NAME);
   }, []);
 
   return useMemo(

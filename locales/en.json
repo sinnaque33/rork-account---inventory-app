@@ -225,6 +225,8 @@
     "boxNotFoundMsg": "No box found for the scanned barcode.",
     "createBoxError": "An error occurred while creating the box.",
     "retry": "Retry",
+    "outOfOrderTitle": "Out-of-Order Item",
+    "outOfOrderMessage": "You are scanning an item not in the order. Do you want to continue?",
     "overLimit": {
       "title": "Quantity Exceeded",
       "message": "Order quantity exceeded, do you want to continue?",

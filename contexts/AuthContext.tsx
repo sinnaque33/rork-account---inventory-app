@@ -1,9 +1,9 @@
 import createContextHook from "@nkzw/create-context-hook";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCallback, useMemo, useState } from "react";
 import { api } from "@/services/api";
 import { LoginCredentials, LoginResponse } from "@/services/types";
+import { getWithMigration, secureStorage } from "@/utils/secureStorage";
 
 const USER_STORAGE_KEY = "auth_user";
 
@@ -40,7 +40,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         console.log("AuthContext: Auth check result:", isAuth);
 
         if (isAuth) {
-          const storedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
+          // Kullanıcı kaydı şifre içerdiği için SecureStore'da tutulur;
+          // eski sürümlerin AsyncStorage kaydı ilk okumada oraya taşınır.
+          const storedUser = await getWithMigration(USER_STORAGE_KEY);
           if (storedUser) {
             const parsedUser = JSON.parse(storedUser) as User;
             console.log(
@@ -109,11 +111,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         password: variables.password,
       };
       setUser(newUser);
-      AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser)).catch(
-        (err) => {
+      secureStorage
+        .setItem(USER_STORAGE_KEY, JSON.stringify(newUser))
+        .catch((err) => {
           console.error("AuthContext: Failed to persist user:", err);
-        },
-      );
+        });
       setPendingNavigation("/(app)/dashboard");
     },
     onError: (error: Error) => {
@@ -128,7 +130,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async () => {
       console.log("AuthContext: Logout mutation started");
       await api.auth.logout();
-      await AsyncStorage.removeItem(USER_STORAGE_KEY);
+      await secureStorage.removeItem(USER_STORAGE_KEY);
     },
     onSuccess: () => {
       console.log("AuthContext: Logout successful");
@@ -153,17 +155,36 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     await logoutMutateAsync();
   }, [logoutMutateAsync]);
 
-  return {
-    user,
-    isAuthenticated: !!user,
-    isLoading: authCheckQuery.isLoading || !isInitialized,
-    login,
-    logout,
-    loginError,
-    loginMsg,
-    isLoggingIn,
-    credentials,
-    pendingNavigation,
-    clearPendingNavigation,
-  };
+  const isLoading = authCheckQuery.isLoading || !isInitialized;
+
+  // Diğer context'lerle aynı desen: referans sabitliği için memoize edilir,
+  // aksi halde provider'ın her render'ı tüm useAuth tüketicilerini yeniden
+  // render eder.
+  return useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      login,
+      logout,
+      loginError,
+      loginMsg,
+      isLoggingIn,
+      credentials,
+      pendingNavigation,
+      clearPendingNavigation,
+    }),
+    [
+      user,
+      isLoading,
+      login,
+      logout,
+      loginError,
+      loginMsg,
+      isLoggingIn,
+      credentials,
+      pendingNavigation,
+      clearPendingNavigation,
+    ],
+  );
 });
