@@ -137,6 +137,8 @@
     "itemDeleted": "Ürün silindi",
     "boxClosed": "Koli başarıyla kapatıldı",
     "boxOpened": "Koli başarıyla açıldı",
+    "boxDeleted": "Koli başarıyla silindi",
+    "boxDeleteFail": "Koli silinemedi",
     "receiptCreated": "İrsaliye oluşturuldu",
     "receiptCreateFail": "İrsaliye oluşturulamadı.",
     "receiptSystemError": "İrsaliye oluşturulurken hata meydana geldi.",
@@ -154,6 +156,7 @@
     "btnCreateReceipt": "İrsaliye\nOluştur",
     "btnOpenBox": "Koli\nAçma",
     "btnCloseBox": "Koli\nKapatma",
+    "btnDeleteBox": "Koli Sil",
     "ok": "Tamam",
     "cancel": "İptal",
     "continue": "Devam",
@@ -168,7 +171,11 @@
       "netWeight": "Net Ağırlık",
       "weightRequired": "Lütfen her iki ağırlığı da giriniz.",
       "openTitle": "Koli Açma",
-      "openSubtitle": "Koliyi açmak istiyor musunuz?"
+      "openSubtitle": "Koliyi açmak istiyor musunuz?",
+      "deleteBoxTitle": "Koli Silme",
+      "deleteBoxSubtitle": "Bu koliyi silmek istiyor musunuz? Bu işlem geri alınamaz.",
+      "deleteBoxSubtitleWithItems": "Kolide {{count}} ürün bulunuyor. Koliyi yine de silmek istiyor musunuz? Bu işlem geri alınamaz.",
+      "deleteBoxConfirm": "Sil"
     },
     "overLimit": {
       "title": "Miktar Aşımı",

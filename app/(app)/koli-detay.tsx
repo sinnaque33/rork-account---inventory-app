@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import { useErrorSignal } from "@/hooks/useErrorSignal";
@@ -34,13 +35,14 @@ import {
 } from "react-native";
 import { memo, useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams, Stack } from "expo-router";
+import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { byteArrayToBase64 } from "@/utils/imageUtils";
 
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
+import type { KoliItem } from "@/services/types";
 import PrintBarcodeModal from "../components/PrintBarcodeModal";
 import { ActionButton } from "../components/ActionButton";
 import ReceiptConfirmModal from "../components/ReceiptConfirmModal";
@@ -73,6 +75,7 @@ export default function KoliDetayScreen() {
 
   const { credentials } = useAuth();
 
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
   const [showCloseBoxModal, setShowCloseBoxModal] = useState(false);
@@ -80,6 +83,7 @@ export default function KoliDetayScreen() {
   const [netWeight, setNetWeight] = useState("");
   const [weightError, setWeightError] = useState<string | null>(null);
   const [showOpenBoxConfirm, setShowOpenBoxConfirm] = useState(false);
+  const [showDeleteBoxConfirm, setShowDeleteBoxConfirm] = useState(false);
 
   // --- BARKOD OKUMA STATE'LERİ ---
   const [scanMode, setScanMode] = useState<"add" | "delete">("add");
@@ -117,6 +121,9 @@ export default function KoliDetayScreen() {
   const toastTranslateY = useRef(new Animated.Value(50)).current;
   const toastHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Koli silindikten sonra listeye dönüş zamanlayıcısı
+  const backTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Sayfa açıldığında veya modal kapandığında inputa odaklan
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -127,9 +134,11 @@ export default function KoliDetayScreen() {
 
   // Ekran kapanırken bekleyen toast gizleme zamanlayıcısını iptal et;
   // aksi halde unmount edilmiş component üzerinde animasyon başlatılır.
+  // Aynı şekilde silme sonrası geri dönüş zamanlayıcısı da temizlenmeli.
   useEffect(() => {
     return () => {
       if (toastHideTimer.current) clearTimeout(toastHideTimer.current);
+      if (backTimer.current) clearTimeout(backTimer.current);
     };
   }, []);
 
@@ -382,6 +391,95 @@ export default function KoliDetayScreen() {
     },
   });
 
+  const deleteBoxMutation = useMutation({
+    mutationFn: async () => {
+      if (!credentials || !id) {
+        throw new Error(t("koliDetay.missingInfo"));
+      }
+      return api.koliListesi.deleteBox(
+        credentials.userCode,
+        credentials.password,
+        parseInt(id, 10),
+      );
+    },
+    onSuccess: (data) => {
+      const isError =
+        String(data.success) !== "true" ||
+        (data.err !== undefined && data.err !== 0);
+
+      if (isError) {
+        playErrorSignal();
+        showToast(
+          t("koliDetay.operationFailed"),
+          data.resultExplanation || data.msg || t("koliDetay.boxDeleteFail"),
+          "error",
+        );
+        return;
+      }
+
+      showToast(
+        t("koliDetay.success"),
+        data.msg || t("koliDetay.boxDeleted"),
+        "success",
+      );
+
+      // Silinen kolinin detay sorgusu yeniden çekilmemeli (ölü kayıt -> hata ekranı).
+      queryClient.removeQueries({ queryKey: ["koli-detay", id] });
+
+      // Sonsuz listelerde invalidate, yüklü tüm sayfaları sırayla yeniden çeker;
+      // bu tamamlanana kadar liste eski önbelleği (silinen koliyi) gösterirdi.
+      // O yüzden koliyi önce önbellekten cerrahi olarak düşürüyoruz.
+      const deletedId = parseInt(id, 10);
+      const dropDeletedBox = (
+        old: InfiniteData<KoliItem[]> | undefined,
+      ): InfiniteData<KoliItem[]> | undefined =>
+        old
+          ? {
+              ...old,
+              pages: old.pages.map((page) =>
+                page.filter((box) => box.id !== deletedId),
+              ),
+            }
+          : old;
+
+      // Prefix eşleşmesi: userCode/arama varyantlarının hepsini yakalar.
+      queryClient.setQueriesData<InfiniteData<KoliItem[]>>(
+        { queryKey: ["koli-listesi"] },
+        dropDeletedBox,
+      );
+      queryClient.setQueriesData<InfiniteData<KoliItem[]>>(
+        { queryKey: ["irs-koli-listesi"] },
+        dropDeletedBox,
+      );
+
+      // Sunucu gerçeğiyle uzlaşmak için arka planda tazele.
+      queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+      queryClient.invalidateQueries({ queryKey: ["irs-koli-listesi"] });
+
+      // Toast görünür kalsın diye kısa gecikmeyle listeye dön.
+      backTimer.current = setTimeout(() => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/(app)/koli-listesi" as any);
+        }
+      }, 900);
+    },
+    onError: (error) => {
+      playErrorSignal();
+      showToast(
+        t("koliDetay.systemError"),
+        error instanceof Error ? error.message : t("koliDetay.defaultError"),
+        "error",
+      );
+    },
+    // "Sil"e basıldıktan sonra sonuç ne olursa olsun modal kapanmalı; aksi halde
+    // iş kuralı hatasında modal açık kalıyor ve toast onun arkasında görünmüyor.
+    onSettled: () => {
+      setShowDeleteBoxConfirm(false);
+    },
+  });
+
   const createReceiptMutation = useMutation({
     mutationFn: async () => {
       if (!credentials || !id) {
@@ -492,6 +590,21 @@ export default function KoliDetayScreen() {
             : boxCode
               ? `${t("koliDetay.boxNo")}${boxCode}`
               : t("koliDetay.headerFallback"),
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => setShowDeleteBoxConfirm(true)}
+              style={{ marginRight: 16 }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel={t("koliDetay.btnDeleteBox")}
+              disabled={deleteBoxMutation.isPending}
+            >
+              {deleteBoxMutation.isPending ? (
+                <ActivityIndicator size="small" color={theme.colors.error} />
+              ) : (
+                <Trash2 size={24} color={theme.colors.error} />
+              )}
+            </TouchableOpacity>
+          ),
         }}
       />
       {receiptNo || sipExp ? (
@@ -840,6 +953,71 @@ export default function KoliDetayScreen() {
                 ) : (
                   <Text style={styles.receiptConfirmText}>
                     {t("koliDetay.continue")}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- KOLİ SİLME ONAY MODALI --- */}
+      <Modal
+        visible={showDeleteBoxConfirm}
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteBoxConfirm(false)}
+      >
+        <View style={styles.receiptModalOverlay}>
+          <View style={styles.receiptModalContent}>
+            <View
+              style={[
+                styles.receiptIconContainer,
+                { backgroundColor: theme.colors.errorTint },
+              ]}
+            >
+              <Trash2 size={48} color={theme.colors.error} />
+            </View>
+            <Text style={styles.receiptModalTitle}>
+              {t("koliDetay.modals.deleteBoxTitle")}
+            </Text>
+            <Text style={styles.receiptModalSubtitle}>
+              {items.length > 0
+                ? t("koliDetay.modals.deleteBoxSubtitleWithItems", {
+                    count: items.length,
+                  })
+                : t("koliDetay.modals.deleteBoxSubtitle")}
+            </Text>
+            <View style={styles.receiptModalButtons}>
+              <TouchableOpacity
+                style={styles.receiptCancelButton}
+                onPress={() => setShowDeleteBoxConfirm(false)}
+              >
+                <Text style={styles.receiptCancelText}>
+                  {t("koliDetay.cancel")}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.receiptConfirmButton,
+                  { backgroundColor: theme.colors.error },
+                  deleteBoxMutation.isPending && styles.disabledButton,
+                ]}
+                onPress={() => deleteBoxMutation.mutate()}
+                disabled={deleteBoxMutation.isPending}
+              >
+                {deleteBoxMutation.isPending ? (
+                  <ActivityIndicator size="small" color={theme.colors.onError} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.receiptConfirmText,
+                      { color: theme.colors.onError },
+                    ]}
+                  >
+                    {t("koliDetay.modals.deleteBoxConfirm")}
                   </Text>
                 )}
               </TouchableOpacity>
