@@ -25,7 +25,6 @@ import {
   TouchableOpacity,
   View,
   Modal,
-  Alert,
   Image,
   Animated,
   Easing,
@@ -363,17 +362,25 @@ export default function KoliDetayScreen() {
         data.msg || t("koliDetay.boxClosed"),
         "success",
       );
-      setShowCloseBoxModal(false);
+      // Ağırlıklar yalnızca başarıda temizlenir; hata durumunda kullanıcı
+      // modalı tekrar açtığında girdiği değerleri yeniden yazmak zorunda kalmasın.
       setGrossWeight("");
       setNetWeight("");
       queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
     },
     onError: (error) => {
-      Alert.alert(
-        t("koliDetay.error"),
+      playErrorSignal();
+      showToast(
+        t("koliDetay.systemError"),
         error instanceof Error ? error.message : t("koliDetay.defaultError"),
+        "error",
       );
+    },
+    // "Devam"a basıldıktan sonra sonuç ne olursa olsun modal kapanmalı; aksi
+    // halde iş kuralı hatasında modal açık kalıyor ve toast arkasında görünmüyor.
+    onSettled: () => {
+      setShowCloseBoxModal(false);
     },
   });
 

@@ -84,8 +84,10 @@
     "subtitle": "Account Login",
     "labels": {
       "user": "User",
-      "password": "Password"
+      "password": "Password",
+      "rememberMe": "Remember me"
     },
+    "rememberMeHint": "Keeps you signed in on this device. Turn off on shared devices.",
     "placeholders": {
       "user": "Enter your username",
       "password": "Enter your password"

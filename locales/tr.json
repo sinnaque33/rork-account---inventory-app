@@ -84,8 +84,10 @@
     "subtitle": "Hesap Girişi",
     "labels": {
       "user": "Kullanıcı Adı",
-      "password": "Şifre"
+      "password": "Şifre",
+      "rememberMe": "Beni hatırla"
     },
+    "rememberMeHint": "Bu cihazda oturum açık kalır. Ortak kullanılan cihazlarda kapatın.",
     "placeholders": {
       "user": "Kullanıcı adınızı girin",
       "password": "Şifrenizi girin"

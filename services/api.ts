@@ -164,7 +164,14 @@ export { tokenStorage };
 
 export const api = {
   auth: {
-    async login(credentials: LoginCredentials): Promise<LoginResponse> {
+    // rememberMe=false ise token diske YAZILMAZ; checkAuth() yalnızca token
+    // varlığına baktığı için bu, soğuk açılışta login ekranına düşmeyi sağlar.
+    // Ticket oturum içinde kullanıldığı (bkz. printBarcode) için her hâlükârda
+    // yazılır; token olmadan zaten otomatik girişe yol açmaz.
+    async login(
+      credentials: LoginCredentials,
+      rememberMe: boolean = true,
+    ): Promise<LoginResponse> {
       console.log("API: Attempting login with", credentials.userCode);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
@@ -224,11 +231,22 @@ export const api = {
         });
 
         if (data.success === "true" && data.err === 0) {
-          await tokenStorage.setToken(data.token);
+          if (rememberMe) {
+            await tokenStorage.setToken(data.token);
+          } else {
+            // Önceki "beni hatırla" oturumundan kalan token temizlenmeli,
+            // aksi halde bu giriş de kalıcıymış gibi davranır.
+            await tokenStorage.removeToken();
+          }
           if (data.ticket) {
             await tokenStorage.setTicket(data.ticket);
           }
-          console.log("API: Login successful for user", credentials.userCode);
+          console.log(
+            "API: Login successful for user",
+            credentials.userCode,
+            "rememberMe:",
+            rememberMe,
+          );
         }
 
         return data;

@@ -1,11 +1,16 @@
 import createContextHook from "@nkzw/create-context-hook";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/services/api";
 import { LoginCredentials, LoginResponse } from "@/services/types";
 import { getWithMigration, secureStorage } from "@/utils/secureStorage";
 
 const USER_STORAGE_KEY = "auth_user";
+// "Beni hatırla" tercihi ve son kullanılan kullanıcı kodu hassas veri değil;
+// düz AsyncStorage yeterli. Şifre buraya ASLA yazılmaz.
+const REMEMBER_ME_KEY = "remember_me";
+const LAST_USER_CODE_KEY = "last_user_code";
 
 interface User {
   uid: number;
@@ -28,6 +33,25 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null,
   );
+  // Varsayılan açık: mevcut kullanıcıların otomatik giriş davranışı bozulmasın.
+  const [rememberMe, setRememberMe] = useState<boolean>(true);
+  const [lastUserCode, setLastUserCode] = useState<string>("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [remembered, storedUserCode] = await Promise.all([
+          AsyncStorage.getItem(REMEMBER_ME_KEY),
+          AsyncStorage.getItem(LAST_USER_CODE_KEY),
+        ]);
+        // Hiç kaydedilmemişse (null) varsayılan true kalır.
+        if (remembered !== null) setRememberMe(remembered === "true");
+        if (storedUserCode) setLastUserCode(storedUserCode);
+      } catch (error) {
+        console.error("AuthContext: Failed to load remember-me prefs:", error);
+      }
+    })();
+  }, []);
 
   const authCheckQuery = useQuery({
     queryKey: ["auth-check"],
@@ -78,14 +102,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginCredentials) => {
-      console.log("AuthContext: Login mutation started");
+    mutationFn: async ({
+      credentials,
+      remember,
+    }: {
+      credentials: LoginCredentials;
+      remember: boolean;
+    }) => {
+      console.log("AuthContext: Login mutation started, remember:", remember);
       setLoginError(null);
       setLoginMsg(null);
       setCredentials(credentials);
-      return api.auth.login(credentials);
+      return api.auth.login(credentials, remember);
     },
-    onSuccess: (data: LoginResponse, variables: LoginCredentials) => {
+    onSuccess: (data: LoginResponse, { credentials: variables, remember }) => {
       if (data.success !== "true" || data.err !== 0) {
         console.log(
           "AuthContext: Login failed with success:",
@@ -111,11 +141,31 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         password: variables.password,
       };
       setUser(newUser);
-      secureStorage
-        .setItem(USER_STORAGE_KEY, JSON.stringify(newUser))
-        .catch((err) => {
-          console.error("AuthContext: Failed to persist user:", err);
+
+      // Tercihi ve kullanıcı kodunu her hâlükârda sakla; kod hassas değil ve
+      // "beni hatırla" kapalıyken bile login ekranını ön-doldurmakta kullanılır.
+      setRememberMe(remember);
+      setLastUserCode(variables.userCode);
+      AsyncStorage.multiSet([
+        [REMEMBER_ME_KEY, String(remember)],
+        [LAST_USER_CODE_KEY, variables.userCode],
+      ]).catch((err) => {
+        console.error("AuthContext: Failed to persist login prefs:", err);
+      });
+
+      if (remember) {
+        secureStorage
+          .setItem(USER_STORAGE_KEY, JSON.stringify(newUser))
+          .catch((err) => {
+            console.error("AuthContext: Failed to persist user:", err);
+          });
+      } else {
+        // Şifre diske hiç yazılmasın; önceki hatırlanan oturum da silinmeli.
+        secureStorage.removeItem(USER_STORAGE_KEY).catch((err) => {
+          console.error("AuthContext: Failed to clear stored user:", err);
         });
+      }
+
       setPendingNavigation("/(app)/dashboard");
     },
     onError: (error: Error) => {
@@ -145,8 +195,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   }, []);
 
   const login = useCallback(
-    async (credentials: LoginCredentials) => {
-      await loginMutateAsync(credentials);
+    async (credentials: LoginCredentials, remember: boolean = true) => {
+      await loginMutateAsync({ credentials, remember });
     },
     [loginMutateAsync],
   );
@@ -171,6 +221,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       loginMsg,
       isLoggingIn,
       credentials,
+      rememberMe,
+      lastUserCode,
       pendingNavigation,
       clearPendingNavigation,
     }),
@@ -183,6 +235,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       loginMsg,
       isLoggingIn,
       credentials,
+      rememberMe,
+      lastUserCode,
       pendingNavigation,
       clearPendingNavigation,
     ],

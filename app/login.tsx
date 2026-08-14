@@ -1,7 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { Stack } from "expo-router";
-import { LogIn, Settings, Eye, EyeOff } from "lucide-react-native";
-import { useMemo, useRef, useState } from "react";
+import {
+  LogIn,
+  Settings,
+  Eye,
+  EyeOff,
+  CheckSquare,
+  Square,
+} from "lucide-react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Image } from "expo-image";
 import {
   ActivityIndicator,
@@ -25,7 +32,14 @@ const logoOnLight = require("../assets/Extreme-Logo-Ana.png");
 
 export default function LoginScreen() {
   const { t } = useTranslation();
-  const { login, loginError, loginMsg, isLoggingIn } = useAuth();
+  const {
+    login,
+    loginError,
+    loginMsg,
+    isLoggingIn,
+    rememberMe,
+    lastUserCode,
+  } = useAuth();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -38,7 +52,18 @@ export default function LoginScreen() {
     null,
   );
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [remember, setRemember] = useState<boolean>(rememberMe);
   const passwordRef = useRef<TextInput>(null);
+
+  // Tercihler AuthContext'te asenkron yüklendiği için ilk render'da henüz
+  // hazır olmayabilir; geldiklerinde kutuyu ve kullanıcı kodunu eşitle.
+  useEffect(() => {
+    setRemember(rememberMe);
+  }, [rememberMe]);
+
+  useEffect(() => {
+    if (lastUserCode) setUserCode(lastUserCode);
+  }, [lastUserCode]);
 
   const validateUserCode = (text: string): boolean => {
     if (!text) {
@@ -67,7 +92,7 @@ export default function LoginScreen() {
       return;
     }
 
-    await login({ userCode: trimmedUserCode, password });
+    await login({ userCode: trimmedUserCode, password }, remember);
   };
 
   return (
@@ -187,6 +212,28 @@ export default function LoginScreen() {
                   <Text style={styles.errorText}>{passwordError}</Text>
                 ) : null}
               </View>
+
+              <Pressable
+                style={styles.rememberRow}
+                onPress={() => setRemember((prev) => !prev)}
+                disabled={isLoggingIn}
+                hitSlop={8}
+                testID="remember-me-toggle"
+              >
+                {remember ? (
+                  <CheckSquare size={22} color={theme.colors.primary} />
+                ) : (
+                  <Square size={22} color={theme.colors.inkSubtle} />
+                )}
+                <View style={styles.rememberTextContainer}>
+                  <Text style={styles.rememberLabel}>
+                    {t("login.labels.rememberMe")}
+                  </Text>
+                  <Text style={styles.rememberHint}>
+                    {t("login.rememberMeHint")}
+                  </Text>
+                </View>
+              </Pressable>
 
               {loginError ? (
                 <View style={styles.errorContainer}>
@@ -335,6 +382,26 @@ const makeStyles = (theme: Theme) => {
     inputError: {
       borderWidth: 2,
       borderColor: colors.error,
+    },
+    rememberRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      paddingVertical: spacing.xxs,
+    },
+    rememberTextContainer: {
+      flex: 1,
+      gap: 2,
+    },
+    rememberLabel: {
+      ...type.body,
+      fontWeight: "600" as const,
+      color: colors.ink,
+    },
+    rememberHint: {
+      ...type.caption,
+      color: colors.inkSubtle,
+      lineHeight: 16,
     },
     errorContainer: {
       backgroundColor: colors.errorTint,
