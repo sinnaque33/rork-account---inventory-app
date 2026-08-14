@@ -35,7 +35,8 @@
       "warehouseCode": "Depo Kodu",
       "errorSound": "Hata Uyarı Tipi",
       "boxMode": "Koli Oluşturma Modu",
-      "skipWeightMode": "Koli Kapatma Modu"
+      "skipWeightMode": "Koli Kapatma Modu",
+      "stockControlMode": "Stok Kontrol Modu"
     },
     "placeholders": {
       "apiUrl": "https://example.com/api",
@@ -50,6 +51,10 @@
     "weightModeDesc": {
       "title": "Koli Kapatırken Ağırlık Sorma",
       "subtitle": "Kapama butonuna basınca brüt/net kg modalını atlayıp doğrudan kapatır."
+    },
+    "stockControlDesc": {
+      "title": "Stok Kontrolü Yapılmasın",
+      "subtitle": "Koli oluşturma, ürün ekleme ve silme işlemlerinde stok/depo kontrolü uygulanmaz."
     },
     "buttons": {
       "save": "Kaydet",
@@ -137,6 +142,7 @@
     "itemDeleted": "Ürün silindi",
     "boxClosed": "Koli başarıyla kapatıldı",
     "boxOpened": "Koli başarıyla açıldı",
+    "boxOpenFail": "Koli açılamadı",
     "boxDeleted": "Koli başarıyla silindi",
     "boxDeleteFail": "Koli silinemedi",
     "receiptCreated": "İrsaliye oluşturuldu",

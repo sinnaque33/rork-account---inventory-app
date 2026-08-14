@@ -43,6 +43,7 @@ export default function SettingsScreen() {
     errorSound,
     useExistingBox,
     skipWeightInput,
+    skipStockControl,
     updateConfig,
     resetToDefault,
     isLoading,
@@ -63,6 +64,9 @@ export default function SettingsScreen() {
   );
   const [skipWeightMode, setSkipWeightMode] = useState<boolean>(
     skipWeightInput || false,
+  );
+  const [skipStockMode, setSkipStockMode] = useState<boolean>(
+    skipStockControl || false,
   );
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const router = useRouter();
@@ -99,6 +103,7 @@ export default function SettingsScreen() {
     setWhCode(warehouseCode);
     setExistingBoxMode(useExistingBox || false);
     setSkipWeightMode(skipWeightInput || false);
+    setSkipStockMode(skipStockControl || false);
     if (errorSound) {
       setSelectedSound(errorSound);
     }
@@ -110,6 +115,7 @@ export default function SettingsScreen() {
     errorSound,
     useExistingBox,
     skipWeightInput,
+    skipStockControl,
   ]);
 
   const playErrorSound = async (soundFile: any) => {
@@ -195,6 +201,7 @@ export default function SettingsScreen() {
         errorSound: selectedSound,
         useExistingBox: existingBoxMode,
         skipWeightInput: skipWeightMode,
+        skipStockControl: skipStockMode,
       });
 
       showSuccessToast();
@@ -221,6 +228,7 @@ export default function SettingsScreen() {
           setSelectedSound("error_1");
           setExistingBoxMode(false);
           setSkipWeightMode(false);
+          setSkipStockMode(false);
           Alert.alert(
             t("settings.alerts.resetSuccessTitle"),
             t("settings.alerts.resetSuccessMsg"),
@@ -518,6 +526,30 @@ export default function SettingsScreen() {
                       </Text>
                       <Text style={styles.checkboxSubtitle}>
                         {t("settings.weightModeDesc.subtitle")}
+                      </Text>
+                    </View>
+                  </Pressable>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>
+                    {t("settings.labels.stockControlMode")}
+                  </Text>
+                  <Pressable
+                    style={styles.checkboxContainer}
+                    onPress={() => setSkipStockMode(!skipStockMode)}
+                  >
+                    {skipStockMode ? (
+                      <CheckSquare size={24} color={theme.colors.primary} />
+                    ) : (
+                      <Square size={24} color={theme.colors.inkSubtle} />
+                    )}
+                    <View style={styles.checkboxTextContainer}>
+                      <Text style={styles.checkboxTitle}>
+                        {t("settings.stockControlDesc.title")}
+                      </Text>
+                      <Text style={styles.checkboxSubtitle}>
+                        {t("settings.stockControlDesc.subtitle")}
                       </Text>
                     </View>
                   </Pressable>

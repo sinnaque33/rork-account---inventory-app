@@ -31,11 +31,13 @@ const API_URL_STORAGE_KEY = "api_base_url";
 const COMPANY_CODE_KEY = "company_code";
 const COMPANY_PASSWORD_KEY = "company_password";
 const WAREHOUSE_CODE_KEY = "warehouse_code";
+const SKIP_STOCK_CONTROL_KEY = "skip_stock_control";
 
 let cachedApiUrl: string | null = null;
 let cachedCompanyCode: string | null = null;
 let cachedCompanyPassword: string | null = null;
 let cachedWarehouseCode: string | null = null;
+let cachedSkipStockControl: boolean | null = null;
 
 async function getApiBaseUrl(): Promise<string> {
   if (cachedApiUrl) {
@@ -95,11 +97,28 @@ async function getWarehouseCode(): Promise<string> {
   }
 }
 
+// Stok/depo kontrolü ayarı: işaretliyse boxWarehouseControlType 0 gider.
+// false de geçerli bir cache değeri olduğu için sentinel `!== null` olmalı.
+async function getSkipStockControl(): Promise<boolean> {
+  if (cachedSkipStockControl !== null) {
+    return cachedSkipStockControl;
+  }
+  try {
+    const stored = await AsyncStorage.getItem(SKIP_STOCK_CONTROL_KEY);
+    cachedSkipStockControl = stored === "true";
+    return cachedSkipStockControl;
+  } catch (error) {
+    console.error("Failed to load stock control flag from storage:", error);
+    return false;
+  }
+}
+
 export function clearApiUrlCache() {
   cachedApiUrl = null;
   cachedCompanyCode = null;
   cachedCompanyPassword = null;
   cachedWarehouseCode = null;
+  cachedSkipStockControl = null;
 }
 
 const tokenStorage = {
@@ -448,6 +467,7 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
       const warehouseCode = await getWarehouseCode();
+      const skipStockControl = await getSkipStockControl();
 
       const dataPayload: any = {
         serviceType: 11,
@@ -461,7 +481,7 @@ export const api = {
         orderConnection: 1,
         orderShipmentControlType: shipmentControlType,
         orderReceiptId: orderReceiptId || 0,
-        boxWarehouseControlType: 1,
+        boxWarehouseControlType: skipStockControl ? 0 : 1,
         inventoryReceiptWarehouseCode: warehouseCode || 3,
       };
 
@@ -532,6 +552,7 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
       const warehouseCode = await getWarehouseCode();
+      const skipStockControl = await getSkipStockControl();
 
       let dataPayload: any = {
         serviceType: useExistingBox ? 101 : 1,
@@ -546,7 +567,7 @@ export const api = {
         ],
         orderConnection: 1,
         orderShipmentControlType: shipmentControlType,
-        boxWarehouseControlType: 1,
+        boxWarehouseControlType: skipStockControl ? 0 : 1,
         inventoryReceiptWarehouseId: warehouseCode || 3,
       };
       if (orderReceiptId !== 0) {
@@ -868,6 +889,7 @@ export const api = {
       const companyCode = await getCompanyCode();
       const companyPassword = await getCompanyPassword();
       const warehouseCode = await getWarehouseCode();
+      const skipStockControl = await getSkipStockControl();
 
       const dataPayload = {
         serviceType: 11,
@@ -881,7 +903,7 @@ export const api = {
         orderConnection: 1,
         orderShipmentControlType: 3,
         RecId: RecId,
-        boxWarehouseControlType: 1,
+        boxWarehouseControlType: skipStockControl ? 0 : 1,
         inventoryReceiptWarehouseId: warehouseCode || 3,
       };
 
@@ -922,7 +944,12 @@ export const api = {
       userName: string,
       password: string,
       boxId: number,
-    ): Promise<{ success: string; msg: string }> {
+    ): Promise<{
+      success: string;
+      msg: string;
+      err?: number;
+      resultExplanation?: string;
+    }> {
       console.log("API: Opening box", boxId);
       const apiBaseUrl = await getApiBaseUrl();
       const companyCode = await getCompanyCode();
@@ -963,7 +990,28 @@ export const api = {
       const data = await response.json();
       console.log("API: OpenBox Response:", JSON.stringify(data, null, 2));
 
-      return data;
+      // Sunucu iş kuralı hatalarında da success:"true" dönebiliyor; gerçek
+      // hata dış `err` ile iç `data`'daki resultError/resultExplanation'da.
+      let finalErr = data.err;
+      let resultExplanation: string | undefined;
+      if (data.data) {
+        try {
+          const parsedData =
+            typeof data.data === "string" ? JSON.parse(data.data) : data.data;
+          if (parsedData.err !== undefined) finalErr = parsedData.err;
+          if (parsedData.resultError === true) finalErr = finalErr || 99;
+          resultExplanation = parsedData.resultExplanation;
+        } catch {
+          console.log("API: OpenBox data parse edilemedi");
+        }
+      }
+
+      return {
+        success: data.success,
+        msg: data.msg,
+        err: finalErr,
+        resultExplanation,
+      };
     },
 
     async deleteBox(

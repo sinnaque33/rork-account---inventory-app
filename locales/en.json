@@ -35,7 +35,8 @@
       "warehouseCode": "Warehouse Code",
       "errorSound": "Error Sound Type",
       "boxMode": "Box Creation Mode",
-      "skipWeightMode": "Box Closing Mode"
+      "skipWeightMode": "Box Closing Mode",
+      "stockControlMode": "Stock Control Mode"
     },
     "placeholders": {
       "apiUrl": "https://example.com/api",
@@ -50,6 +51,10 @@
     "weightModeDesc": {
       "title": "Skip Weight When Closing Box",
       "subtitle": "Skips the gross/net weight modal and closes the box directly."
+    },
+    "stockControlDesc": {
+      "title": "Skip Stock Control",
+      "subtitle": "Skips stock/warehouse validation when creating boxes and adding or removing items."
     },
     "buttons": {
       "save": "Save",
@@ -137,6 +142,7 @@
     "itemDeleted": "Product deleted",
     "boxClosed": "Box successfully closed",
     "boxOpened": "Box successfully opened",
+    "boxOpenFail": "Box could not be opened",
     "boxDeleted": "Box deleted successfully",
     "boxDeleteFail": "Box could not be deleted",
     "receiptCreated": "Waybill created",

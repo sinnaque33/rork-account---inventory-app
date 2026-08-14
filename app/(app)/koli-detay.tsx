@@ -116,6 +116,9 @@ export default function KoliDetayScreen() {
     title: "",
     message: "",
     type: "success" as "success" | "error",
+    // Aynı içerikle art arda çağrıldığında da animasyon efektinin yeniden
+    // tetiklenmesi için artan sayaç.
+    nonce: 0,
   });
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(50)).current;
@@ -147,7 +150,19 @@ export default function KoliDetayScreen() {
     message: string,
     type: "success" | "error" = "success",
   ) => {
-    setToastContent({ title, message, type });
+    setToastContent((prev) => ({
+      title,
+      message,
+      type,
+      nonce: prev.nonce + 1,
+    }));
+  };
+
+  // Animasyon, yeni içerik render edildikten SONRA başlamalı. Aksi halde
+  // native driver hâlâ eski renkteki (ilk açılışta yeşil) view'i fade-in eder
+  // ve toast bir an yanlış renkte görünüp sonra doğru renge atlar.
+  useEffect(() => {
+    if (toastContent.nonce === 0) return;
 
     Animated.parallel([
       Animated.timing(toastOpacity, {
@@ -178,7 +193,7 @@ export default function KoliDetayScreen() {
         }),
       ]).start();
     }, 2000);
-  };
+  }, [toastContent.nonce, toastOpacity, toastTranslateY]);
 
   // --- BARKOD OKUMA (MUTATION) ---
   const barcodeMutation = useMutation({
@@ -367,27 +382,50 @@ export default function KoliDetayScreen() {
       if (!credentials || !id) {
         throw new Error(t("koliDetay.missingInfo"));
       }
-      return api.koliListesi.openBox(
+      const result = await api.koliListesi.openBox(
         credentials.userCode,
         credentials.password,
         parseInt(id, 10),
       );
+      console.log("Koli Açma API Yanıtı:", JSON.stringify(result, null, 2));
+      return result;
     },
     onSuccess: (data) => {
+      // Sunucu iş kuralı hatalarında da success:"true" döndüğü için sadece
+      // success'e bakmak yetmez; err/resultExplanation da kontrol edilmeli.
+      const isError =
+        String(data.success) !== "true" ||
+        (data.err !== undefined && data.err !== 0);
+
+      if (isError) {
+        playErrorSignal();
+        showToast(
+          t("koliDetay.operationFailed"),
+          data.resultExplanation || data.msg || t("koliDetay.boxOpenFail"),
+          "error",
+        );
+        return;
+      }
+
       showToast(
         t("koliDetay.success"),
         data.msg || t("koliDetay.boxOpened"),
         "success",
       );
-      setShowOpenBoxConfirm(false);
       queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
     },
     onError: (error) => {
-      Alert.alert(
-        t("koliDetay.error"),
+      playErrorSignal();
+      showToast(
+        t("koliDetay.systemError"),
         error instanceof Error ? error.message : t("koliDetay.defaultError"),
+        "error",
       );
+    },
+    // Sonuç ne olursa olsun modal kapanmalı; açık kalırsa toast arkasında kalır.
+    onSettled: () => {
+      setShowOpenBoxConfirm(false);
     },
   });
 

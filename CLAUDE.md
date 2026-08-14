@@ -31,13 +31,13 @@ Everything network-related lives in [services/api.ts](services/api.ts). There is
 - **Every request body repeats credentials**: `userName`, `password`, `companyCode`, `companyPassword`, `licenseKey: "16016923"` (hardcoded), usually `logout: true`. `userName`/`password` are passed in from the calling screen (sourced from `useAuth().user`), not read globally.
 - **`success` is the string `"true"`**, not a boolean — check `data.success === "true"`. Errors are also signalled by numeric `err` (e.g. `err === 99`) and `resultErrorType` codes.
 - **Responses are doubly-encoded.** Write endpoints frequently return a `data` field that is itself a JSON string needing a second `JSON.parse`, with result fields appearing under varying names (`resultBoxId` / `boxId` / `RecId`, `resultBoxCode` / `PackageNo`). The existing methods defensively probe multiple keys — mirror that pattern when adding methods.
-- Config values (`apiBaseUrl`, `companyCode`, `companyPassword`, `warehouseCode`) are read from `AsyncStorage` and **module-level cached**; `clearApiUrlCache()` must be called after any config write (ApiConfigContext already does this). `warehouseCode` defaults to `"3"`.
+- Config values (`apiBaseUrl`, `companyCode`, `companyPassword`, `warehouseCode`, `skipStockControl`) are read from `AsyncStorage` and **module-level cached**; `clearApiUrlCache()` must be called after any config write (ApiConfigContext already does this). `warehouseCode` defaults to `"3"`. `skipStockControl` (default `false`) drives `boxWarehouseControlType` (`0` when on, else `1`) in the create-box, add-item and delete-item payloads.
 
 ## State & auth flow
 
 - **Server state**: React Query (`QueryClientProvider` in [app/_layout.tsx](app/_layout.tsx)).
 - **App config, auth & theme**: three context hooks built with `@nkzw/create-context-hook` (zustand is installed but unused):
-  - [contexts/ApiConfigContext.tsx](contexts/ApiConfigContext.tsx) — API URL, company creds, warehouse code, error sound, `useExistingBox`, `skipWeightInput`, printer name. All persisted to `AsyncStorage`. Use `updateConfig({...})` to persist several fields in one save cycle.
+  - [contexts/ApiConfigContext.tsx](contexts/ApiConfigContext.tsx) — API URL, company creds, warehouse code, error sound, `useExistingBox`, `skipWeightInput`, `skipStockControl`, printer name. All persisted to `AsyncStorage`. Use `updateConfig({...})` to persist several fields in one save cycle.
   - [contexts/AuthContext.tsx](contexts/AuthContext.tsx) — user object + login/logout mutations. The logged-in `user` holds the raw `userName`/`password`, which are then threaded into every `api.*` call.
   - [contexts/ThemeContext.tsx](contexts/ThemeContext.tsx) — dark/light mode (persisted); screens read tokens via `useTheme()` and build styles with `makeStyles(theme)`.
 - **Token storage is platform-split**: `SecureStore` on native, `localStorage` on web (see `tokenStorage` in api.ts). Same split logic appears in a few places.
