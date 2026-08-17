@@ -101,6 +101,7 @@
     },
     "footer": "Güvenli kurumsal kimlik doğrulama"
   },
+
   "orderReceipts": {
     "headerTitle": "Sipariş Seçimi",
     "searchPlaceholder": "Sipariş No veya Cari Ara...",
@@ -111,24 +112,34 @@
     "emptySearch": "Aramanıza uygun sipariş bulunamadı",
     "emptyList": "Henüz bir sipariş fişi yok",
     "noOrderLink": "Sipariş bağlantısı yapılmayacak",
-    "noOrderDesc": "Siparişten bağımsız koli oluştur"
+    "noOrderDesc": "Siparişten bağımsız koli oluştur",
+    "headerTitleEmpty": "Sipariş Seçimi (Boş Koli)",
+    "selectForEmpty": "Koli oluşturulacak siparişi seçin",
+    "creating": "Koli oluşturuluyor...",
+    "createErrorTitle": "Koli Oluşturulamadı",
+    "createErrorMsg": "Koli oluşturulurken bir hata oluştu"
   },
+
   "koliListesi": {
     "loading": "Koli listesi yükleniyor...",
     "errorTitle": "Hata Koli Listesi",
     "defaultError": "Bir hata oluştu",
-    "searchPlaceholder": "Koli Ara...",
+    "searchPlaceholder": "Koli ara, Enter'a bas...",
+    "clearSearch": "Aramayı temizle",
     "receiptNoPrefix": "Sipariş No: ",
     "allLoaded": "Tüm koliler yüklendi",
     "emptySearch": "Aramanızla eşleşen koli bulunamadı",
     "emptyList": "Koli bulunamadı",
     "newBox": "Yeni Koli",
+    "quickCreateOrder": "Siparişten koli",
+    "quickCreateEmpty": "Boş koli",
     "scan": "Barkod",
     "selectedCount": "{{count}} Koli Seçildi",
     "createReceipt": "İrsaliye Oluştur",
     "bulkReceiptError": "Toplu irsaliye oluşturulurken bir hata oluştu.",
     "bulkReceiptSuccess": "Seçilen koliler için {{receiptNo}} nolu irsaliye başarıyla oluşturuldu."
   },
+
   "koliDetay": {
     "headerFallback": "Koli Detay",
     "boxNo": "Koli No: ",
@@ -153,7 +164,26 @@
     "itemFallback": "Kalem #",
     "quantity": "Miktar",
     "orderNo": "Sipariş No: ",
+    "orderNoLabel": "Sipariş No",
+    "orderBoxes": {
+      "openHint": "Bu siparişe bağlı kolileri listeler",
+      "title": "Siparişteki Koliler",
+      "subtitle": "{{receiptNo}} numaralı siparişe bağlı koliler",
+      "loading": "Koliler yükleniyor...",
+      "empty": "Bu siparişe bağlı koli bulunamadı.",
+      "retry": "Tekrar Dene",
+      "current": "Açık",
+      "close": "Kapat",
+      "back": "Geri",
+      "confirmTitle": "Koliye Geçilsin mi?",
+      "confirmMessage": "<no>{{packageNo}}</no> numaralı kolinin içine geçmek istiyor musunuz?",
+      "confirmBtn": "Koliye Geç"
+    },
     "btnPrint": "Yazdır",
+    "btnNewBox": "Yeni Koli",
+    "newBoxCreated": "Yeni koli oluşturuldu",
+    "newBoxFail": "Yeni koli oluşturulamadı",
+    "orderNotResolved": "Bu koliye ait sipariş bulunamadı, yeni koli oluşturulamıyor.",
     "outOfOrderTitle": "Sipariş Dışı Ürün",
     "outOfOrderMessage": "Siparişte olmayan malzeme okutuyorsunuz. Devam etmek istiyor musunuz?",
     "addMaterial": "Malzeme Ekle",
@@ -183,7 +213,9 @@
       "deleteBoxTitle": "Koli Silme",
       "deleteBoxSubtitle": "Bu koliyi silmek istiyor musunuz? Bu işlem geri alınamaz.",
       "deleteBoxSubtitleWithItems": "Kolide {{count}} ürün bulunuyor. Koliyi yine de silmek istiyor musunuz? Bu işlem geri alınamaz.",
-      "deleteBoxConfirm": "Sil"
+      "deleteBoxConfirm": "Sil",
+      "newBoxTitle": "Yeni Koli Oluştur",
+      "newBoxSubtitle": "<no>{{receiptNo}}</no> numaralı sipariş için yeni bir koli açılacak ve doğrudan içine yönlendirileceksiniz."
     },
     "overLimit": {
       "title": "Miktar Aşımı",
@@ -192,6 +224,7 @@
       "confirmBtn": "Evet, Ekle"
     }
   },
+
   "irsKoli": {
     "headerTitle": "İrsaliye Oluştur",
     "boxPrefix": "Koli #{{id}}",
@@ -206,6 +239,7 @@
     "receiptCreateFail": "İrsaliye oluşturulamadı.",
     "receiptCreateSuccess": "İrsaliye başarıyla oluşturuldu."
   },
+
   "dashboard": {
     "createWaybillTitle": "İrsaliye Oluştur",
     "createWaybillSubtitle": "Kolileri seçerek yeni irsaliye oluşturun",
@@ -214,19 +248,25 @@
     "boxListTitle": "Koli Listesi",
     "boxListSubtitle": "Kolilerinize buradan ulaşabilirsiniz"
   },
+
   "createKoli": {
     "headerTitle": "Yeni Koli",
-    "title": "Malzeme Ekleme",
-    "subtitle": "Malzeme ekleme şeklini seçiniz",
+    "title": "Koli Oluştur",
+    "subtitle": "Nasıl koli oluşturmak istediğinizi seçin",
+    "subtitleSingle": "Siparişten malzeme okutarak koli oluşturun",
     "orderOptionTitle": "Sipariş",
-    "orderOptionDesc": "Siparişten malzeme ekleme"
+    "orderOptionDesc": "Siparişten malzeme ekleme",
+    "emptyOptionTitle": "Boş Koli",
+    "emptyOptionDesc": "Sipariş seçin, malzeme okutmadan koli oluşturulsun"
   },
+
   "navigation": {
     "dashboard": "Ana Sayfa",
     "koliListesi": "Koli Listesi",
     "createKoli": "Yeni Koli",
     "barcodeScanner": "Barkod Okuyucu"
   },
+
   "scanner": {
     "headerTitle": "Barkod Okutun",
     "placeholder": "Okutun veya yazın...",

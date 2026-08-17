@@ -1,5 +1,5 @@
-import { ShoppingCart } from 'lucide-react-native';
-import { useTranslation } from 'react-i18next';
+import { PackagePlus, ShoppingCart } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import {
   StyleSheet,
   Text,
@@ -8,12 +8,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { Stack } from 'expo-router';
-import { useMemo } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
-import type { Theme } from '@/constants/theme';
-import { useSafeNavigation } from '@/hooks/useSafeNavigation';
+} from "react-native";
+import { Stack } from "expo-router";
+import { useMemo } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/constants/theme";
+import { useSafeNavigation } from "@/hooks/useSafeNavigation";
+
+// "Boş Koli" (barkodsuz koli oluşturma) seçeneği şimdilik gizli; kod ileride
+// lazım olabileceği için duruyor. Geri getirmek için true yapmak yeterli.
+// Aynı akış koli listesindeki (+) FAB'ına basılı tutunca hâlâ erişilebilir.
+const SHOW_EMPTY_BOX_OPTION: boolean = false;
 
 export default function CreateKoliScreen() {
   const { push } = useSafeNavigation();
@@ -25,27 +30,31 @@ export default function CreateKoliScreen() {
     <>
       <Stack.Screen
         options={{
-          title: t('createKoli.headerTitle'),
+          title: t("createKoli.headerTitle"),
         }}
       />
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            <Text style={styles.title}>{t('createKoli.title')}</Text>
-            <Text style={styles.subtitle}>{t('createKoli.subtitle')}</Text>
+            <Text style={styles.title}>{t("createKoli.title")}</Text>
+            <Text style={styles.subtitle}>
+              {SHOW_EMPTY_BOX_OPTION
+                ? t("createKoli.subtitle")
+                : t("createKoli.subtitleSingle")}
+            </Text>
 
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
                 style={styles.optionButton}
                 onPress={() => {
-                  console.log('CreateKoli: Navigating to order-receipts');
-                  push('/(app)/order-receipts');
+                  console.log("CreateKoli: Navigating to order-receipts");
+                  push("/(app)/order-receipts");
                 }}
                 activeOpacity={0.7}
                 testID="receipt-barcode-button"
@@ -53,11 +62,40 @@ export default function CreateKoliScreen() {
                 <View style={styles.iconCircle}>
                   <ShoppingCart size={32} color={theme.colors.onPrimary} />
                 </View>
-                <Text style={styles.optionTitle}>{t('createKoli.orderOptionTitle')}</Text>
+                <Text style={styles.optionTitle}>
+                  {t("createKoli.orderOptionTitle")}
+                </Text>
                 <Text style={styles.optionDescription}>
-                  {t('createKoli.orderOptionDesc')}
+                  {t("createKoli.orderOptionDesc")}
                 </Text>
               </TouchableOpacity>
+
+              {SHOW_EMPTY_BOX_OPTION && (
+                <TouchableOpacity
+                  style={styles.optionButton}
+                  onPress={() => {
+                    console.log(
+                      "CreateKoli: Navigating to order-receipts (empty box)",
+                    );
+                    push({
+                      pathname: "/(app)/order-receipts",
+                      params: { mode: "create_empty" },
+                    });
+                  }}
+                  activeOpacity={0.7}
+                  testID="empty-koli-button"
+                >
+                  <View style={[styles.iconCircle, styles.iconCircleTinted]}>
+                    <PackagePlus size={32} color={theme.colors.primary} />
+                  </View>
+                  <Text style={styles.optionTitle}>
+                    {t("createKoli.emptyOptionTitle")}
+                  </Text>
+                  <Text style={styles.optionDescription}>
+                    {t("createKoli.emptyOptionDesc")}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -98,7 +136,7 @@ const makeStyles = (theme: Theme) => {
       backgroundColor: colors.surface1,
       borderRadius: radius.lg,
       padding: spacing.xl,
-      alignItems: 'center',
+      alignItems: "center",
       borderWidth: 1,
       borderColor: colors.hairline,
     },
@@ -107,9 +145,16 @@ const makeStyles = (theme: Theme) => {
       height: 80,
       borderRadius: radius.pill,
       backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
       marginBottom: spacing.md,
+    },
+    // İkincil akış: dolgu yerine tint zemin, böylece birincil kartla arasında
+    // görsel hiyerarşi kalır.
+    iconCircleTinted: {
+      backgroundColor: colors.primaryTint,
+      borderWidth: 1,
+      borderColor: colors.hairline,
     },
     optionTitle: {
       ...type.cardTitle,
@@ -119,7 +164,7 @@ const makeStyles = (theme: Theme) => {
     optionDescription: {
       ...type.bodySm,
       color: colors.inkMuted,
-      textAlign: 'center',
+      textAlign: "center",
       lineHeight: 20,
     },
   });

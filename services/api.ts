@@ -33,6 +33,13 @@ const COMPANY_PASSWORD_KEY = "company_password";
 const WAREHOUSE_CODE_KEY = "warehouse_code";
 const SKIP_STOCK_CONTROL_KEY = "skip_stock_control";
 
+// Bir siparişe bağlı kolileri toplarken kullanılan sayfalama sınırları.
+// Sunucuda "siparişe göre koli listesi" diye ayrı bir servis olmadığı için
+// koliListesi sayfa sayfa okunup filtrelenir; tarama sonsuza uzamasın diye
+// sayfa sayısı sınırlanır.
+const ORDER_BOX_PAGE_LEN = 50;
+const MAX_ORDER_BOX_SCAN_PAGES = 6;
+
 let cachedApiUrl: string | null = null;
 let cachedCompanyCode: string | null = null;
 let cachedCompanyPassword: string | null = null;
@@ -345,6 +352,54 @@ export const api = {
       return data.data?.items || [];
     },
 
+    /**
+     * Bir siparişe bağlı kolileri döndürür.
+     *
+     * Sunucuda sipariş numarasına göre filtreleyen bir servis yok. Önce
+     * koliListesi'nin arama parametresi denenir (kurulumların çoğunda sipariş
+     * numarasıyla da eşleşiyor); arama sipariş numarasını tanımıyorsa liste
+     * sayfa sayfa okunup istemci tarafında filtrelenir. Her iki yolda da
+     * sonuçlar `ReceiptNo` üzerinden birebir eşleşmeye göre süzülür, yani
+     * aramanın yan sonuçları listeye sızmaz.
+     */
+    async getBoxesByOrderNo(
+      userName: string,
+      password: string,
+      receiptNo: string,
+    ): Promise<KoliItem[]> {
+      const target = receiptNo.trim();
+      if (!target) return [];
+
+      const matchesOrder = (item: KoliItem) =>
+        String(item.ReceiptNo ?? "").trim() === target;
+
+      const collect = async (searchId?: string): Promise<KoliItem[]> => {
+        const found: KoliItem[] = [];
+        for (let page = 0; page < MAX_ORDER_BOX_SCAN_PAGES; page += 1) {
+          const items = await api.koliListesi.getList(
+            userName,
+            password,
+            page * ORDER_BOX_PAGE_LEN,
+            ORDER_BOX_PAGE_LEN,
+            searchId,
+          );
+          found.push(...items.filter(matchesOrder));
+          if (items.length < ORDER_BOX_PAGE_LEN) break;
+        }
+        return found;
+      };
+
+      const fromSearch = await collect(target);
+      if (fromSearch.length > 0) {
+        return fromSearch;
+      }
+
+      console.log(
+        "API: order box search returned no match, falling back to full scan",
+      );
+      return collect();
+    },
+
     async irsKoliListesi(
       userName: string,
       password: string,
@@ -550,11 +605,13 @@ export const api = {
       };
     },
 
+    // barcode opsiyoneldir: verilmezse malzeme eklenmeden yalnızca koli açılır
+    // (bkz. createEmptyKoliFromOrderReceipt).
     async createKoliFromOrderReceipt(
       userName: string,
       password: string,
       orderReceiptId: number,
-      barcode: string,
+      barcode?: string,
       useExistingBox: boolean = false,
       shipmentControlType: number = 3,
     ): Promise<{
@@ -572,25 +629,28 @@ export const api = {
       const warehouseCode = await getWarehouseCode();
       const skipStockControl = await getSkipStockControl();
 
-      let dataPayload: any = {
-        serviceType: useExistingBox ? 101 : 1,
+      const hasBarcode = !!barcode && barcode.trim().length > 0;
+
+      const dataPayload: any = {
+        // Barkodsuz koli her zaman YENİ koli açmalı; 101 "mevcut koliyi kullan"
+        // demektir ve malzemesiz çağrıda anlamı yok.
+        serviceType: hasBarcode && useExistingBox ? 101 : 1,
         boxType: 2,
         boxId: 0,
         boxCode: "",
         orderReceiptId: orderReceiptId,
-        inventoryBarcode: barcode,
-        boxFieldsValue: [
-          { name: "SpecialCode", value: "fromExt" },
-          { name: "Explanation", value: barcode },
-        ],
+        ...(hasBarcode ? { inventoryBarcode: barcode } : {}),
+        boxFieldsValue: hasBarcode
+          ? [
+              { name: "SpecialCode", value: "fromExt" },
+              { name: "Explanation", value: barcode },
+            ]
+          : [{ name: "SpecialCode", value: "fromExt" }],
         orderConnection: 1,
         orderShipmentControlType: shipmentControlType,
         boxWarehouseControlType: skipStockControl ? 0 : 1,
         inventoryReceiptWarehouseId: warehouseCode || 3,
       };
-      if (orderReceiptId !== 0) {
-        dataPayload.orderReceiptId = orderReceiptId;
-      }
 
       const requestBody = {
         data: JSON.stringify(dataPayload),
@@ -668,6 +728,23 @@ export const api = {
         boxCode,
         resultErrorType,
       };
+    },
+
+    /** Malzeme okutmadan, yalnızca sipariş bağlantısıyla boş koli açar. */
+    async createEmptyKoliFromOrderReceipt(
+      userName: string,
+      password: string,
+      orderReceiptId: number,
+    ) {
+      console.log(
+        "API: Creating EMPTY koli from order receipt",
+        orderReceiptId,
+      );
+      return this.createKoliFromOrderReceipt(
+        userName,
+        password,
+        orderReceiptId,
+      );
     },
 
     async createReceipt(

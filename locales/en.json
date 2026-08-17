@@ -101,6 +101,7 @@
     },
     "footer": "Secure business authentication"
   },
+
   "orderReceipts": {
     "headerTitle": "Order Selection",
     "searchPlaceholder": "Search Order No or Account...",
@@ -111,24 +112,34 @@
     "emptySearch": "No orders found matching your search",
     "emptyList": "There are no order receipts yet",
     "noOrderLink": "No Order Link",
-    "noOrderDesc": "Create a standalone box"
+    "noOrderDesc": "Create a standalone box",
+    "headerTitleEmpty": "Order Selection (Empty Box)",
+    "selectForEmpty": "Select the order to create a box for",
+    "creating": "Creating box...",
+    "createErrorTitle": "Box Could Not Be Created",
+    "createErrorMsg": "An error occurred while creating the box"
   },
+
   "koliListesi": {
     "loading": "Loading box list...",
     "errorTitle": "Box List Error",
     "defaultError": "An error occurred",
-    "searchPlaceholder": "Search Box...",
+    "searchPlaceholder": "Search a box, press Enter...",
+    "clearSearch": "Clear search",
     "receiptNoPrefix": "Order No: ",
     "allLoaded": "All boxes loaded",
     "emptySearch": "No boxes found matching your search",
     "emptyList": "No boxes found",
     "newBox": "New Box",
+    "quickCreateOrder": "Box from order",
+    "quickCreateEmpty": "Empty box",
     "scan": "Scan",
     "selectedCount": "{{count}} Boxes Selected",
     "createReceipt": "Create Waybill",
     "bulkReceiptError": "An error occurred while creating bulk waybills.",
     "bulkReceiptSuccess": "Waybill no {{receiptNo}} was successfully created for the selected boxes."
   },
+
   "koliDetay": {
     "headerFallback": "Box Details",
     "boxNo": "Box No: ",
@@ -153,7 +164,26 @@
     "itemFallback": "Item #",
     "quantity": "Quantity",
     "orderNo": "Order No: ",
+    "orderNoLabel": "Order No",
+    "orderBoxes": {
+      "openHint": "Lists the boxes linked to this order",
+      "title": "Boxes In This Order",
+      "subtitle": "Boxes linked to order {{receiptNo}}",
+      "loading": "Loading boxes...",
+      "empty": "No box found for this order.",
+      "retry": "Try Again",
+      "current": "Open",
+      "close": "Close",
+      "back": "Back",
+      "confirmTitle": "Go To This Box?",
+      "confirmMessage": "Do you want to open box <no>{{packageNo}}</no>?",
+      "confirmBtn": "Go To Box"
+    },
     "btnPrint": "Print",
+    "btnNewBox": "New Box",
+    "newBoxCreated": "New box created",
+    "newBoxFail": "Could not create the new box",
+    "orderNotResolved": "The order for this box could not be found, so a new box cannot be created.",
     "outOfOrderTitle": "Out-of-Order Item",
     "outOfOrderMessage": "You are scanning an item not in the order. Do you want to continue?",
     "addMaterial": "Add Material",
@@ -183,7 +213,9 @@
       "deleteBoxTitle": "Delete Box",
       "deleteBoxSubtitle": "Do you want to delete this box? This action cannot be undone.",
       "deleteBoxSubtitleWithItems": "This box still contains {{count}} item(s). Delete it anyway? This action cannot be undone.",
-      "deleteBoxConfirm": "Delete"
+      "deleteBoxConfirm": "Delete",
+      "newBoxTitle": "Create New Box",
+      "newBoxSubtitle": "A new box will be opened for order <no>{{receiptNo}}</no> and you will be taken straight into it."
     },
     "overLimit": {
       "title": "Quantity Exceeded",
@@ -192,6 +224,7 @@
       "confirmBtn": "Yes, Add"
     }
   },
+
   "irsKoli": {
     "headerTitle": "Create Waybill",
     "boxPrefix": "Box #{{id}}",
@@ -206,6 +239,7 @@
     "receiptCreateFail": "Could not create waybill.",
     "receiptCreateSuccess": "Waybill created successfully."
   },
+
   "dashboard": {
     "createWaybillTitle": "Create Waybill",
     "createWaybillSubtitle": "Create a new waybill by selecting boxes",
@@ -214,19 +248,25 @@
     "boxListTitle": "Box List",
     "boxListSubtitle": "You can access your boxes here"
   },
+
   "createKoli": {
     "headerTitle": "New Box",
-    "title": "Add Material",
-    "subtitle": "Choose how to add materials",
+    "title": "Create Box",
+    "subtitle": "Choose how you want to create the box",
+    "subtitleSingle": "Create a box by scanning materials from an order",
     "orderOptionTitle": "Order",
-    "orderOptionDesc": "Add material from an order"
+    "orderOptionDesc": "Add material from an order",
+    "emptyOptionTitle": "Empty Box",
+    "emptyOptionDesc": "Pick an order and create a box without scanning material"
   },
+
   "navigation": {
     "dashboard": "Home",
     "koliListesi": "Box List",
     "createKoli": "Create Box",
     "barcodeScanner": "Barcode Scanner"
   },
+
   "scanner": {
     "headerTitle": "Scan Barcode",
     "placeholder": "Scan or type...",

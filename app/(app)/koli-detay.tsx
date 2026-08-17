@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import { useErrorSignal } from "@/hooks/useErrorSignal";
 import {
@@ -15,6 +15,9 @@ import {
   ScanBarcode,
   AlertTriangle,
   Printer,
+  PackagePlus,
+  Boxes,
+  ChevronRight,
 } from "lucide-react-native";
 import {
   ActivityIndicator,
@@ -34,6 +37,7 @@ import {
 } from "react-native";
 import { memo, useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,8 +60,10 @@ export default function KoliDetayScreen() {
     id,
     packageNo,
     receiptNo,
+    recId,
     sipExp,
     boxCode,
+    initialSuccessMsg,
     alwaysIgnoreLimit: initialIgnoreLimit,
   } = useLocalSearchParams<{
     id: string;
@@ -66,6 +72,7 @@ export default function KoliDetayScreen() {
     recId?: string;
     sipExp?: string;
     boxCode?: string;
+    initialSuccessMsg?: string;
     alwaysIgnoreLimit?: string;
   }>();
 
@@ -75,14 +82,23 @@ export default function KoliDetayScreen() {
   const { credentials } = useAuth();
 
   const router = useRouter();
+  const navigation = useNavigation();
   const queryClient = useQueryClient();
   const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
+  const [showNewBoxConfirm, setShowNewBoxConfirm] = useState(false);
   const [showCloseBoxModal, setShowCloseBoxModal] = useState(false);
   const [grossWeight, setGrossWeight] = useState("");
   const [netWeight, setNetWeight] = useState("");
   const [weightError, setWeightError] = useState<string | null>(null);
   const [showOpenBoxConfirm, setShowOpenBoxConfirm] = useState(false);
   const [showDeleteBoxConfirm, setShowDeleteBoxConfirm] = useState(false);
+
+  // --- SİPARİŞE BAĞLI KOLİLER (banner'daki sipariş numarasına dokununca) ---
+  const [showOrderBoxesModal, setShowOrderBoxesModal] = useState(false);
+  // Listeden seçilen koli; doluysa modal onay adımına geçer.
+  const [pendingSiblingBox, setPendingSiblingBox] = useState<KoliItem | null>(
+    null,
+  );
 
   // --- BARKOD OKUMA STATE'LERİ ---
   const [scanMode, setScanMode] = useState<"add" | "delete">("add");
@@ -144,18 +160,26 @@ export default function KoliDetayScreen() {
     };
   }, []);
 
-  const showToast = (
-    title: string,
-    message: string,
-    type: "success" | "error" = "success",
-  ) => {
-    setToastContent((prev) => ({
-      title,
-      message,
-      type,
-      nonce: prev.nonce + 1,
-    }));
-  };
+  const showToast = useCallback(
+    (title: string, message: string, type: "success" | "error" = "success") => {
+      setToastContent((prev) => ({
+        title,
+        message,
+        type,
+        nonce: prev.nonce + 1,
+      }));
+    },
+    [],
+  );
+
+  // Başka bir ekrandan "işlem başarılı" mesajıyla gelindiyse (örn. yeni koli
+  // oluşturma) ekran açılır açılmaz bir kez toast göster.
+  const initialToastShownRef = useRef(false);
+  useEffect(() => {
+    if (!initialSuccessMsg || initialToastShownRef.current) return;
+    initialToastShownRef.current = true;
+    showToast(t("koliDetay.success"), initialSuccessMsg, "success");
+  }, [initialSuccessMsg, showToast, t]);
 
   // Animasyon, yeni içerik render edildikten SONRA başlamalı. Aksi halde
   // native driver hâlâ eski renkteki (ilk açılışta yeşil) view'i fade-in eder
@@ -228,7 +252,7 @@ export default function KoliDetayScreen() {
           credentials.password,
           koliIdNum,
           scannedBarcode,
-          id
+          id,
         );
       }
     },
@@ -352,7 +376,9 @@ export default function KoliDetayScreen() {
       if (isError) {
         playErrorSignal();
         const errorMsg =
-          parsedData.resultExplanation || data.msg || t("koliDetay.defaultError");
+          parsedData.resultExplanation ||
+          data.msg ||
+          t("koliDetay.defaultError");
         showToast(t("koliDetay.error"), errorMsg, "error");
         return;
       }
@@ -500,6 +526,7 @@ export default function KoliDetayScreen() {
       // Sunucu gerçeğiyle uzlaşmak için arka planda tazele.
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
       queryClient.invalidateQueries({ queryKey: ["irs-koli-listesi"] });
+      queryClient.invalidateQueries({ queryKey: ["order-boxes"] });
 
       // Toast görünür kalsın diye kısa gecikmeyle listeye dön.
       backTimer.current = setTimeout(() => {
@@ -533,7 +560,7 @@ export default function KoliDetayScreen() {
       return api.koliListesi.createReceipt(
         credentials.userCode,
         credentials.password,
-        parseInt(id, 10)
+        parseInt(id, 10),
       );
     },
     onSuccess: (data) => {
@@ -570,6 +597,144 @@ export default function KoliDetayScreen() {
     },
   });
 
+  // Yeni koli, içinde bulunduğumuz kolinin siparişine bağlanmalı. Sipariş
+  // RecId'si iki yoldan gelebilir:
+  //  1) `recId` parametresi (barkod okuyucu / sipariş seçim ekranı bunu doğru
+  //     gönderir),
+  //  2) koli listesi ekranından gelindiyse `recId` koli id'sinin kendisidir
+  //     (bkz. koli-listesi.tsx `//todo recId gönder`), o yüzden güvenilmez;
+  //     bu durumda sipariş numarasından RecId'yi sipariş listesinden çözeriz.
+  const trustedOrderRecId = useMemo(() => {
+    const boxId = parseInt(id, 10);
+    const paramOrderId = recId ? parseInt(recId, 10) : NaN;
+    return !Number.isNaN(paramOrderId) &&
+      paramOrderId > 0 &&
+      paramOrderId !== boxId
+      ? paramOrderId
+      : undefined;
+  }, [id, recId]);
+
+  const resolveOrderReceiptId = useCallback(async (): Promise<number> => {
+    if (!credentials) throw new Error(t("koliDetay.missingInfo"));
+
+    if (trustedOrderRecId !== undefined) {
+      return trustedOrderRecId;
+    }
+
+    if (!receiptNo) throw new Error(t("koliDetay.orderNotResolved"));
+
+    // Sipariş listesi ekranıyla aynı cache anahtarı; çoğu zaman hazır gelir.
+    const orders = await queryClient.fetchQuery({
+      queryKey: ["order-receipts", credentials.userCode],
+      queryFn: () =>
+        api.koliListesi.getOrderReceipts(
+          credentials.userCode,
+          credentials.password,
+        ),
+      staleTime: 60_000,
+    });
+
+    const match = orders.find(
+      (order) => String(order.ReceiptNo).trim() === String(receiptNo).trim(),
+    );
+    if (!match) throw new Error(t("koliDetay.orderNotResolved"));
+
+    return match.RecId;
+  }, [credentials, trustedOrderRecId, receiptNo, queryClient, t]);
+
+  // Koli detayından başka bir koli detayına geçerken stack büyütülmez: geri
+  // tuşu koli detaylarında birikmek yerine doğrudan listeye dönmeli.
+  const openBoxDetail = useCallback(
+    (detailParams: Record<string, string | undefined>) => {
+      navigation.dispatch((state) => {
+        const koliListesiIndex = state.routes.findIndex(
+          (route) => route.name === "koli-listesi",
+        );
+
+        if (koliListesiIndex !== -1) {
+          const newRoutes = state.routes.slice(0, koliListesiIndex + 1);
+          newRoutes.push({ name: "koli-detay", params: detailParams } as any);
+
+          return CommonActions.reset({
+            index: newRoutes.length - 1,
+            routes: newRoutes,
+          } as any);
+        }
+
+        return CommonActions.reset({
+          index: 2,
+          routes: [
+            { name: "dashboard" },
+            { name: "koli-listesi" },
+            { name: "koli-detay", params: detailParams },
+          ],
+        } as any);
+      });
+    },
+    [navigation],
+  );
+
+  const createNewBoxMutation = useMutation({
+    mutationFn: async () => {
+      if (!credentials || !id) {
+        throw new Error(t("koliDetay.missingInfo"));
+      }
+      const orderReceiptId = await resolveOrderReceiptId();
+      const result = await api.koliListesi.createEmptyKoliFromOrderReceipt(
+        credentials.userCode,
+        credentials.password,
+        orderReceiptId,
+      );
+      console.log("Yeni Koli API Yanıtı:", JSON.stringify(result, null, 2));
+      return { ...result, orderReceiptId };
+    },
+    onSuccess: (data) => {
+      // Bu serviste success:"true" gelirken de iş kuralı hatası dönebiliyor.
+      const isError =
+        String(data.success) !== "true" ||
+        (data.err !== undefined && data.err !== 0) ||
+        !data.resultBoxId;
+
+      if (isError) {
+        playErrorSignal();
+        showToast(
+          t("koliDetay.operationFailed"),
+          data.msg || t("koliDetay.newBoxFail"),
+          "error",
+        );
+        return;
+      }
+
+      const newBoxCode = data.boxCode || String(data.resultBoxId);
+      queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+      // Siparişin koli listesi de değişti (banner'daki listeye yansımalı).
+      queryClient.invalidateQueries({ queryKey: ["order-boxes"] });
+
+      // Yeni koliye geç, ama geri tuşu önceki koliye değil listeye dönsün.
+      openBoxDetail({
+        id: String(data.resultBoxId),
+        recId: String(data.orderReceiptId),
+        packageNo: newBoxCode,
+        boxCode: newBoxCode,
+        receiptNo,
+        sipExp,
+        initialSuccessMsg: t("koliDetay.newBoxCreated"),
+      });
+    },
+    onError: (error) => {
+      playErrorSignal();
+      showToast(
+        t("koliDetay.systemError"),
+        error instanceof Error ? error.message : t("koliDetay.newBoxFail"),
+        "error",
+      );
+    },
+    // Sonuç ne olursa olsun modal kapanmalı; açık kalırsa toast arkasında kalır.
+    onSettled: () => {
+      setShowNewBoxConfirm(false);
+    },
+  });
+
   const koliDetailQuery = useQuery({
     // credentials objesi şifre içerir; cache anahtarına yalnızca kullanıcı
     // kodu girmeli (kullanıcı değişince cache ayrışması için yeterli).
@@ -586,6 +751,60 @@ export default function KoliDetayScreen() {
     },
     enabled: !!credentials && !!id,
   });
+
+  // Aynı siparişe bağlı koliler. Yalnızca modal açıldığında çekilir; sipariş
+  // numarası ekrana parametre olarak geldiği için sorgu ondan beslenir.
+  const orderBoxesQuery = useQuery({
+    queryKey: ["order-boxes", receiptNo, credentials?.userCode],
+    queryFn: async () => {
+      if (!credentials || !receiptNo) {
+        throw new Error(t("koliDetay.missingInfo"));
+      }
+      return api.koliListesi.getBoxesByOrderNo(
+        credentials.userCode,
+        credentials.password,
+        receiptNo,
+      );
+    },
+    enabled: showOrderBoxesModal && !!credentials && !!receiptNo,
+    staleTime: 30_000,
+  });
+
+  const openOrderBoxes = useCallback(() => {
+    // Barkod inputu her zaman odakta; klavye modalın üstüne binmesin.
+    Keyboard.dismiss();
+    setPendingSiblingBox(null);
+    setShowOrderBoxesModal(true);
+  }, []);
+
+  const closeOrderBoxes = useCallback(() => {
+    setShowOrderBoxesModal(false);
+    setPendingSiblingBox(null);
+    inputRef.current?.focus();
+  }, []);
+
+  const goToSiblingBox = useCallback(
+    (box: KoliItem) => {
+      setShowOrderBoxesModal(false);
+      setPendingSiblingBox(null);
+      openBoxDetail({
+        id: String(box.id),
+        packageNo: box.PackageNo,
+        boxCode: box.PackageNo,
+        receiptNo: box.ReceiptNo || receiptNo,
+        // sipExp ekranda decodeURIComponent'ten geçtiği için kodlanmış gider.
+        sipExp: box.SipExp ? encodeURIComponent(box.SipExp) : sipExp,
+        // recId yalnızca gerçekten sipariş RecId'siyse aktarılır; koli
+        // listesinden gelen "recId = koli id" değeri yeni kolinin yanlış
+        // siparişe bağlanmasına yol açardı.
+        recId:
+          trustedOrderRecId !== undefined
+            ? String(trustedOrderRecId)
+            : undefined,
+      });
+    },
+    [openBoxDetail, receiptNo, sipExp, trustedOrderRecId],
+  );
 
   // Satır bileşeni memoize edildiği için barkod inputundaki her tuş vuruşu
   // artık tüm listeyi yeniden render etmez.
@@ -654,16 +873,76 @@ export default function KoliDetayScreen() {
       />
       {receiptNo || sipExp ? (
         <View style={styles.receiptBanner}>
+          {/* Sipariş numarası artık bir aksiyon: dokununca aynı siparişe bağlı
+              koliler listelenir. Dokunulabilir olduğu çerçeve, sol vurgu şeridi
+              ve sağdaki koli/ok ikonuyla belli edilir. */}
           {receiptNo ? (
-            <Text style={styles.receiptBannerText}>
-              {t("koliDetay.orderNo")}
-              {receiptNo}
-            </Text>
-          ) : null}
-          {sipExp ? (
-            <Text style={styles.sipExpBannerText}>
-              {decodeURIComponent(sipExp)}
-            </Text>
+            <TouchableOpacity
+              style={styles.orderCard}
+              onPress={openOrderBoxes}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={`${t("koliDetay.orderNo")}${receiptNo}`}
+              accessibilityHint={t("koliDetay.orderBoxes.openHint")}
+              testID="order-boxes-button"
+            >
+              <View style={styles.orderCardAccent} />
+              <View style={styles.orderCardInfo}>
+                <Text style={styles.orderCardLabel}>
+                  {t("koliDetay.orderNoLabel")}
+                </Text>
+                <Text style={styles.orderCardValue} numberOfLines={1}>
+                  {receiptNo}
+                </Text>
+                {sipExp ? (
+                  // Buton yanında kaldığı için uzun açıklama kartı şişirmesin.
+                  <Text style={styles.sipExpBannerText} numberOfLines={2}>
+                    {decodeURIComponent(sipExp)}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={styles.orderCardAction}>
+                <Boxes size={16} color={theme.colors.primary} />
+                <ChevronRight size={14} color={theme.colors.primary} />
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.receiptBannerInfo}>
+              {sipExp ? (
+                <Text style={styles.sipExpBannerText} numberOfLines={2}>
+                  {decodeURIComponent(sipExp)}
+                </Text>
+              ) : null}
+            </View>
+          )}
+
+          {/* Aynı siparişe yeni koli: aksiyon, ait olduğu siparişin yanında
+              durur; alttaki koli aksiyonları çubuğuna dokunmaz. */}
+          {receiptNo ? (
+            <TouchableOpacity
+              style={[
+                styles.newBoxButton,
+                createNewBoxMutation.isPending && styles.disabledButton,
+              ]}
+              onPress={() => setShowNewBoxConfirm(true)}
+              disabled={createNewBoxMutation.isPending}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={t("koliDetay.btnNewBox")}
+              testID="new-box-button"
+            >
+              {createNewBoxMutation.isPending ? (
+                <ActivityIndicator
+                  size="small"
+                  color={theme.colors.onPrimary}
+                />
+              ) : (
+                <PackagePlus size={18} color={theme.colors.onPrimary} />
+              )}
+              <Text style={styles.newBoxButtonText}>
+                {t("koliDetay.btnNewBox")}
+              </Text>
+            </TouchableOpacity>
           ) : null}
         </View>
       ) : null}
@@ -684,7 +963,11 @@ export default function KoliDetayScreen() {
           >
             <Plus
               size={18}
-              color={scanMode === "add" ? theme.colors.onPrimary : theme.colors.inkSubtle}
+              color={
+                scanMode === "add"
+                  ? theme.colors.onPrimary
+                  : theme.colors.inkSubtle
+              }
             />
             <Text
               style={[
@@ -709,7 +992,11 @@ export default function KoliDetayScreen() {
           >
             <Trash2
               size={18}
-              color={scanMode === "delete" ? theme.colors.onError : theme.colors.inkSubtle}
+              color={
+                scanMode === "delete"
+                  ? theme.colors.onError
+                  : theme.colors.inkSubtle
+              }
             />
             <Text
               style={[
@@ -730,7 +1017,9 @@ export default function KoliDetayScreen() {
         >
           <ScanBarcode
             size={22}
-            color={scanMode === "delete" ? theme.colors.error : theme.colors.primary}
+            color={
+              scanMode === "delete" ? theme.colors.error : theme.colors.primary
+            }
           />
           <TextInput
             ref={inputRef}
@@ -939,7 +1228,10 @@ export default function KoliDetayScreen() {
                 disabled={closeBoxMutation.isPending}
               >
                 {closeBoxMutation.isPending ? (
-                  <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.onPrimary}
+                  />
                 ) : (
                   <Text style={styles.receiptConfirmText}>
                     {t("koliDetay.continue")}
@@ -994,10 +1286,75 @@ export default function KoliDetayScreen() {
                 disabled={openBoxMutation.isPending}
               >
                 {openBoxMutation.isPending ? (
-                  <ActivityIndicator size="small" color={theme.colors.onSuccess} />
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.onSuccess}
+                  />
                 ) : (
                   <Text style={styles.receiptConfirmText}>
                     {t("koliDetay.continue")}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- YENİ KOLİ ONAY MODALI --- */}
+      <Modal
+        visible={showNewBoxConfirm}
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent
+        animationType="fade"
+        onRequestClose={() => setShowNewBoxConfirm(false)}
+      >
+        <View style={styles.receiptModalOverlay}>
+          <View style={styles.receiptModalContent}>
+            <View style={styles.receiptIconContainer}>
+              <PackagePlus size={48} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.receiptModalTitle}>
+              {t("koliDetay.modals.newBoxTitle")}
+            </Text>
+            {/* Sipariş numarası cümle içinde kaybolmasın diye vurgulanır;
+                çeviri tek bir cümle olarak kalsın diye <Trans> kullanılıyor. */}
+            <Text style={styles.receiptModalSubtitle}>
+              <Trans
+                i18nKey="koliDetay.modals.newBoxSubtitle"
+                values={{ receiptNo }}
+                components={{
+                  no: <Text style={styles.receiptModalHighlight} />,
+                }}
+              />
+            </Text>
+            <View style={styles.receiptModalButtons}>
+              <TouchableOpacity
+                style={styles.receiptCancelButton}
+                onPress={() => setShowNewBoxConfirm(false)}
+                disabled={createNewBoxMutation.isPending}
+              >
+                <Text style={styles.receiptCancelText}>
+                  {t("koliDetay.cancel")}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.receiptConfirmButton,
+                  createNewBoxMutation.isPending && styles.disabledButton,
+                ]}
+                onPress={() => createNewBoxMutation.mutate()}
+                disabled={createNewBoxMutation.isPending}
+              >
+                {createNewBoxMutation.isPending ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.onPrimary}
+                  />
+                ) : (
+                  <Text style={styles.receiptConfirmText}>
+                    {t("koliDetay.create")}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -1054,7 +1411,10 @@ export default function KoliDetayScreen() {
                 disabled={deleteBoxMutation.isPending}
               >
                 {deleteBoxMutation.isPending ? (
-                  <ActivityIndicator size="small" color={theme.colors.onError} />
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.onError}
+                  />
                 ) : (
                   <Text
                     style={[
@@ -1175,11 +1535,196 @@ export default function KoliDetayScreen() {
                   });
                 }}
               >
-                <Text style={[styles.resultButtonText, { color: theme.colors.onWarning }]}>
+                <Text
+                  style={[
+                    styles.resultButtonText,
+                    { color: theme.colors.onWarning },
+                  ]}
+                >
                   {t("scanner.overLimit.confirmBtn")}
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- SİPARİŞE BAĞLI KOLİLER: LİSTE + ONAY --- */}
+      <Modal
+        visible={showOrderBoxesModal}
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent
+        animationType="fade"
+        onRequestClose={closeOrderBoxes}
+      >
+        <View style={styles.receiptModalOverlay}>
+          <View style={styles.orderBoxesModalContent}>
+            {pendingSiblingBox ? (
+              // --- 2. ADIM: SEÇİLEN KOLİYE GEÇİŞ ONAYI ---
+              <View style={styles.orderBoxesConfirm}>
+                <View style={styles.receiptIconContainer}>
+                  <Package size={48} color={theme.colors.primary} />
+                </View>
+                <Text style={styles.receiptModalTitle}>
+                  {t("koliDetay.orderBoxes.confirmTitle")}
+                </Text>
+                <Text style={styles.receiptModalSubtitle}>
+                  <Trans
+                    i18nKey="koliDetay.orderBoxes.confirmMessage"
+                    values={{ packageNo: pendingSiblingBox.PackageNo }}
+                    components={{
+                      no: <Text style={styles.receiptModalHighlight} />,
+                    }}
+                  />
+                </Text>
+                <View style={styles.receiptModalButtons}>
+                  <TouchableOpacity
+                    style={styles.receiptCancelButton}
+                    onPress={() => setPendingSiblingBox(null)}
+                  >
+                    <Text style={styles.receiptCancelText}>
+                      {t("koliDetay.orderBoxes.back")}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.receiptConfirmButton}
+                    onPress={() => goToSiblingBox(pendingSiblingBox)}
+                    testID="order-box-confirm"
+                  >
+                    <Text style={styles.receiptConfirmText}>
+                      {t("koliDetay.orderBoxes.confirmBtn")}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              // --- 1. ADIM: SİPARİŞE BAĞLI KOLİ LİSTESİ ---
+              <>
+                <Text style={styles.orderBoxesTitle}>
+                  {t("koliDetay.orderBoxes.title")}
+                </Text>
+                <Text style={styles.orderBoxesSubtitle}>
+                  {t("koliDetay.orderBoxes.subtitle", { receiptNo })}
+                </Text>
+
+                {orderBoxesQuery.isLoading ? (
+                  <View style={styles.orderBoxesState}>
+                    <ActivityIndicator
+                      size="large"
+                      color={theme.colors.primary}
+                    />
+                    <Text style={styles.orderBoxesStateText}>
+                      {t("koliDetay.orderBoxes.loading")}
+                    </Text>
+                  </View>
+                ) : orderBoxesQuery.isError ? (
+                  <View style={styles.orderBoxesState}>
+                    <AlertCircle size={32} color={theme.colors.error} />
+                    <Text style={styles.orderBoxesStateText}>
+                      {orderBoxesQuery.error instanceof Error
+                        ? orderBoxesQuery.error.message
+                        : t("koliDetay.defaultError")}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.orderBoxesRetry}
+                      onPress={() => orderBoxesQuery.refetch()}
+                    >
+                      <Text style={styles.orderBoxesRetryText}>
+                        {t("koliDetay.orderBoxes.retry")}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <FlatList
+                    data={orderBoxesQuery.data || []}
+                    style={styles.orderBoxesList}
+                    keyExtractor={(box) => String(box.id)}
+                    ItemSeparatorComponent={() => (
+                      <View style={styles.orderBoxesSeparator} />
+                    )}
+                    renderItem={({ item: box }) => {
+                      const isCurrent = String(box.id) === String(id);
+                      return (
+                        <TouchableOpacity
+                          style={[
+                            styles.orderBoxRow,
+                            isCurrent && styles.orderBoxRowCurrent,
+                          ]}
+                          activeOpacity={0.75}
+                          disabled={isCurrent}
+                          onPress={() => setPendingSiblingBox(box)}
+                          testID={`order-box-${box.id}`}
+                        >
+                          <View
+                            style={[
+                              styles.orderBoxRowIcon,
+                              isCurrent && {
+                                backgroundColor: theme.colors.surface3,
+                              },
+                            ]}
+                          >
+                            <Package
+                              size={18}
+                              color={
+                                isCurrent
+                                  ? theme.colors.inkSubtle
+                                  : theme.colors.primary
+                              }
+                            />
+                          </View>
+                          <View style={styles.orderBoxRowInfo}>
+                            <Text
+                              style={styles.orderBoxRowTitle}
+                              numberOfLines={1}
+                            >
+                              {box.PackageNo}
+                            </Text>
+                            {box.Explanation ? (
+                              <Text
+                                style={styles.orderBoxRowSub}
+                                numberOfLines={1}
+                              >
+                                {box.Explanation}
+                              </Text>
+                            ) : null}
+                          </View>
+                          {isCurrent ? (
+                            <View style={styles.orderBoxCurrentBadge}>
+                              <Text style={styles.orderBoxCurrentBadgeText}>
+                                {t("koliDetay.orderBoxes.current")}
+                              </Text>
+                            </View>
+                          ) : (
+                            <ChevronRight
+                              size={18}
+                              color={theme.colors.inkSubtle}
+                            />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    }}
+                    ListEmptyComponent={
+                      <View style={styles.orderBoxesState}>
+                        <Package size={32} color={theme.colors.inkSubtle} />
+                        <Text style={styles.orderBoxesStateText}>
+                          {t("koliDetay.orderBoxes.empty")}
+                        </Text>
+                      </View>
+                    }
+                  />
+                )}
+
+                <TouchableOpacity
+                  style={styles.orderBoxesCloseButton}
+                  onPress={closeOrderBoxes}
+                >
+                  <Text style={styles.receiptCancelText}>
+                    {t("koliDetay.orderBoxes.close")}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -1381,25 +1926,89 @@ const makeStyles = (theme: Theme) => {
     content: {
       padding: spacing.md,
     },
+    // Sipariş bilgisi sakin bir bilgi satırı; dolu renkli şerit yerine nötr
+    // yüzey + ince ayraç kullanılır, vurgu metnin ve butonun kendisinde kalır.
     receiptBanner: {
-      backgroundColor: colors.primaryTint,
+      backgroundColor: colors.surface1,
       paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: colors.hairline,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
     },
-    receiptBannerText: {
-      ...type.bodySm,
-      fontWeight: "600" as const,
-      color: colors.primary,
-      textAlign: "center",
+    receiptBannerInfo: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    // Sipariş numarası dokunulabilir bir kart: sol vurgu şeridi + çerçeve onu
+    // banner'ın geri kalanından ayırır, sağdaki ikon çifti aksiyonu duyurur.
+    orderCard: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+      borderRadius: radius.md,
+      paddingVertical: spacing.xs,
+      paddingRight: spacing.sm,
+      paddingLeft: spacing.xs,
+      minHeight: 52,
+      overflow: "hidden",
+    },
+    orderCardAccent: {
+      width: 3,
+      alignSelf: "stretch",
+      borderRadius: radius.pill,
+      backgroundColor: colors.primary,
+    },
+    orderCardInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    orderCardLabel: {
+      ...type.caption,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      color: colors.inkSubtle,
+    },
+    orderCardValue: {
+      ...type.cardTitle,
+      fontSize: 16,
+      color: colors.ink,
+    },
+    orderCardAction: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 1,
+      backgroundColor: colors.primaryTint,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: spacing.xxs,
     },
     sipExpBannerText: {
       ...type.bodySm,
       fontWeight: "500" as const,
       color: colors.success,
-      textAlign: "center",
-      marginTop: spacing.xxs,
+    },
+    newBoxButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      backgroundColor: colors.primary,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.md,
+      // Dokunma alanı en az 44pt olmalı (iOS/Android kılavuzu).
+      minHeight: 44,
+      minWidth: 44,
+    },
+    newBoxButtonText: {
+      ...type.button,
+      color: colors.onPrimary,
     },
     centerContainer: {
       flex: 1,
@@ -1588,6 +2197,11 @@ const makeStyles = (theme: Theme) => {
       textAlign: "center",
       marginBottom: spacing.xl,
     },
+    // Modal metninde öne çıkarılan değer (örn. sipariş numarası).
+    receiptModalHighlight: {
+      color: colors.primary,
+      fontWeight: "700" as const,
+    },
     receiptModalButtons: {
       flexDirection: "row" as const,
       gap: spacing.sm,
@@ -1620,6 +2234,126 @@ const makeStyles = (theme: Theme) => {
     receiptConfirmText: {
       ...type.button,
       color: colors.onPrimary,
+    },
+    // Siparişe bağlı koliler modalı: liste barındırdığı için yüksekliği
+    // sınırlanır, içerik kaydırılır.
+    orderBoxesModalContent: {
+      backgroundColor: colors.surface1,
+      borderRadius: radius.xxl,
+      padding: spacing.lg,
+      width: "100%",
+      maxWidth: 360,
+      maxHeight: "80%",
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    orderBoxesConfirm: {
+      alignItems: "center",
+    },
+    orderBoxesTitle: {
+      ...type.cardTitle,
+      fontSize: 18,
+      color: colors.ink,
+      textAlign: "center",
+    },
+    orderBoxesSubtitle: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      textAlign: "center",
+      marginTop: spacing.xxs,
+      marginBottom: spacing.md,
+    },
+    orderBoxesList: {
+      // RN'de varsayılan flexShrink 0; liste uzayınca modalın maxHeight'ını
+      // taşırıp "Kapat" butonunu ekran dışına itmesin.
+      flexGrow: 0,
+      flexShrink: 1,
+    },
+    orderBoxesSeparator: {
+      height: spacing.xs,
+    },
+    orderBoxRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      minHeight: 56,
+    },
+    orderBoxRowCurrent: {
+      borderColor: colors.primary,
+      backgroundColor: colors.surface1,
+    },
+    orderBoxRowIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.sm,
+      backgroundColor: colors.primaryTint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    orderBoxRowInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    orderBoxRowTitle: {
+      ...type.body,
+      fontWeight: "600" as const,
+      color: colors.ink,
+    },
+    orderBoxRowSub: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+    },
+    orderBoxCurrentBadge: {
+      backgroundColor: colors.primaryTint,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+    },
+    orderBoxCurrentBadgeText: {
+      ...type.caption,
+      color: colors.primary,
+      fontWeight: "700" as const,
+    },
+    orderBoxesState: {
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+      paddingVertical: spacing.xl,
+    },
+    orderBoxesStateText: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      textAlign: "center",
+    },
+    orderBoxesRetry: {
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
+      backgroundColor: colors.surface2,
+      paddingHorizontal: spacing.lg,
+      minHeight: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    orderBoxesRetryText: {
+      ...type.button,
+      color: colors.ink,
+    },
+    orderBoxesCloseButton: {
+      marginTop: spacing.md,
+      backgroundColor: colors.surface2,
+      borderRadius: radius.md,
+      minHeight: 48,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.hairlineStrong,
     },
     closeBoxModalContent: {
       backgroundColor: colors.surface1,

@@ -13,11 +13,15 @@ import {
   CheckCircle2,
   X,
   FileText,
+  ShoppingCart,
+  PackagePlus,
 } from "lucide-react-native";
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -46,8 +50,12 @@ export default function KoliListesiScreen() {
   const queryClient = useQueryClient();
 
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  // `searchQuery` yalnızca inputun içeriği; sorgu, kullanıcı Enter'a basınca
+  // `activeSearchQuery`ye taşınır. Böylece her tuş vuruşunda sunucuya istek
+  // gitmez (el terminali barkod okuttuğunda da sonuna Enter geldiği için
+  // okutma otomatik olarak aramayı tetikler).
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
+  const [activeSearchQuery, setActiveSearchQuery] = useState<string>("");
 
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [selectedItems, setSelectedItems] = useState<KoliItem[]>([]);
@@ -60,17 +68,71 @@ export default function KoliListesiScreen() {
     type: "success" as "success" | "error" | "warning",
   });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 500);
-    return () => clearTimeout(timer);
+  // (+) FAB'a basılı tutunca açılan hızlı oluşturma menüsü. Kısa dokunuş
+  // eskisi gibi create-koli ekranına gider; menü yalnızca kısayol.
+  const [fabMenuOpen, setFabMenuOpen] = useState<boolean>(false);
+  const fabMenuAnim = useRef(new Animated.Value(0)).current;
+
+  const openFabMenu = useCallback(() => {
+    Vibration.vibrate(50);
+    setFabMenuOpen(true);
+    Animated.spring(fabMenuAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 7,
+      tension: 90,
+    }).start();
+  }, [fabMenuAnim]);
+
+  const closeFabMenu = useCallback(() => {
+    Animated.timing(fabMenuAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => setFabMenuOpen(false));
+  }, [fabMenuAnim]);
+
+  // Menü öğesinin giriş animasyonu: alttan yukarı, hafif büyüyerek.
+  const fabMenuItemStyle = (index: number) => ({
+    opacity: fabMenuAnim,
+    transform: [
+      {
+        translateY: fabMenuAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [12 + index * 10, 0],
+        }),
+      },
+      {
+        scale: fabMenuAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.85, 1],
+        }),
+      },
+    ],
+  });
+
+  const submitSearch = useCallback(() => {
+    setActiveSearchQuery(searchQuery.trim());
   }, [searchQuery]);
+
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    // Alan tamamen temizlendiyse aramayı da sıfırla; kullanıcı tüm listeye
+    // dönmek için ayrıca Enter'a basmak zorunda kalmasın.
+    if (text.trim() === "") {
+      setActiveSearchQuery("");
+    }
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+    setActiveSearchQuery("");
+  }, []);
 
   const koliQuery = useInfiniteQuery({
     // credentials objesi şifre içerir; cache anahtarına yalnızca kullanıcı
     // kodu girmeli (kullanıcı değişince cache ayrışması için yeterli).
-    queryKey: ["koli-listesi", credentials?.userCode, debouncedSearchQuery],
+    queryKey: ["koli-listesi", credentials?.userCode, activeSearchQuery],
     queryFn: async ({ pageParam = 0 }) => {
       if (!credentials) {
         throw new Error("No credentials available");
@@ -80,9 +142,9 @@ export default function KoliListesiScreen() {
         credentials.password,
         pageParam,
         PAGE_LEN,
-        debouncedSearchQuery || undefined,
+        activeSearchQuery || undefined,
       );
-      console.log(" itemler ",items);
+      console.log(" itemler ", items);
       return items;
     },
     initialPageParam: 0,
@@ -106,6 +168,10 @@ export default function KoliListesiScreen() {
   };
 
   const filteredItems = allItems;
+
+  // Arama kutusundaki bekleme göstergesi: sayfalama ve pull-to-refresh hariç.
+  const isSearching =
+    koliQuery.isFetching && !koliQuery.isFetchingNextPage && !refreshing;
 
   const loadMore = useCallback(() => {
     if (koliQuery.hasNextPage && !koliQuery.isFetchingNextPage) {
@@ -140,7 +206,9 @@ export default function KoliListesiScreen() {
     onSuccess: (data) => {
       setResultData({
         title: t("common.success"),
-        message: t("koliListesi.bulkReceiptSuccess", { receiptNo: data.resultReceiptNo }),
+        message: t("koliListesi.bulkReceiptSuccess", {
+          receiptNo: data.resultReceiptNo,
+        }),
         type: "success",
       });
       setResultModalVisible(true);
@@ -151,7 +219,8 @@ export default function KoliListesiScreen() {
     onError: (error) => {
       setResultData({
         title: t("common.error"),
-        message: error instanceof Error ? error.message : t("common.defaultError"),
+        message:
+          error instanceof Error ? error.message : t("common.defaultError"),
         type: "error",
       });
       setResultModalVisible(true);
@@ -187,10 +256,10 @@ export default function KoliListesiScreen() {
   };
 
   const handlePress = (item: KoliItem) => {
-    
     if (isSelectionMode) {
       toggleSelection(item);
-    } else { //todo recId gönder
+    } else {
+      //todo recId gönder
       push(
         `/(app)/koli-detay?id=${item.id}&packageNo=${item.PackageNo || ""}&receiptNo=${item.ReceiptNo || ""}&recId=${item.id || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
       );
@@ -203,7 +272,14 @@ export default function KoliListesiScreen() {
     setShowReceiptConfirm(false);
   };
 
-  if (koliQuery.isLoading && allItems.length === 0 && !refreshing) {
+  // Arama sırasında tam sayfa yükleniyor ekranına düşülmemeli; yoksa arama
+  // çubuğu kaybolur. O durumda bekleme, liste alanında gösterilir.
+  if (
+    koliQuery.isLoading &&
+    allItems.length === 0 &&
+    !refreshing &&
+    !activeSearchQuery
+  ) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -300,9 +376,26 @@ export default function KoliListesiScreen() {
             placeholder={t("koliListesi.searchPlaceholder")}
             placeholderTextColor={theme.colors.inkSubtle}
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={handleSearchChange}
+            onSubmitEditing={submitSearch}
+            returnKeyType="search"
+            autoCorrect={false}
             testID="search-input"
           />
+
+          {isSearching ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          ) : searchQuery.length > 0 ? (
+            <TouchableOpacity
+              onPress={clearSearch}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={t("koliListesi.clearSearch")}
+              testID="clear-search-button"
+            >
+              <X size={18} color={theme.colors.inkSubtle} />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 
@@ -323,40 +416,155 @@ export default function KoliListesiScreen() {
         onEndReachedThreshold={0.3}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Package size={48} color={theme.colors.inkSubtle} />
-            <Text style={styles.emptyText}>
-              {searchQuery
-                ? t("koliListesi.emptySearch")
-                : t("koliListesi.emptyList")}
-            </Text>
-          </View>
+          isSearching ? (
+            <View style={styles.emptyContainer}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={styles.emptyText}>{t("koliListesi.loading")}</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Package size={48} color={theme.colors.inkSubtle} />
+              <Text style={styles.emptyText}>
+                {activeSearchQuery
+                  ? t("koliListesi.emptySearch")
+                  : t("koliListesi.emptyList")}
+              </Text>
+            </View>
+          )
         }
       />
 
       {!isSelectionMode && (
         <>
-          <TouchableOpacity
-            style={styles.fabSecondary}
-            onPress={() => {
-              push({
-                pathname: "/(app)/barcode-scanner",
-                params: { mode: "search" },
-              });
-            }}
-            activeOpacity={0.8}
-            testID="barcode-scanner-button"
+          {fabMenuOpen && (
+            <Animated.View
+              style={[styles.fabScrim, { opacity: fabMenuAnim }]}
+              testID="fab-menu-scrim"
+            >
+              <Pressable
+                style={StyleSheet.absoluteFill}
+                onPress={closeFabMenu}
+              />
+            </Animated.View>
+          )}
+
+          {fabMenuOpen && (
+            <>
+              <Animated.View
+                style={[
+                  styles.fabMenuItem,
+                  styles.fabMenuItemTop,
+                  fabMenuItemStyle(1),
+                ]}
+              >
+                <View style={styles.fabMenuLabelPill}>
+                  <Text style={styles.fabMenuLabel}>
+                    {t("koliListesi.quickCreateOrder")}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.fabMenuButton}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    closeFabMenu();
+                    push("/(app)/order-receipts");
+                  }}
+                  accessibilityLabel={t("koliListesi.quickCreateOrder")}
+                  testID="fab-menu-order"
+                >
+                  <ShoppingCart size={22} color={theme.colors.primary} />
+                </TouchableOpacity>
+              </Animated.View>
+
+              <Animated.View
+                style={[
+                  styles.fabMenuItem,
+                  styles.fabMenuItemBottom,
+                  fabMenuItemStyle(0),
+                ]}
+              >
+                <View style={styles.fabMenuLabelPill}>
+                  <Text style={styles.fabMenuLabel}>
+                    {t("koliListesi.quickCreateEmpty")}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.fabMenuButton}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    closeFabMenu();
+                    push({
+                      pathname: "/(app)/order-receipts",
+                      params: { mode: "create_empty" },
+                    });
+                  }}
+                  accessibilityLabel={t("koliListesi.quickCreateEmpty")}
+                  testID="fab-menu-empty"
+                >
+                  <PackagePlus size={22} color={theme.colors.primary} />
+                </TouchableOpacity>
+              </Animated.View>
+            </>
+          )}
+
+          {/* Menü açıkken barkod FAB'ı yerini menü öğelerine bırakır. */}
+          <Animated.View
+            style={[
+              styles.fabSecondaryContainer,
+              {
+                opacity: fabMenuAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0],
+                }),
+              },
+            ]}
+            pointerEvents={fabMenuOpen ? "none" : "auto"}
           >
-            <ScanBarcode size={26} color={theme.colors.primary} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.fabSecondary}
+              onPress={() => {
+                push({
+                  pathname: "/(app)/barcode-scanner",
+                  params: { mode: "search" },
+                });
+              }}
+              activeOpacity={0.8}
+              testID="barcode-scanner-button"
+            >
+              <ScanBarcode size={26} color={theme.colors.primary} />
+            </TouchableOpacity>
+          </Animated.View>
 
           <TouchableOpacity
             style={styles.fab}
-            onPress={() => push("/(app)/create-koli")}
+            onPress={() => {
+              if (fabMenuOpen) {
+                closeFabMenu();
+                return;
+              }
+              push("/(app)/create-koli");
+            }}
+            onLongPress={() => {
+              if (!fabMenuOpen) openFabMenu();
+            }}
+            delayLongPress={300}
             activeOpacity={0.8}
             testID="create-koli-button"
           >
-            <Plus size={28} color={theme.colors.onPrimary} />
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    rotate: fabMenuAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ["0deg", "45deg"],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <Plus size={28} color={theme.colors.onPrimary} />
+            </Animated.View>
           </TouchableOpacity>
         </>
       )}
@@ -387,7 +595,9 @@ export default function KoliListesiScreen() {
             ) : (
               <FileText size={18} color={theme.colors.primary} />
             )}
-            <Text style={styles.bulkActionText}>{t("koliListesi.createReceipt")}</Text>
+            <Text style={styles.bulkActionText}>
+              {t("koliListesi.createReceipt")}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -548,10 +758,12 @@ const makeStyles = (theme: Theme) => {
       shadowOpacity: 0.35,
       shadowRadius: 12,
     },
-    fabSecondary: {
+    fabSecondaryContainer: {
       position: "absolute",
       right: spacing.lg,
       bottom: 132,
+    },
+    fabSecondary: {
       width: 52,
       height: 52,
       borderRadius: radius.pill,
@@ -561,6 +773,48 @@ const makeStyles = (theme: Theme) => {
       alignItems: "center",
       justifyContent: "center",
       elevation: 4,
+    },
+    fabScrim: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.scrim,
+    },
+    // Sağa sabitlenmiş satır: etiket etiketin genişliği kadar sola doğru büyür.
+    fabMenuItem: {
+      position: "absolute",
+      right: spacing.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    fabMenuItemBottom: {
+      bottom: 132,
+    },
+    fabMenuItemTop: {
+      bottom: 196,
+    },
+    fabMenuLabelPill: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.hairline,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      elevation: 4,
+    },
+    fabMenuLabel: {
+      ...type.button,
+      color: colors.ink,
+    },
+    fabMenuButton: {
+      width: 52,
+      height: 52,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface1,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      elevation: 6,
     },
     selectionBar: {
       position: "absolute",

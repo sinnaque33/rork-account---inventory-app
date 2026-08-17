@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
@@ -17,13 +18,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
 import { OrderReceipt } from "@/services/types";
 import { useSafeNavigation } from "@/hooks/useSafeNavigation";
+import { useErrorSignal } from "@/hooks/useErrorSignal";
+import ResultModal from "../components/ResultModal";
 
 export default function OrderReceiptsScreen() {
   const { t } = useTranslation();
@@ -33,6 +36,17 @@ export default function OrderReceiptsScreen() {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // mode=create_empty: sipariş seçilince barkod ekranına gidilmez, malzemesiz
+  // koli doğrudan burada oluşturulur.
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const isCreateEmpty = params.mode === "create_empty";
+
+  const navigation = useNavigation();
+  const queryClient = useQueryClient();
+  const playErrorSignal = useErrorSignal();
+  const [resultModalVisible, setResultModalVisible] = useState<boolean>(false);
+  const [resultData, setResultData] = useState({ title: "", message: "" });
 
   const orderReceiptsQuery = useQuery({
     // credentials objesi şifre içerir; cache anahtarına yalnızca kullanıcı
@@ -51,7 +65,96 @@ export default function OrderReceiptsScreen() {
     enabled: !!credentials,
   });
 
+  const showError = (message: string) => {
+    playErrorSignal();
+    setResultData({
+      title: t("orderReceipts.createErrorTitle"),
+      message: message || t("orderReceipts.createErrorMsg"),
+    });
+    setResultModalVisible(true);
+  };
+
+  const createEmptyBoxMutation = useMutation({
+    mutationFn: async (item: OrderReceipt) => {
+      if (!credentials) {
+        throw new Error("No credentials available");
+      }
+      const result = await api.koliListesi.createEmptyKoliFromOrderReceipt(
+        credentials.userCode,
+        credentials.password,
+        item.RecId,
+      );
+      return { ...result, item };
+    },
+    onSuccess: (data: any) => {
+      // Bu serviste success:"true" gelirken de iş kuralı hatası dönebiliyor;
+      // barcode-scanner ile aynı hata tespiti uygulanır.
+      const explanation = data.resultExplanation || data.msg || "";
+      const isError =
+        String(data.success) !== "true" ||
+        (data.err !== 0 && data.err !== undefined) ||
+        data.resultError === true ||
+        !data.resultBoxId;
+
+      if (isError) {
+        showError(explanation);
+        return;
+      }
+
+      const boxCode =
+        data.resultBoxCode || data.boxCode || String(data.resultBoxId);
+
+      queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+
+      // Geri tuşu create-koli/order-receipts'e değil koli listesine dönmeli.
+      const detailParams = {
+        id: data.resultBoxId?.toString(),
+        recId: data.item.RecId?.toString(),
+        packageNo: boxCode,
+        boxCode,
+        receiptNo: data.item.ReceiptNo,
+      };
+
+      navigation.dispatch((state) => {
+        const koliListesiIndex = state.routes.findIndex(
+          (r) => r.name === "koli-listesi",
+        );
+
+        if (koliListesiIndex !== -1) {
+          const newRoutes = state.routes.slice(0, koliListesiIndex + 1);
+          newRoutes.push({
+            name: "koli-detay",
+            params: detailParams,
+          } as any);
+
+          return CommonActions.reset({
+            index: newRoutes.length - 1,
+            routes: newRoutes,
+          } as any);
+        }
+
+        return CommonActions.reset({
+          index: 2,
+          routes: [
+            { name: "dashboard" },
+            { name: "koli-listesi" },
+            { name: "koli-detay", params: detailParams },
+          ],
+        } as any);
+      });
+    },
+    onError: (error: unknown) => {
+      showError(error instanceof Error ? error.message : "");
+    },
+  });
+
   const handleReceiptSelect = (item: OrderReceipt) => {
+    if (isCreateEmpty) {
+      if (createEmptyBoxMutation.isPending) return;
+      createEmptyBoxMutation.mutate(item);
+      return;
+    }
+
     push({
       pathname: "/(app)/barcode-scanner",
       params: {
@@ -79,6 +182,10 @@ export default function OrderReceiptsScreen() {
     setRefreshing(false);
   };
 
+  const headerTitle = isCreateEmpty
+    ? t("orderReceipts.headerTitleEmpty")
+    : t("orderReceipts.headerTitle");
+
   const filteredItems = useMemo(() => {
     const items = orderReceiptsQuery.data || [];
     if (!searchQuery.trim()) {
@@ -96,7 +203,7 @@ export default function OrderReceiptsScreen() {
   if (orderReceiptsQuery.isLoading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: t("orderReceipts.headerTitle") }} />
+        <Stack.Screen options={{ title: headerTitle }} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>{t("orderReceipts.loading")}</Text>
       </View>
@@ -106,7 +213,7 @@ export default function OrderReceiptsScreen() {
   if (orderReceiptsQuery.isError) {
     return (
       <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: t("orderReceipts.headerTitle") }} />
+        <Stack.Screen options={{ title: headerTitle }} />
         <AlertCircle size={48} color={theme.colors.error} />
         <Text style={styles.errorTitle}>{t("orderReceipts.errorTitle")}</Text>
         <Text style={styles.errorText}>
@@ -145,7 +252,7 @@ export default function OrderReceiptsScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: t("orderReceipts.headerTitle") }} />
+      <Stack.Screen options={{ title: headerTitle }} />
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Search size={20} color={theme.colors.inkSubtle} />
@@ -174,44 +281,52 @@ export default function OrderReceiptsScreen() {
           />
         }
         ListHeaderComponent={
-          <TouchableOpacity
-            style={[
-              styles.card,
-              {
-                borderColor: theme.colors.primary,
-                borderWidth: 2,
-                marginBottom: 20,
-              },
-            ]}
-            activeOpacity={0.7}
-            onPress={handleNoOrderSelect}
-          >
-            <View style={styles.cardHeader}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  { backgroundColor: theme.colors.primary },
-                ]}
-              >
-                <FileText size={22} color={theme.colors.onPrimary} />
+          // Boş koli akışının amacı siparişe istinaden koli açmak; "sipariş
+          // bağlantısı yok" kartı bu modda anlamsız olduğu için gizlenir.
+          isCreateEmpty ? (
+            <Text style={styles.modeHint}>
+              {t("orderReceipts.selectForEmpty")}
+            </Text>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.card,
+                {
+                  borderColor: theme.colors.primary,
+                  borderWidth: 2,
+                  marginBottom: 20,
+                },
+              ]}
+              activeOpacity={0.7}
+              onPress={handleNoOrderSelect}
+            >
+              <View style={styles.cardHeader}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
+                >
+                  <FileText size={22} color={theme.colors.onPrimary} />
+                </View>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.receiptNo}>
+                    {t(
+                      "orderReceipts.noOrderLink",
+                      "Sipariş bağlantısı yapılmayacak",
+                    )}
+                  </Text>
+                  <Text style={styles.accountName}>
+                    {t(
+                      "orderReceipts.noOrderDesc",
+                      "Siparişten bağımsız koli oluştur",
+                    )}
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={theme.colors.primary} />
               </View>
-              <View style={styles.itemInfo}>
-                <Text style={styles.receiptNo}>
-                  {t(
-                    "orderReceipts.noOrderLink",
-                    "Sipariş bağlantısı yapılmayacak",
-                  )}
-                </Text>
-                <Text style={styles.accountName}>
-                  {t(
-                    "orderReceipts.noOrderDesc",
-                    "Siparişten bağımsız koli oluştur",
-                  )}
-                </Text>
-              </View>
-              <ChevronRight size={20} color={theme.colors.primary} />
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          )
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -224,6 +339,23 @@ export default function OrderReceiptsScreen() {
           </View>
         }
         showsVerticalScrollIndicator={false}
+      />
+
+      {createEmptyBoxMutation.isPending && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingOverlayText}>
+            {t("orderReceipts.creating")}
+          </Text>
+        </View>
+      )}
+
+      <ResultModal
+        visible={resultModalVisible}
+        onClose={() => setResultModalVisible(false)}
+        title={resultData.title}
+        message={resultData.message}
+        type="error"
       />
     </View>
   );
@@ -293,6 +425,12 @@ const makeStyles = (theme: Theme) => {
       ...type.body,
       color: colors.inkMuted,
       textAlign: "center",
+    },
+    modeHint: {
+      ...type.bodySm,
+      color: colors.inkMuted,
+      marginBottom: spacing.md,
+      paddingHorizontal: spacing.xxs,
     },
     card: {
       backgroundColor: colors.surface1,
