@@ -32,7 +32,7 @@
       "apiUrl": "API URL",
       "companyCode": "Company Code",
       "companyPassword": "Company Password",
-      "warehouseCode": "Warehouse Code",
+      "warehouseCode": "Warehouse Id",
       "errorSound": "Error Sound Type",
       "boxMode": "Box Creation Mode",
       "skipWeightMode": "Box Closing Mode",
@@ -42,7 +42,7 @@
       "apiUrl": "https://example.com/api",
       "companyCode": "Company Code (optional)",
       "companyPassword": "Company Password (optional)",
-      "warehouseCode": "Warehouse Code (default: 3)"
+      "warehouseCode": "Warehouse Id (default: 3)"
     },
     "boxModeDesc": {
       "title": "Add to Existing Open Box",
@@ -126,7 +126,7 @@
     "defaultError": "An error occurred",
     "searchPlaceholder": "Search a box, press Enter...",
     "clearSearch": "Clear search",
-    "receiptNoPrefix": "Order No: ",
+    "orderNoLabel": "Order No",
     "allLoaded": "All boxes loaded",
     "emptySearch": "No boxes found matching your search",
     "emptyList": "No boxes found",

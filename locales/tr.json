@@ -32,7 +32,7 @@
       "apiUrl": "API URL",
       "companyCode": "Şirket Kodu",
       "companyPassword": "Şirket Şifresi",
-      "warehouseCode": "Depo Kodu",
+      "warehouseCode": "Depo Id",
       "errorSound": "Hata Uyarı Tipi",
       "boxMode": "Koli Oluşturma Modu",
       "skipWeightMode": "Koli Kapatma Modu",
@@ -42,7 +42,7 @@
       "apiUrl": "https://example.com/api",
       "companyCode": "Şirket Kodu (opsiyonel)",
       "companyPassword": "Şirket Şifresi (opsiyonel)",
-      "warehouseCode": "Depo Kodu (varsayılan: 3)"
+      "warehouseCode": "Depo Id (varsayılan: 3)"
     },
     "boxModeDesc": {
       "title": "Mevcut Açık Koliye Ekle",
@@ -126,7 +126,7 @@
     "defaultError": "Bir hata oluştu",
     "searchPlaceholder": "Koli ara, Enter'a bas...",
     "clearSearch": "Aramayı temizle",
-    "receiptNoPrefix": "Sipariş No: ",
+    "orderNoLabel": "Sipariş No",
     "allLoaded": "Tüm koliler yüklendi",
     "emptySearch": "Aramanızla eşleşen koli bulunamadı",
     "emptyList": "Koli bulunamadı",

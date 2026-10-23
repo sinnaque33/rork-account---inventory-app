@@ -1,0 +1,35 @@
+{
+  "id": "2026-10-16-impeccable-v3",
+  "date": "2026-10-16",
+  "label": "Impeccable · Koli ekranlarında okunabilirlik",
+  "status": "pending_approval",
+  "basedOn": "2026-10-15",
+  "note": "Üçüncü öneri: yalnız koli listesi ve koli detayında daha büyük yazılar, belirgin satırlar ve ayrı miktar alanı. Ana koda uygulanmadı.",
+  "skill": "impeccable / typeset / operate",
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden",
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "screenNotes": {
+    "koli-listesi": [
+      "Koli numarası 15 → 20 px, müşteri adı 14 → 16 px, sipariş/depo bilgileri 12–13 → 14 px oldu.",
+      "Müşteri, sevkiyat notu, sipariş ve depo ayrı satırlarda; dönüşümlü yüzeyler kayıt sınırını belirginleştiriyor.",
+      "Aynı yedi kayıt korunuyor; daha rahat okuma için ekranda daha az kayıt görünüyor."
+    ],
+    "koli-detay": [
+      "Ürün adı 15 → 20 px ve tam satır; miktar 20 → 24 px, ayrı yeşil alanda.",
+      "Renk ve beden değerleri 16 px; etiketler ve stok kodu 14 px.",
+      "Sipariş başlığı kısaltıldı; ürünlere daha fazla dikey alan ayrıldı. Dört alt işlem korundu."
+    ]
+  },
+  "revision": 3,
+  "previous": "2026-10-16-impeccable-v2"
+}

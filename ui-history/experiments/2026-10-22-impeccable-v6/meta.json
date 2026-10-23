@@ -1,0 +1,70 @@
+{
+  "id": "2026-10-22-impeccable-v6",
+  "date": "2026-10-22",
+  "label": "Impeccable · Kritik sonrası küçük düzeltmeler",
+  "status": "pending_approval",
+  "basedOn": "2026-10-15",
+  "note": "Altıncı öneri: görüntüleyicideki dokuz ekran Impeccable kritiğinden geçti ve yalnız küçük düzeltmeler yapıldı; kaynak önerilerin düzeni ve metinleri korundu. Kırmızı ve çivit tema değerlerinde. Ana koda uygulanmadı.",
+  "skill": "impeccable / critique + polish / operate",
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden",
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "screenNotes": {
+    "login": [
+      "Kaynak: v2 girişi; düzen ve metinler korundu.",
+      "“Beni hatırla” işareti orijinaldeki gibi marka kırmızısı, güvenlik kilidi nötr: yeşil yalnız tamamlama anlamında kalır.",
+      "Ayarlar ve şifre göster düğmeleri 48 px dokunma alanında; açıklama ve alt bilgi 14 px."
+    ],
+    "settings": [
+      "Kaynak: v2 ayarları; bölümler, anahtarlar ve değerler korundu.",
+      "Bağlantı alanları orijinal sırada: API URL ve hemen altında açıklaması, Şirket kodu ile Şirket şifresi yan yana, en son Depo ID.",
+      "Bölüm başlıkları markanın büyük harfli etiket stilinde; segmentler 48 px, anahtarlar ayarın adıyla okunur."
+    ],
+    "dashboard": [
+      "Kaynak: v2 Ana Sayfa; iki kartlı yapı korundu.",
+      "İrsaliye karosu çivit, Koli Listesi karosu kırmızı: sonraki ekranlardaki akış renkleriyle aynı.",
+      "Kartlarda › kullanıldı (↗ dış bağlantı gibi okunuyordu); kullanıcı adı 30 → 24 px. Gradyan kartlara dönüş kullanıcı kararına bırakıldı."
+    ],
+    "create-koli": [
+      "Kaynak: v2 Yeni Koli; tek seçenek korundu.",
+      "Sipariş seçeneği fiş ikonuyla, Sipariş Seçimi’ndeki gibi; karo koli kırmızısında.",
+      "Seçenek başlığı 16 px kalın, açıklaması 13 → 14 px: Sipariş Seçimi’ndeki siparişsiz koli seçeneğiyle aynı ölçüde."
+    ],
+    "koli-listesi": [
+      "Kaynak: v4 koli kartları; sipariş no nötr renkte, sipariş ve depo kartın alt şeridinde.",
+      "Kart iç boşlukları sıkılaştırıldı: ekranda daha çok koli görünür.",
+      "Yeni Koli tek kırmızı, ışımalı düğme; Barkod düğmesinin ikonu nötr."
+    ],
+    "koli-detay": [
+      "Kaynak: v4; sipariş bağlamı marka kırmızısı gradyan kartta, filigransız.",
+      "Miktar nötr zeminde yeşil sayıyla (orijinaldeki gibi); Koli sil ikonu zeminsiz ve tema hata kırmızısında, ürün karolarıyla karışmaz.",
+      "Kart ve alt çubuk boşlukları sıkılaştırıldı; sipariş bağlantısı, Yeni Koli ve mod düğmeleri 48 px."
+    ],
+    "irskoli-listesi": [
+      "Kaynak: v4; seçim modunda iki kapalı koli seçili, başlık kaynak koddaki gibi “2 Koli Seçildi”.",
+      "Çivit tema değerinde; onay kutusunun köşesi 4 px, satırlar onay kutusu olarak okunur.",
+      "Açık/Kapalı rozetleri renk, nokta ve kelimeyle; renk tek başına anlam taşımaz."
+    ],
+    "barcode-scanner": [
+      "Kaynak: v5; orijinal ortalanmış düzen korundu.",
+      "Tarama dairesi orijinaldeki gibi nötr gri, ikon kırmızı: dokunulacak bir düğme gibi durmaz.",
+      "“İlk ürünü okutun” 16 px ana renkte ve alanın etiketi; başlık düğmeleri 48 px."
+    ],
+    "order-receipts": [
+      "Kaynak: v5; arama, siparişsiz koli seçeneği ve sipariş kartları korundu.",
+      "Siparişsiz koli seçeneği sıradan kart görünümünde; uyarı şeridi gibi durmaz, koli ekleme ikonu ve alt satırıyla ayrışır.",
+      "Cari adı en fazla iki satır; kırmızı ikon tonu barkod ekranıyla aynı."
+    ]
+  },
+  "revision": 6,
+  "previous": "2026-10-22-impeccable-v5"
+}

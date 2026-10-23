@@ -1,0 +1,35 @@
+{
+  "id": "2026-10-22-impeccable-v5",
+  "date": "2026-10-22",
+  "label": "Impeccable · Barkod ve sipariş seçiminde hafif iyileştirme",
+  "status": "pending_approval",
+  "basedOn": "2026-10-15",
+  "note": "Beşinci öneri: barkod okutma kaynak uygulamadaki ortalanmış düzene döndü ve yalnız hafif iyileştirildi; sipariş seçimi koli kartlarıyla aynı dile getirildi. Ana koda uygulanmadı.",
+  "skill": "impeccable / polish / operate",
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden",
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "screenNotes": {
+    "barcode-scanner": [
+      "Kaynak düzen korundu: ortadaki tarama dairesi, başlık, ortalanmış barkod alanı ve kırmızı Gönder.",
+      "Sipariş no fiş etiketinde, cari adı ayrı satırda; “İlk ürünü okutun” talimatı barkod alanının hemen üstünde.",
+      "Barkod büyük ve sabit genişlikli yazıyla; alan orijinaldeki gibi sade. Tarama dairesi kırmızı tonlu; ana sayfa düğmesi tonlu, böylece tek dolu kırmızı düğme Gönder."
+    ],
+    "order-receipts": [
+      "Kaynak yapı korundu: arama, siparişsiz koli seçeneği ve sipariş kartları.",
+      "Sipariş no 17 → 20 px sabit genişlikli, cari adı 13 → 16 px ana renkte; kartlar koli listesiyle aynı dilde.",
+      "Siparişsiz koli seçeneği kırmızı tonlu kartta ve koli ikonuyla; sipariş listesinden “6 sipariş” sayacıyla ayrılır."
+    ]
+  },
+  "revision": 5,
+  "previous": "2026-10-22-impeccable-v4"
+}

@@ -15,6 +15,7 @@ import {
   FileText,
   ShoppingCart,
   PackagePlus,
+  ChevronRight,
 } from "lucide-react-native";
 import { useMemo, useState, useCallback, useRef } from "react";
 import {
@@ -307,6 +308,8 @@ export default function KoliListesiScreen() {
       (selected) => selected.id === item.id,
     );
 
+    const hasOrderInfo = !!item.ReceiptNo || !!item.SipExp;
+
     return (
       <TouchableOpacity
         style={[styles.card, isSelected && styles.cardSelected]}
@@ -323,27 +326,46 @@ export default function KoliListesiScreen() {
             ]}
           >
             {isSelected ? (
-              <CheckCircle2 size={24} color={theme.colors.onPrimary} />
+              <CheckCircle2 size={22} color={theme.colors.onPrimary} />
             ) : (
-              <Package size={24} color={theme.colors.primary} />
+              <Package size={22} color={theme.colors.primary} />
             )}
           </View>
           <View style={styles.itemInfo}>
-            <Text style={styles.packageNo}>{item.PackageNo}</Text>
-            {item.ReceiptNo ? (
-              <Text style={styles.receiptNo}>
-                {t("koliListesi.receiptNoPrefix")}
-                {item.ReceiptNo}
+            <Text style={styles.packageNo} numberOfLines={1}>
+              {item.PackageNo}
+            </Text>
+            {item.Explanation ? (
+              <Text style={styles.explanation} numberOfLines={2}>
+                {item.Explanation}
               </Text>
             ) : null}
-            {item.SipExp ? (
-              <Text style={styles.sipExp}>{item.SipExp}</Text>
+          </View>
+          {/* Seçim modunda ok gizlenir; dokunuş detaya değil seçime gider. */}
+          {!isSelectionMode && (
+            <ChevronRight size={20} color={theme.colors.inkSubtle} />
+          )}
+        </View>
+
+        {hasOrderInfo && (
+          <View style={styles.cardBody}>
+            {item.ReceiptNo ? (
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>
+                  {t("koliListesi.orderNoLabel")}
+                </Text>
+                <Text style={styles.receiptNo} numberOfLines={1}>
+                  {item.ReceiptNo}
+                </Text>
+              </View>
             ) : null}
-            {item.Explanation ? (
-              <Text style={styles.explanation}>{item.Explanation}</Text>
+            {item.SipExp ? (
+              <Text style={styles.sipExp} numberOfLines={2}>
+                {item.SipExp}
+              </Text>
             ) : null}
           </View>
-        </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -628,7 +650,7 @@ const makeStyles = (theme: Theme) => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.canvas,
+      backgroundColor: theme.isDark ? colors.canvas : colors.surface1,
     },
     searchContainer: {
       backgroundColor: colors.canvas,
@@ -687,27 +709,34 @@ const makeStyles = (theme: Theme) => {
       color: colors.inkMuted,
       textAlign: "center",
     },
+    // Kart, liste zemininden net ayrılsın diye koyu temada bir basamak
+    // yukarıdaki yüzeyi, açık temada gri zemin üstünde beyaz kartı kullanır.
     card: {
-      backgroundColor: colors.surface1,
+      backgroundColor: theme.isDark ? colors.surface2 : colors.canvas,
       borderRadius: radius.lg,
-      padding: spacing.md,
       marginBottom: spacing.sm,
       borderWidth: 1,
-      borderColor: colors.hairline,
+      borderColor: colors.hairlineStrong,
+      overflow: "hidden",
+      elevation: theme.isDark ? 0 : 2,
+      shadowColor: colors.ink,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.isDark ? 0 : 0.08,
+      shadowRadius: 6,
     },
     cardSelected: {
       borderColor: colors.primary,
-      borderWidth: 2,
       backgroundColor: colors.primaryTint,
     },
     cardHeader: {
       flexDirection: "row",
       alignItems: "center",
       gap: spacing.sm,
+      padding: spacing.md,
     },
     iconContainer: {
-      width: 48,
-      height: 48,
+      width: 44,
+      height: 44,
       borderRadius: radius.md,
       backgroundColor: colors.primaryTint,
       alignItems: "center",
@@ -725,14 +754,31 @@ const makeStyles = (theme: Theme) => {
       ...type.bodySm,
       color: colors.inkMuted,
     },
+    cardBody: {
+      borderTopWidth: 1,
+      borderTopColor: colors.hairline,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.xxs,
+    },
+    metaRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      gap: spacing.xs,
+    },
+    metaLabel: {
+      ...type.label,
+      color: colors.inkSubtle,
+      textTransform: "uppercase",
+    },
     receiptNo: {
       ...type.mono,
-      color: colors.primary,
+      flexShrink: 1,
+      color: colors.ink,
     },
     sipExp: {
       ...type.bodySm,
-      color: colors.success,
-      fontWeight: "500" as const,
+      color: colors.inkMuted,
     },
     footerLoader: {
       paddingVertical: spacing.lg,

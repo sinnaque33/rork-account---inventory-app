@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-15",
+  "gitCommit": "36edf726f073ca38f03fda1da9e476966f4bd083",
+  "appVersion": "1.0.0",
+  "note": "İlk tasarım arşivi. Mevcut uygulamanın 9 ekranı kaynak koddan HTML/CSS olarak kaydedildi.",
+  "changedScreens": [
+    "login",
+    "settings",
+    "dashboard",
+    "koli-listesi",
+    "koli-detay",
+    "create-koli",
+    "order-receipts",
+    "irskoli-listesi",
+    "barcode-scanner"
+  ],
+  "screenNotes": {
+    "login": "İlk kayıt — mevcut tasarım.",
+    "settings": "İlk kayıt — mevcut tasarım.",
+    "dashboard": "İlk kayıt — mevcut tasarım.",
+    "koli-listesi": "İlk kayıt — mevcut tasarım.",
+    "koli-detay": "İlk kayıt — mevcut tasarım.",
+    "create-koli": "İlk kayıt — mevcut tasarım.",
+    "order-receipts": "İlk kayıt — mevcut tasarım.",
+    "irskoli-listesi": "İlk kayıt — mevcut tasarım.",
+    "barcode-scanner": "İlk kayıt — mevcut tasarım."
+  },
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden"
+  },
+  "fixture": "../../fixtures.json"
+}

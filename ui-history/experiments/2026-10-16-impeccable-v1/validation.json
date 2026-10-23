@@ -1,0 +1,383 @@
+{
+  "date": "2026-10-16",
+  "method": "Chrome headless file:// DOM and layout; no screenshots",
+  "screenshots": false,
+  "applicationApplied": false,
+  "sourceAndArchiveUnchanged": 40,
+  "checks": [
+    {
+      "name": "proposal-barcode-scanner",
+      "errors": [],
+      "passed": [
+        "390x844 / 390x796",
+        "yerel fontlar",
+        "yerel görseller",
+        "yatay taşma yok: ",
+        "kullanılabilir kaydırma alanı",
+        "metin kontrastı",
+        "listenin sonuna ulaşım"
+      ],
+      "contrast": [],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "scrolls": [
+        {
+          "height": 740,
+          "content": 740
+        }
+      ]
+    },
+    {
+      "name": "proposal-create-koli",
+      "errors": [],
+      "passed": [
+        "390x844 / 390x796",
+        "yerel fontlar",
+        "yerel görseller",
+        "yatay taşma yok: ",
+        "kullanılabilir kaydırma alanı",
+        "metin kontrastı",
+        "listenin sonuna ulaşım"
+      ],
+      "contrast": [],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "scrolls": [
+        {
+          "height": 740,
+          "content": 740
+        }
+      ]
+    },
+    {
+      "name": "proposal-dashboard",
+      "errors": [],
+      "passed": [
+        "390x844 / 390x796",
+        "yerel fontlar",
+        "yerel görseller",
+        "yatay taşma yok: ",
+        "kullanılabilir kaydırma alanı",
+        "metin kontrastı",
+        "listenin sonuna ulaşım"
+      ],
+      "contrast": [],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "scrolls": [
+        {
+          "height": 740,
+          "content": 740
+        }
+      ]
+    },
+    {
+      "name": "proposal-irskoli-listesi",
+      "errors": [],
+      "passed": [
+        "390x844 / 390x796",
+        "yerel fontlar",
+        "yerel görseller",
+        "yatay taşma yok: ",
+        "kullanılabilir kaydırma alanı",
+        "metin kontrastı",
+        "listenin sonuna ulaşım"
+      ],
+      "contrast": [],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "scrolls": [
+        {
+          "height": 551,
+          "content": 601
+        }
+      ]
+    },
+    {
+      "name": "proposal-koli-detay",
+      "errors": [],
+      "passed": [
+        "390x844 / 390x796",
+        "yerel fontlar",
+        "yerel görseller",
+        "yatay taşma yok: ",
+        "kullanılabilir kaydırma alanı",
+        "metin kontrastı",
+        "listenin sonuna ulaşım"
+      ],
+      "contrast": [],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "scrolls": [
+        {
+          "height": 337,
+          "content": 576
+        }
+      ]
+    },
+    {
+      "name": "proposal-koli-listesi",
+      "errors": [],
+      "passed": [
+        "390x844 / 390x796",
+        "yerel fontlar",
+        "yerel görseller",
+        "yatay taşma yok: ",
+        "kullanılabilir kaydırma alanı",
+        "metin kontrastı",
+        "listenin sonuna ulaşım"
+      ],
+      "contrast": [],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "scrolls": [
+        {
+          "height": 579,
+          "content": 982
+        }
+      ]
+    },
+    {
+      "name": "proposal-login",
+      "errors": [],
+      "passed": [
+        "390x844 / 390x796",
+        "yerel fontlar",
+        "yerel görseller",
+        "yatay taşma yok: ",
+        "kullanılabilir kaydırma alanı",
+        "metin kontrastı",
+        "listenin sonuna ulaşım"
+      ],
+      "contrast": [],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "scrolls": [
+        {
+          "height": 728,
+          "content": 728
+        }
+      ]
+    },
+    {
+      "name": "proposal-order-receipts",
+      "errors": [],
+      "passed": [
+        "390x844 / 390x796",
+        "yerel fontlar",
+        "yerel görseller",
+        "yatay taşma yok: ",
+        "kullanılabilir kaydırma alanı",
+        "metin kontrastı",
+        "listenin sonuna ulaşım"
+      ],
+      "contrast": [],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "scrolls": [
+        {
+          "height": 660,
+          "content": 660
+        }
+      ]
+    },
+    {
+      "name": "proposal-settings",
+      "errors": [],
+      "passed": [
+        "390x844 / 390x796",
+        "yerel fontlar",
+        "yerel görseller",
+        "yatay taşma yok: ",
+        "kullanılabilir kaydırma alanı",
+        "metin kontrastı",
+        "listenin sonuna ulaşım"
+      ],
+      "contrast": [],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "scrolls": [
+        {
+          "height": 740,
+          "content": 1400
+        }
+      ]
+    },
+    {
+      "name": "viewer-interactions",
+      "errors": [],
+      "passed": [
+        "9 ekran",
+        "boş slot",
+        "tarih penceresi",
+        "A seçildi",
+        "seçim sonrası odak",
+        "aynı tarih iki slot",
+        "ekran iki slotta değişti",
+        "hash saklandı",
+        "tema içeriği etkilemedi",
+        "tam boy açıldı",
+        "tam boy 390x844",
+        "tek slot temizlendi",
+        "temizleme sonrası odak",
+        "hash geri yükleme",
+        "iframe sabit ölçü",
+        "scale çerçeveye sığıyor",
+        "masaüstünde yan yana",
+        "çerçeve tıklaması"
+      ]
+    },
+    {
+      "name": "viewer-ai",
+      "errors": [],
+      "passed": [
+        "öneri varsayılan yüklendi",
+        "onay durumu",
+        "login ve notları",
+        "settings ve notları",
+        "dashboard ve notları",
+        "koli-listesi ve notları",
+        "koli-detay ve notları",
+        "create-koli ve notları",
+        "order-receipts ve notları",
+        "irskoli-listesi ve notları",
+        "barcode-scanner ve notları",
+        "AI sabit viewport",
+        "AI scale",
+        "AI tam yükseklik",
+        "kaynakla karşılaştır",
+        "tema bağımsız",
+        "AI tam boy",
+        "AI odak dönüşü",
+        "AI klavye önizleme"
+      ]
+    },
+    {
+      "name": "viewer-ai-narrow",
+      "errors": [],
+      "passed": [
+        "öneri varsayılan yüklendi",
+        "onay durumu",
+        "login ve notları",
+        "settings ve notları",
+        "dashboard ve notları",
+        "koli-listesi ve notları",
+        "koli-detay ve notları",
+        "create-koli ve notları",
+        "order-receipts ve notları",
+        "irskoli-listesi ve notları",
+        "barcode-scanner ve notları",
+        "AI sabit viewport",
+        "AI scale",
+        "AI tam yükseklik",
+        "kaynakla karşılaştır",
+        "tema bağımsız",
+        "AI tam boy",
+        "AI odak dönüşü",
+        "AI klavye önizleme",
+        "AI dar ekranda alt alta",
+        "AI dar görünüm taşmasız"
+      ]
+    },
+    {
+      "name": "viewer-fallback",
+      "errors": [],
+      "passed": [
+        "farklı tarihlerde eski ekran",
+        "seçilen yeni tarih",
+        "önceki sürüm etiketi",
+        "eski ekranın uygulama sürümü",
+        "güncel ekranda eski etiketi yok",
+        "tarih listesi yeniden eskiye",
+        "seçicide ekran değişim bilgisi"
+      ]
+    },
+    {
+      "name": "viewer-narrow",
+      "errors": [],
+      "passed": [
+        "farklı tarihlerde eski ekran",
+        "seçilen yeni tarih",
+        "önceki sürüm etiketi",
+        "eski ekranın uygulama sürümü",
+        "güncel ekranda eski etiketi yok",
+        "dar ekranda alt alta",
+        "dar ekranda yatay taşma yok",
+        "tarih listesi yeniden eskiye",
+        "seçicide ekran değişim bilgisi"
+      ]
+    },
+    {
+      "name": "actual-file-embedding",
+      "errors": [],
+      "passed": [
+        "Gerçek file:// URL",
+        "İki iframe seçimi",
+        "Yerel CSS/font engeli yok"
+      ]
+    }
+  ],
+  "actualAIFileEmbedded": true,
+  "impeccable": {
+    "scanFindings": 1,
+    "resolution": "Removed decorative scanner icon tile; no second detector scan."
+  },
+  "limits": [
+    "Static HTML proposals; application actions are not interactive.",
+    "No native-device pixel comparison."
+  ]
+}

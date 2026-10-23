@@ -1,0 +1,81 @@
+{
+  "id": "2026-10-16-impeccable-v2",
+  "date": "2026-10-16",
+  "label": "Impeccable · Açık/koyu tema ve renk dengesi",
+  "status": "pending_approval",
+  "basedOn": "2026-10-15",
+  "note": "İkinci AI önerisi: açık/koyu tema, kırmızı marka işlemleri ve yeşil ekleme/kaydetme/tamamlama vurguları. Ana koda uygulanmadı.",
+  "skill": "impeccable / polish / operate",
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden",
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "screenNotes": {
+    "login": [
+      "Hatırla seçimi ve güvenlik ikonu yeşil; giriş düğmesi marka kırmızısı.",
+      "Açık ve koyu tema için ayrı, okunabilir renk paletleri hazırlandı.",
+      "Form, logo ve karşılama metni tek bir okuma akışında hizalandı.",
+      "Etiketler ve hatırlatma metni daha okunaklı; ana giriş eylemi belirginleştirildi."
+    ],
+    "settings": [
+      "Kaydet yeşil onay eylemi olarak ayrıldı; açık tema seçimi önizlemeyle eşleşir.",
+      "Açık ve koyu tema için ayrı, okunabilir renk paletleri hazırlandı.",
+      "Ayarlar görünüm, bağlantı/depo ve çalışma tercihleri olarak gruplandı.",
+      "İkili tercihler anahtar olarak önerildi; mevcut kapalı durumlar ve değerler korundu.",
+      "Kaydet / sıfırla öncelikleri ayrıştırıldı; açıklamalar sadeleştirildi."
+    ],
+    "dashboard": [
+      "Koli erişimi kırmızı, irsaliye oluşturma erişimi yeşil vurgu taşır.",
+      "Açık ve koyu tema için ayrı, okunabilir renk paletleri hazırlandı.",
+      "Büyük dekoratif başlık ve filigran kaldırıldı; kullanıcı adı öne alındı.",
+      "İki erişim alanında daha sakin yüzeyler ve açıklayıcı işlem hiyerarşisi kullanıldı."
+    ],
+    "koli-listesi": [
+      "Yeni Koli kırmızı ana eylem; barkod işlemi nötr kaldı.",
+      "Açık ve koyu tema için ayrı, okunabilir renk paletleri hazırlandı.",
+      "Koli ve sipariş numaraları taraması kolay satırlara taşındı.",
+      "Yüzen ikonların yerine etiketli Barkod / Yeni Koli alt işlem alanı önerildi.",
+      "Mevcut yedi kayıt üzerinden koli sayısı gösterildi."
+    ],
+    "koli-detay": [
+      "Ekleme modu ve miktarlar yeşil; silme kırmızı; koli kapatma yeşil tamamlanma eylemi.",
+      "Açık ve koyu tema için ayrı, okunabilir renk paletleri hazırlandı.",
+      "Sipariş bağlamı, barkod girişi ve ürünler ayrı okunabilir alanlara yerleştirildi.",
+      "Ürün miktarı belirginleştirildi; renk, beden, stok ve birim bilgileri korundu."
+    ],
+    "create-koli": [
+      "Sipariş seçeneği yumuşak kırmızı ikon zeminiyle belirginleştirildi.",
+      "Açık ve koyu tema için ayrı, okunabilir renk paletleri hazırlandı.",
+      "Başlık tekrarı azaltıldı; sipariş seçeneği daha kompakt yatay satır olarak düzenlendi.",
+      "Mevcut tek seçenek korundu; yeni işlev eklenmedi."
+    ],
+    "order-receipts": [
+      "Sipariş satırı yönlendirmeleri marka kırmızısıyla vurgulandı.",
+      "Açık ve koyu tema için ayrı, okunabilir renk paletleri hazırlandı.",
+      "Bağımsız koli seçeneği sipariş listesinden görsel olarak ayrıldı.",
+      "Sipariş numarası ve müşteri adı hiyerarşisi netleştirildi; altı kayıt korundu."
+    ],
+    "irskoli-listesi": [
+      "Kapalı durumun yeşil rozeti netleştirildi; seçimsiz işlem pasif kaldı.",
+      "Açık ve koyu tema için ayrı, okunabilir renk paletleri hazırlandı.",
+      "Seçim kutuları sola taşındı; açık/kapalı durumları metinli rozetlerle ayrıldı.",
+      "Seçim yapılmadan da sonraki adımı anlatan pasif işlem alanı önerildi (0 seçili)."
+    ],
+    "barcode-scanner": [
+      "Gönder yeşil işlem düğmesi; sipariş bağlamında kırmızı vurgu korundu.",
+      "Açık ve koyu tema için ayrı, okunabilir renk paletleri hazırlandı.",
+      "Sipariş bağlamı ve barkod formu üstten başlayan daha kısa bir akışa alındı.",
+      "Barkod alanına görünür etiket eklendi; sayısal veri sabit genişlikli fontla gösterildi."
+    ]
+  },
+  "revision": 2,
+  "previous": "2026-10-16-impeccable-v1"
+}

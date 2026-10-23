@@ -1,0 +1,29 @@
+{
+  "description": "İlk arşivin sabit ve tamamen örnek verileri. Sonraki sürümlerde değiştirmeyin.",
+  "user": { "firstName": "Deniz", "userName": "deniz.yilmaz", "passwordDisplay": "••••••••" },
+  "settings": { "apiUrl": "https://demo.example.com/ExtWs/Services", "companyCode": "DEMO", "passwordDisplay": "••••••••", "warehouseCode": "3" },
+  "barcode": "8690123456789",
+  "orders": [
+    { "RecId": 101, "ReceiptNo": "SIP-2026-0148", "CurrentAccountName": "Marmara Tekstil A.Ş." },
+    { "RecId": 102, "ReceiptNo": "SIP-2026-0149", "CurrentAccountName": "Ege Hazır Giyim Ltd. Şti." },
+    { "RecId": 103, "ReceiptNo": "SIP-2026-0150", "CurrentAccountName": "Atlas Perakende A.Ş." },
+    { "RecId": 104, "ReceiptNo": "SIP-2026-0151", "CurrentAccountName": "Kuzey Mağazacılık Ltd. Şti." },
+    { "RecId": 105, "ReceiptNo": "SIP-2026-0152", "CurrentAccountName": "Anadolu Tekstil A.Ş." },
+    { "RecId": 106, "ReceiptNo": "SIP-2026-0153", "CurrentAccountName": "Bursa Konfeksiyon Ltd. Şti." }
+  ],
+  "boxes": [
+    { "id": 501, "PackageNo": "KL-001248", "ReceiptNo": "SIP-2026-0148", "SipExp": "Marmara Tekstil • Sonbahar sevkiyatı", "Explanation": "İstanbul / Merkez depo", "Status": 0 },
+    { "id": 502, "PackageNo": "KL-001249", "ReceiptNo": "SIP-2026-0148", "SipExp": "Marmara Tekstil • Sonbahar sevkiyatı", "Explanation": "İstanbul / Merkez depo", "Status": 2 },
+    { "id": 503, "PackageNo": "KL-001250", "ReceiptNo": "SIP-2026-0149", "SipExp": "Ege Hazır Giyim • Mağaza siparişi", "Explanation": "İzmir / Bölge depo", "Status": 0 },
+    { "id": 504, "PackageNo": "KL-001251", "ReceiptNo": "SIP-2026-0150", "SipExp": "Atlas Perakende • Ekim teslimatı", "Explanation": "Ankara / Merkez depo", "Status": 2 },
+    { "id": 505, "PackageNo": "KL-001252", "ReceiptNo": "SIP-2026-0151", "SipExp": "Kuzey Mağazacılık • Sezon ürünleri", "Explanation": "Bursa / Şube depo", "Status": 0 },
+    { "id": 506, "PackageNo": "KL-001253", "ReceiptNo": "SIP-2026-0152", "SipExp": "Anadolu Tekstil • Mağaza siparişi", "Explanation": "Konya / Merkez depo", "Status": 2 },
+    { "id": 507, "PackageNo": "KL-001254", "ReceiptNo": "SIP-2026-0153", "SipExp": "Bursa Konfeksiyon • Ekim teslimatı", "Explanation": "Bursa / Merkez depo", "Status": 2 }
+  ],
+  "items": [
+    { "InventoryName": "Pamuklu Bisiklet Yaka Tişört", "h1_Ürün": "Pamuklu Bisiklet Yaka Tişört", "h2_Miktar": 24, "sh_Renk": "Lacivert", "sh_Beden": "M", "sh_Stok": "TSH-1048", "sh_Birim": "Adet", "Thumbnail": null },
+    { "InventoryName": "Pamuklu Bisiklet Yaka Tişört", "h1_Ürün": "Pamuklu Bisiklet Yaka Tişört", "h2_Miktar": 18, "sh_Renk": "Beyaz", "sh_Beden": "L", "sh_Stok": "TSH-1048", "sh_Birim": "Adet", "Thumbnail": null },
+    { "InventoryName": "Uzun Kollu Basic Sweatshirt", "h1_Ürün": "Uzun Kollu Basic Sweatshirt", "h2_Miktar": 12, "sh_Renk": "Gri", "sh_Beden": "M", "sh_Stok": "SWT-2036", "sh_Birim": "Adet", "Thumbnail": null },
+    { "InventoryName": "Fermuarlı Kapüşonlu Sweatshirt", "h1_Ürün": "Fermuarlı Kapüşonlu Sweatshirt", "h2_Miktar": 10, "sh_Renk": "Siyah", "sh_Beden": "XL", "sh_Stok": "SWT-2040", "sh_Birim": "Adet", "Thumbnail": null }
+  ]
+}

@@ -1,0 +1,307 @@
+{
+  "date": "2026-10-15",
+  "method": "Chrome headless DOM/layout; file://; no screenshots",
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr"
+  },
+  "limitations": [
+    "No real-device pixel comparison.",
+    "Screen tests use instrumented temporary HTML copies; actual-file-embedding separately checks the production viewer file.",
+    "Source-map records files read during initial capture; subsequent application edits do not rewrite this snapshot."
+  ],
+  "staticVerification": "tools/verify.cjs passed",
+  "checks": [
+    {
+      "name": "screen-barcode-scanner",
+      "errors": [],
+      "viewport": [
+        390,
+        844
+      ],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "background": "rgb(12, 11, 13)",
+      "scrolls": [
+        {
+          "height": 699,
+          "content": 699
+        }
+      ],
+      "overflow": [],
+      "images": []
+    },
+    {
+      "name": "screen-create-koli",
+      "errors": [],
+      "viewport": [
+        390,
+        844
+      ],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "background": "rgb(12, 11, 13)",
+      "scrolls": [
+        {
+          "height": 740,
+          "content": 740
+        }
+      ],
+      "overflow": [],
+      "images": []
+    },
+    {
+      "name": "screen-dashboard",
+      "errors": [],
+      "viewport": [
+        390,
+        844
+      ],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "background": "rgb(12, 11, 13)",
+      "scrolls": [
+        {
+          "height": 606,
+          "content": 606
+        }
+      ],
+      "overflow": [],
+      "images": []
+    },
+    {
+      "name": "screen-irskoli-listesi",
+      "errors": [],
+      "viewport": [
+        390,
+        844
+      ],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "background": "rgb(12, 11, 13)",
+      "scrolls": [
+        {
+          "height": 661,
+          "content": 746
+        }
+      ],
+      "overflow": [],
+      "images": []
+    },
+    {
+      "name": "screen-koli-detay",
+      "errors": [],
+      "viewport": [
+        390,
+        844
+      ],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "background": "rgb(12, 11, 13)",
+      "scrolls": [
+        {
+          "height": 332,
+          "content": 592
+        }
+      ],
+      "overflow": [],
+      "images": []
+    },
+    {
+      "name": "screen-koli-listesi",
+      "errors": [],
+      "viewport": [
+        390,
+        844
+      ],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "background": "rgb(12, 11, 13)",
+      "scrolls": [
+        {
+          "height": 661,
+          "content": 1042
+        }
+      ],
+      "overflow": [],
+      "images": []
+    },
+    {
+      "name": "screen-login",
+      "errors": [],
+      "viewport": [
+        390,
+        844
+      ],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "background": "rgb(12, 11, 13)",
+      "scrolls": [
+        {
+          "height": 796,
+          "content": 796
+        }
+      ],
+      "overflow": [],
+      "images": [
+        true
+      ]
+    },
+    {
+      "name": "screen-order-receipts",
+      "errors": [],
+      "viewport": [
+        390,
+        844
+      ],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "background": "rgb(12, 11, 13)",
+      "scrolls": [
+        {
+          "height": 661,
+          "content": 722
+        }
+      ],
+      "overflow": [],
+      "images": []
+    },
+    {
+      "name": "screen-settings",
+      "errors": [],
+      "viewport": [
+        390,
+        844
+      ],
+      "app": [
+        390,
+        796
+      ],
+      "fonts": [
+        true,
+        true
+      ],
+      "background": "rgb(12, 11, 13)",
+      "scrolls": [
+        {
+          "height": 740,
+          "content": 1552
+        }
+      ],
+      "overflow": [],
+      "images": []
+    },
+    {
+      "name": "viewer-interactions",
+      "errors": [],
+      "passed": [
+        "9 ekran",
+        "boş slot",
+        "tarih penceresi",
+        "A seçildi",
+        "seçim sonrası odak",
+        "aynı tarih iki slot",
+        "ekran iki slotta değişti",
+        "hash saklandı",
+        "tema içeriği etkilemedi",
+        "tam boy açıldı",
+        "tam boy 390x844",
+        "tek slot temizlendi",
+        "temizleme sonrası odak",
+        "hash geri yükleme",
+        "iframe sabit ölçü",
+        "scale çerçeveye sığıyor",
+        "masaüstünde yan yana",
+        "çerçeve tıklaması"
+      ]
+    },
+    {
+      "name": "viewer-fallback",
+      "errors": [],
+      "passed": [
+        "farklı tarihlerde eski ekran",
+        "seçilen yeni tarih",
+        "önceki sürüm etiketi",
+        "eski ekranın uygulama sürümü",
+        "güncel ekranda eski etiketi yok",
+        "tarih listesi yeniden eskiye",
+        "seçicide ekran değişim bilgisi"
+      ]
+    },
+    {
+      "name": "viewer-narrow",
+      "errors": [],
+      "passed": [
+        "farklı tarihlerde eski ekran",
+        "seçilen yeni tarih",
+        "önceki sürüm etiketi",
+        "eski ekranın uygulama sürümü",
+        "güncel ekranda eski etiketi yok",
+        "dar ekranda alt alta",
+        "dar ekranda yatay taşma yok",
+        "tarih listesi yeniden eskiye",
+        "seçicide ekran değişim bilgisi"
+      ]
+    },
+    {
+      "name": "actual-file-embedding",
+      "errors": [],
+      "passed": [
+        "Gerçek file:// URL",
+        "İki iframe seçimi",
+        "Yerel CSS/font engeli yok"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "id": "2026-10-22-impeccable-v4",
+  "date": "2026-10-22",
+  "label": "Impeccable · Ana temanın akış renkleri",
+  "status": "pending_approval",
+  "basedOn": "2026-10-15",
+  "note": "Dördüncü öneri: koli listesi, koli detayı, irsaliye oluşturma ve barkod okutma ekranlarında ana temanın kırmızı (koli), çivit (irsaliye), yeşil (tamamlama) ve amber (açık koli) renkleri anlamlı yerlere geri getirildi. Ana koda uygulanmadı.",
+  "skill": "impeccable / colorize + bolder / operate",
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden",
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "screenNotes": {
+    "koli-listesi": [
+      "Her koli ayrı bir kart: kırmızı koli ikonu, büyük koli numarası, müşteri ve sevkiyat notu.",
+      "Sipariş ve depo kartın alt şeridinde; sipariş numarası koli akışının kırmızısıyla vurgulanır.",
+      "Yeni Koli, ana temadaki tarama düğmesinin kırmızı ışımasını taşır; Barkod sakin ikincil düğme."
+    ],
+    "koli-detay": [
+      "Sipariş bağlamı Ana Sayfa kartlarıyla aynı kırmızı gradyan kartta; Extreme şevronu filigran olarak içinde.",
+      "Malzeme Ekle seçiliyken düğme ve barkod alanı yeşil; okutma alanı hazır göründüğü için ilk bakışta bulunur.",
+      "Ürünler ayrı kartlarda; miktar yeşil alanda. İrsaliye ikonu çivit, Koli Açma amber, Koli Kapatma yeşil."
+    ],
+    "irskoli-listesi": [
+      "İrsaliye akışı ana temadaki çivit rengini taşır: seçili koliler, onay kutuları ve alt işlem düğmesi.",
+      "Önizleme seçim modunda çizildi: iki kapalı koli seçili, başlık kaynak koddaki gibi “2 Koli Seçildi”. Kaynak arşiv seçimsizdir.",
+      "Açık/Kapalı durumu nokta ve metinli renkli rozetle; renk tek başına anlam taşımaz."
+    ],
+    "barcode-scanner": [
+      "Sipariş bağlamı, Ana Sayfa’daki Koli Listesi kartıyla aynı kırmızı gradyan kartta.",
+      "Sipariş no ve cari ayrı satırlarda; barkod alanı büyük sabit genişlikli yazı ve yeşil hazır çerçeveyle.",
+      "Gönder yeşil tamamlama düğmesi; Extreme şevronu kartın köşesinde marka filigranı."
+    ]
+  },
+  "revision": 4,
+  "previous": "2026-10-16-impeccable-v3"
+}

@@ -1,0 +1,131 @@
+{
+  "id": "2026-10-23-impeccable-v8",
+  "date": "2026-10-23",
+  "label": "Impeccable · Seri okutma bildirimi",
+  "status": "pending_approval",
+  "basedOn": "2026-10-15",
+  "note": "Sekizinci öneri: seri okutma için tam ekran yeşil ve kırmızı kaldırıldı. Başarı ve hata aynı alt bildirimde; başarı 2 sn kalır, hata sonraki okutmaya kadar kalır ve okutma alanını kırmızı çerçeveler. Ana koda uygulanmadı.",
+  "skill": "impeccable / harden / operate",
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden",
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "screenNotes": {
+    "login": [
+      "Kaynak: v2 girişi; düzen ve metinler korundu.",
+      "“Beni hatırla” işareti orijinaldeki gibi marka kırmızısı, güvenlik kilidi nötr: yeşil yalnız tamamlama anlamında kalır.",
+      "Ayarlar ve şifre göster düğmeleri 48 px dokunma alanında; açıklama ve alt bilgi 14 px."
+    ],
+    "settings": [
+      "Kaynak: v2 ayarları; bölümler, anahtarlar ve değerler korundu.",
+      "Bağlantı alanları orijinal sırada: API URL ve hemen altında açıklaması, Şirket kodu ile Şirket şifresi yan yana, en son Depo ID.",
+      "Bölüm başlıkları markanın büyük harfli etiket stilinde; segmentler 48 px, anahtarlar ayarın adıyla okunur."
+    ],
+    "dashboard": [
+      "Kaynak: v2 Ana Sayfa; iki kartlı yapı korundu.",
+      "İrsaliye karosu çivit, Koli Listesi karosu kırmızı: sonraki ekranlardaki akış renkleriyle aynı.",
+      "Kartlarda › kullanıldı (↗ dış bağlantı gibi okunuyordu); kullanıcı adı 30 → 24 px. Gradyan kartlara dönüş kullanıcı kararına bırakıldı."
+    ],
+    "create-koli": [
+      "Kaynak: v2 Yeni Koli; tek seçenek korundu.",
+      "Sipariş seçeneği fiş ikonuyla, Sipariş Seçimi’ndeki gibi; karo koli kırmızısında.",
+      "Seçenek başlığı 16 px kalın, açıklaması 13 → 14 px: Sipariş Seçimi’ndeki siparişsiz koli seçeneğiyle aynı ölçüde."
+    ],
+    "koli-listesi": [
+      "Kaynak: v4 koli kartları; sipariş no nötr renkte, sipariş ve depo kartın alt şeridinde.",
+      "Kart iç boşlukları sıkılaştırıldı: ekranda daha çok koli görünür.",
+      "Yeni Koli tek kırmızı, ışımalı düğme; Barkod düğmesinin ikonu nötr."
+    ],
+    "koli-detay": [
+      "Kaynak: v4; sipariş bağlamı marka kırmızısı gradyan kartta, filigransız.",
+      "Miktar nötr zeminde yeşil sayıyla (orijinaldeki gibi); Koli sil ikonu zeminsiz ve tema hata kırmızısında, ürün karolarıyla karışmaz.",
+      "Kart ve alt çubuk boşlukları sıkılaştırıldı; sipariş bağlantısı, Yeni Koli ve mod düğmeleri 48 px.",
+      "Durum seçicide: Okutma başarılı, Okutma hatalı (ikisi de alttaki bildirim) ve Miktar aşımı."
+    ],
+    "irskoli-listesi": [
+      "Kaynak: v6; seçim modunda iki kapalı koli seçili.",
+      "Açık koliler irsaliyeye eklenemez (kullanıcı kararı): kesik çizgili satır, pasif onay kutusu ve satırda “Kapatılmadan eklenemez”.",
+      "Açık/Kapalı rozetleri renk, nokta ve kelimeyle; seçili satırlar çivit."
+    ],
+    "barcode-scanner": [
+      "Kaynak: v5; orijinal ortalanmış düzen korundu.",
+      "Tarama dairesi orijinaldeki gibi nötr gri, ikon kırmızı: dokunulacak bir düğme gibi durmaz.",
+      "“İlk ürünü okutun” 16 px ana renkte ve alanın etiketi; başlık düğmeleri 48 px.",
+      "Durum seçicide: Gönderiliyor, Okutma başarılı (yeni kolinin detayı) ve Okutma hatalı (alttaki bildirim)."
+    ],
+    "order-receipts": [
+      "Kaynak: v6; arama, siparişsiz koli seçeneği ve sipariş kartları korundu.",
+      "Siparişsiz seçenek “Siparişsiz koli oluştur / Koli bir siparişe bağlanmaz” (kullanıcı kararı): eylemi söyler, uyarı gibi okunmaz.",
+      "Cari adı en fazla iki satır; kırmızı ikon tonu barkod ekranıyla aynı."
+    ]
+  },
+  "revision": 8,
+  "previous": "2026-10-22-impeccable-v7",
+  "states": {
+    "barcode-scanner": [
+      {
+        "id": "gonderiliyor",
+        "name": "Gönderiliyor",
+        "notes": [
+          "Gönder’e basılınca düğmede yükleniyor işareti döner ve düğme pasifleşir; çift gönderim olmaz. Uygulamadaki davranış.",
+          "Barkod alanı yanıt gelene kadar kilitli ve soluk; ses ve titreşim yok."
+        ]
+      },
+      {
+        "id": "okutma-basarili",
+        "name": "Okutma başarılı",
+        "notes": [
+          "Okutma başarılıysa koli açılır ve doğrudan yeni kolinin detayına geçilir: KL-001255, ilk ürün 1 adet. Uygulamadaki davranış; araya tam ekran parlama girmez.",
+          "Altta 2 sn kalan bildirim “Başarılı” ve sunucunun açıklamasını gösterir; buradaki açıklama metni örnektir.",
+          "Okutma alanı yeniden odaklanır; sonraki ürün hemen okutulabilir."
+        ]
+      },
+      {
+        "id": "okutma-hatali",
+        "name": "Okutma hatalı",
+        "notes": [
+          "Ekran kırmızıya boyanmaz: hata, başarı bildirimiyle aynı yerde ve biçimde çıkar; kırmızı ikon, kırmızı çerçeve, 500 ms titreşim ve Ayarlar’daki hata sesi.",
+          "Okutma alanı kırmızı çerçeveli, okutulan barkod alanda kalır; yeniden okutunca yerine yazılır.",
+          "Bildirim kendiliğinden kapanmaz: sonraki okutmada ya da × ile kapanır. Neden sunucunun açıklamasıdır; yoksa uygulamanın metni."
+        ]
+      }
+    ],
+    "koli-detay": [
+      {
+        "id": "okutma-basarili",
+        "name": "Okutma başarılı",
+        "notes": [
+          "Seri okutma için tam ekran parlama yok: liste yenilenir, miktarı artan ürün yeşil çerçeveyle işaretlenir, altta bildirim çıkar. Ses yok.",
+          "Bildirim 2 sn kalır ve hangi ürünün eklendiğini, yeni miktarı söyler; uygulamadaki “Başarılı / Ürün eklendi” yerine. Yeni okutma eskisinin yerine geçer.",
+          "Okutma alanı odakta kalır; dokunmadan sonraki barkod okutulur. Silme modunda aynı bildirim “Ürün silindi” der."
+        ]
+      },
+      {
+        "id": "okutma-hatali",
+        "name": "Okutma hatalı",
+        "notes": [
+          "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Liste değişmez.",
+          "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; bildirimde neden ve barkod yazar (neden metni örnektir, yoksa “Bir hata oluştu”).",
+          "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır; Tamam’a basmak gerekmez, okutma alanı odakta kalır."
+        ]
+      },
+      {
+        "id": "miktar-asimi",
+        "name": "Miktar aşımı",
+        "notes": [
+          "v7’deki gibi: karar gerektiği için okutma durur ve alttan pencere açılır; metin ve “Hayır / Evet” uygulamadakiyle aynı.",
+          "Düğmeler başparmak bölgesinde; okutulan barkod gösterilir. Evet, ürünü sınırı yok sayarak ekler.",
+          "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+        ]
+      }
+    ]
+  }
+}
