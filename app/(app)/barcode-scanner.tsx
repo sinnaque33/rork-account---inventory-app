@@ -265,7 +265,9 @@ export default function BarcodeScannerScreen() {
       }
 
       if (data.mode === "create_from_order") {
-        if (isError) {
+        // Koli numarası gelmezse detay ekranı çalışamaz; order-receipts'teki
+        // boş koli akışıyla aynı şekilde hata sayılır.
+        if (isError || !data.resultBoxId) {
           playErrorSignal();
           setScanError({
             title: t("scanner.scanFailed"),
