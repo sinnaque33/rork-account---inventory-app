@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Stack } from "expo-router";
 import {
+  AlertCircle,
   LogIn,
   Settings,
   Eye,
@@ -95,176 +96,197 @@ export default function LoginScreen() {
     await login({ userCode: trimmedUserCode, password }, remember);
   };
 
+  // Sunucunun reddettiği giriş (loginMsg) ile istek hatası (loginError) aynı
+  // yerde, Giriş düğmesinin hemen üstünde gösterilir.
+  const formError = loginError || loginMsg;
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.container}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.settingsButton,
-            { top: insets.top + theme.spacing.sm },
-            pressed && styles.settingsButtonPressed,
-          ]}
-          onPress={() => push("/settings" as any)}
-          testID="settings-button"
-          hitSlop={8}
-        >
-          <Settings size={22} color={theme.colors.inkMuted} />
-        </Pressable>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.topBar}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.settingsButton,
+              pressed && styles.settingsButtonPressed,
+            ]}
+            onPress={() => push("/settings" as any)}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings.headerTitle")}
+            testID="settings-button"
+          >
+            <Settings size={24} color={theme.colors.ink} />
+          </Pressable>
+        </View>
 
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: insets.bottom + theme.spacing.xl },
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.content}>
-            <View style={styles.header}>
-              <Image
-                source={theme.isDark ? logoOnDark : logoOnLight}
-                style={styles.logo}
-                contentFit="contain"
-              />
-              <Text style={styles.title}>{t("login.welcome")}</Text>
-              <Text style={styles.subtitle}>{t("login.subtitle")}</Text>
-              {loginMsg ? (
-                <Text style={styles.loginMsgText}>{loginMsg}</Text>
-              ) : null}
-            </View>
-
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>{t("login.labels.user")}</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    focusedField === "user" && styles.inputFocused,
-                    userCodeError ? styles.inputError : null,
-                  ]}
-                  placeholder={t("login.placeholders.user")}
-                  placeholderTextColor={theme.colors.inkSubtle}
-                  value={userCode}
-                  onChangeText={(text) => {
-                    setUserCode(text);
-                    if (userCodeError) validateUserCode(text);
-                  }}
-                  onFocus={() => setFocusedField("user")}
-                  onBlur={() => setFocusedField(null)}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoggingIn}
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  onSubmitEditing={() => passwordRef.current?.focus()}
-                  testID="usercode-input"
+              <View style={styles.header}>
+                <Image
+                  source={theme.isDark ? logoOnDark : logoOnLight}
+                  style={styles.logo}
+                  contentFit="contain"
+                  contentPosition="left"
                 />
-                {userCodeError ? (
-                  <Text style={styles.errorText}>{userCodeError}</Text>
-                ) : null}
+                <Text style={styles.title} accessibilityRole="header">
+                  {t("login.welcome")}
+                </Text>
+                <Text style={styles.subtitle}>{t("login.subtitle")}</Text>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>{t("login.labels.password")}</Text>
-                <View style={styles.passwordWrapper}>
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>{t("login.labels.user")}</Text>
                   <TextInput
-                    ref={passwordRef}
                     style={[
                       styles.input,
-                      styles.passwordInput,
-                      focusedField === "password" && styles.inputFocused,
-                      passwordError ? styles.inputError : null,
+                      focusedField === "user" && styles.inputFocused,
+                      userCodeError ? styles.inputError : null,
                     ]}
-                    placeholder={t("login.placeholders.password")}
+                    placeholder={t("login.placeholders.user")}
                     placeholderTextColor={theme.colors.inkSubtle}
-                    value={password}
+                    value={userCode}
                     onChangeText={(text) => {
-                      setPassword(text);
-                      if (passwordError) validatePassword(text);
+                      setUserCode(text);
+                      if (userCodeError) validateUserCode(text);
                     }}
-                    onFocus={() => setFocusedField("password")}
+                    onFocus={() => setFocusedField("user")}
                     onBlur={() => setFocusedField(null)}
-                    secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
                     editable={!isLoggingIn}
-                    returnKeyType="go"
-                    onSubmitEditing={handleLogin}
-                    testID="password-input"
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    accessibilityLabel={t("login.labels.user")}
+                    testID="usercode-input"
                   />
-                  <Pressable
-                    style={styles.eyeButton}
-                    onPress={() => setShowPassword((prev) => !prev)}
-                    hitSlop={8}
-                    disabled={isLoggingIn}
-                    testID="toggle-password-visibility"
-                  >
-                    {showPassword ? (
-                      <EyeOff size={20} color={theme.colors.inkMuted} />
-                    ) : (
-                      <Eye size={20} color={theme.colors.inkMuted} />
-                    )}
-                  </Pressable>
+                  {userCodeError ? (
+                    <Text style={styles.errorText}>{userCodeError}</Text>
+                  ) : null}
                 </View>
-                {passwordError ? (
-                  <Text style={styles.errorText}>{passwordError}</Text>
-                ) : null}
-              </View>
 
-              <Pressable
-                style={styles.rememberRow}
-                onPress={() => setRemember((prev) => !prev)}
-                disabled={isLoggingIn}
-                hitSlop={8}
-                testID="remember-me-toggle"
-              >
-                {remember ? (
-                  <CheckSquare size={22} color={theme.colors.primary} />
-                ) : (
-                  <Square size={22} color={theme.colors.inkSubtle} />
-                )}
-                <View style={styles.rememberTextContainer}>
-                  <Text style={styles.rememberLabel}>
-                    {t("login.labels.rememberMe")}
-                  </Text>
-                  <Text style={styles.rememberHint}>
-                    {t("login.rememberMeHint")}
-                  </Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>{t("login.labels.password")}</Text>
+                  <View style={styles.passwordWrapper}>
+                    <TextInput
+                      ref={passwordRef}
+                      style={[
+                        styles.input,
+                        styles.passwordInput,
+                        focusedField === "password" && styles.inputFocused,
+                        passwordError ? styles.inputError : null,
+                      ]}
+                      placeholder={t("login.placeholders.password")}
+                      placeholderTextColor={theme.colors.inkSubtle}
+                      value={password}
+                      onChangeText={(text) => {
+                        setPassword(text);
+                        if (passwordError) validatePassword(text);
+                      }}
+                      onFocus={() => setFocusedField("password")}
+                      onBlur={() => setFocusedField(null)}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!isLoggingIn}
+                      returnKeyType="go"
+                      onSubmitEditing={handleLogin}
+                      accessibilityLabel={t("login.labels.password")}
+                      testID="password-input"
+                    />
+                    <Pressable
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword((prev) => !prev)}
+                      disabled={isLoggingIn}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        showPassword
+                          ? t("login.hidePassword")
+                          : t("login.showPassword")
+                      }
+                      testID="toggle-password-visibility"
+                    >
+                      {showPassword ? (
+                        <EyeOff size={20} color={theme.colors.inkMuted} />
+                      ) : (
+                        <Eye size={20} color={theme.colors.inkMuted} />
+                      )}
+                    </Pressable>
+                  </View>
+                  {passwordError ? (
+                    <Text style={styles.errorText}>{passwordError}</Text>
+                  ) : null}
                 </View>
-              </Pressable>
 
-              {loginError ? (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>{loginError}</Text>
-                </View>
-              ) : null}
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.button,
-                  pressed && styles.buttonPressed,
-                  isLoggingIn && styles.buttonDisabled,
-                ]}
-                onPress={handleLogin}
-                disabled={isLoggingIn}
-                testID="login-button"
-              >
-                {isLoggingIn ? (
-                  <ActivityIndicator color={theme.colors.onPrimary} />
-                ) : (
-                  <>
-                    <Text style={styles.buttonText}>
-                      {t("login.buttons.login")}
+                <Pressable
+                  style={styles.rememberRow}
+                  onPress={() => setRemember((prev) => !prev)}
+                  disabled={isLoggingIn}
+                  hitSlop={8}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: remember, disabled: isLoggingIn }}
+                  testID="remember-me-toggle"
+                >
+                  {remember ? (
+                    <CheckSquare size={24} color={theme.colors.primary} />
+                  ) : (
+                    <Square size={24} color={theme.colors.inkSubtle} />
+                  )}
+                  <View style={styles.rememberTextContainer}>
+                    <Text style={styles.rememberLabel}>
+                      {t("login.labels.rememberMe")}
                     </Text>
-                    <LogIn size={20} color={theme.colors.onPrimary} />
-                  </>
-                )}
-              </Pressable>
-            </View>
+                    <Text style={styles.rememberHint}>
+                      {t("login.rememberMeHint")}
+                    </Text>
+                  </View>
+                </Pressable>
 
-            <Text style={styles.footer}>{t("login.footer")}</Text>
+                {formError ? (
+                  <View
+                    style={styles.errorContainer}
+                    accessibilityRole="alert"
+                    accessibilityLiveRegion="polite"
+                  >
+                    <AlertCircle size={20} color={theme.colors.error} />
+                    <Text style={styles.errorContainerText}>{formError}</Text>
+                  </View>
+                ) : null}
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.button,
+                    pressed && styles.buttonPressed,
+                    isLoggingIn && styles.buttonDisabled,
+                  ]}
+                  onPress={handleLogin}
+                  disabled={isLoggingIn}
+                  testID="login-button"
+                >
+                  {isLoggingIn ? (
+                    <ActivityIndicator color={theme.colors.onPrimary} />
+                  ) : (
+                    <>
+                      <LogIn size={20} color={theme.colors.onPrimary} />
+                      <Text style={styles.buttonText}>
+                        {t("login.buttons.login")}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -278,106 +300,94 @@ const makeStyles = (theme: Theme) => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.canvas,
+      backgroundColor: colors.loginPage,
+    },
+    topBar: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    settingsButton: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    settingsButtonPressed: {
+      backgroundColor: colors.surface2,
     },
     keyboardView: {
       flex: 1,
     },
     scrollContent: {
       flexGrow: 1,
-      justifyContent: "center",
-      paddingHorizontal: spacing.xl,
-      paddingVertical: spacing.xxl,
+      paddingHorizontal: spacing.xxl,
+      paddingTop: spacing.xl,
     },
     content: {
       width: "100%",
       maxWidth: 440,
       alignSelf: "center",
     },
-    settingsButton: {
-      position: "absolute",
-      top: spacing.xxl,
-      right: spacing.xl,
-      width: 44,
-      height: 44,
-      borderRadius: radius.pill,
-      backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.hairlineStrong,
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 10,
-    },
-    settingsButtonPressed: {
-      backgroundColor: colors.surface3,
-    },
     header: {
-      alignItems: "center",
       marginBottom: spacing.xxl,
     },
     logo: {
-      width: 240,
-      height: 72,
-      marginBottom: spacing.lg,
+      width: 208,
+      height: 64,
+      marginBottom: spacing.xxl,
     },
     title: {
-      ...type.headline,
+      ...type.heroTitle,
       color: colors.ink,
-      marginBottom: spacing.xxs,
-      textAlign: "center",
+      marginBottom: spacing.xs,
     },
     subtitle: {
-      ...type.bodySm,
+      ...type.body,
       color: colors.inkMuted,
-      marginBottom: spacing.xs,
-      textAlign: "center",
-    },
-    loginMsgText: {
-      ...type.bodySm,
-      color: colors.error,
-      marginTop: spacing.xs,
-      textAlign: "center",
     },
     form: {
-      gap: spacing.lg,
+      gap: spacing.xl,
     },
     inputGroup: {
       gap: spacing.xs,
     },
     label: {
-      ...type.label,
-      color: colors.inkMuted,
-      textTransform: "uppercase",
+      ...type.labelMd,
+      color: colors.ink,
     },
     input: {
       ...type.body,
-      backgroundColor: colors.surface2,
-      borderRadius: radius.md,
+      backgroundColor: colors.loginField,
+      borderRadius: radius.control,
       paddingHorizontal: spacing.md,
-      minHeight: 50,
+      minHeight: 56,
       color: colors.ink,
       borderWidth: 1,
-      borderColor: colors.hairlineStrong,
+      borderColor: colors.controlLine,
     },
     passwordWrapper: {
       position: "relative",
       justifyContent: "center",
     },
     passwordInput: {
-      paddingRight: 48,
+      paddingRight: 52,
     },
     eyeButton: {
       position: "absolute",
-      right: spacing.xs,
+      right: spacing.xxs,
       top: 0,
       bottom: 0,
-      width: 40,
+      width: 48,
       alignItems: "center",
       justifyContent: "center",
     },
+    // Odak halkası nötr; kırmızı halka hata durumuyla karışır.
     inputFocused: {
       borderWidth: 2,
-      borderColor: colors.primaryRing,
+      borderColor: colors.ink,
     },
     inputError: {
       borderWidth: 2,
@@ -387,60 +397,59 @@ const makeStyles = (theme: Theme) => {
       flexDirection: "row",
       alignItems: "flex-start",
       gap: spacing.sm,
-      paddingVertical: spacing.xxs,
     },
     rememberTextContainer: {
       flex: 1,
-      gap: 2,
+      gap: spacing.xxs,
     },
     rememberLabel: {
-      ...type.body,
-      fontWeight: "600" as const,
+      ...type.labelStrong,
       color: colors.ink,
     },
     rememberHint: {
-      ...type.caption,
-      color: colors.inkSubtle,
-      lineHeight: 16,
+      ...type.hint,
+      color: colors.inkMuted,
     },
     errorContainer: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
       backgroundColor: colors.errorTint,
-      padding: spacing.sm,
-      borderRadius: radius.md,
-      borderLeftWidth: 4,
-      borderLeftColor: colors.error,
+      borderRadius: radius.control,
+      borderWidth: 1,
+      borderColor: colors.error,
+    },
+    errorContainerText: {
+      ...type.hint,
+      flex: 1,
+      color: colors.ink,
     },
     errorText: {
-      ...type.bodySm,
+      ...type.hint,
       color: colors.error,
     },
     button: {
       backgroundColor: colors.primary,
-      borderRadius: radius.md,
-      paddingVertical: 14,
-      paddingHorizontal: spacing.lg,
-      minHeight: 48,
+      borderRadius: radius.control,
+      paddingHorizontal: spacing.sm,
+      minHeight: 56,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: spacing.xs,
-      marginTop: spacing.xs,
     },
     buttonPressed: {
       backgroundColor: colors.primaryPress,
     },
+    // Yüklenirken düğme kırmızı kalır; beyaz gösterge iki temada da görünür.
     buttonDisabled: {
-      backgroundColor: colors.surface2,
+      opacity: 0.6,
     },
     buttonText: {
-      ...type.button,
+      ...type.labelStrong,
       color: colors.onPrimary,
-    },
-    footer: {
-      ...type.caption,
-      textAlign: "center",
-      color: colors.inkSubtle,
-      marginTop: spacing.xxl,
     },
   });
 };

@@ -5,64 +5,63 @@
     "defaultError": "Bir hata oluştu",
     "credentialsMissing": "Giriş bilgileri bulunamadı."
   },
-
   "notFound": {
     "headerTitle": "Bulunamadı",
     "title": "Sayfa Bulunamadı",
     "subtitle": "Bu sayfa mevcut değil.",
     "goToLogin": "Girişe Dön"
   },
-
   "settings": {
     "sounds": {
       "error_1": "Klasik Bip",
       "error_2": "Alternatif Bip",
       "vibration": "Sadece Titreşim"
     },
-    "language": "Uygulama Dili",
-    "theme": "Görünüm Teması",
+    "language": "Dil",
+    "theme": "Tema",
     "themeOptions": {
       "dark": "Koyu",
       "light": "Aydınlık"
     },
-    "headerTitle": "API Ayarları",
-    "pageTitle": "API Ayarları",
-    "pageSubtitle": "API Ayarlarını yapınız",
+    "headerTitle": "Ayarlar",
+    "pageTitle": "Uygulama ayarları",
+    "pageSubtitle": "Bağlantı ve çalışma tercihlerinizi düzenleyin.",
+    "sections": {
+      "appearance": "Görünüm",
+      "connection": "Bağlantı ve depo",
+      "preferences": "Çalışma tercihleri"
+    },
     "labels": {
       "apiUrl": "API URL",
-      "companyCode": "Şirket Kodu",
-      "companyPassword": "Şirket Şifresi",
-      "warehouseCode": "Depo Id",
-      "errorSound": "Hata Uyarı Tipi",
-      "boxMode": "Koli Oluşturma Modu",
-      "skipWeightMode": "Koli Kapatma Modu",
-      "stockControlMode": "Stok Kontrol Modu"
+      "companyCode": "Şirket kodu",
+      "companyPassword": "Şirket şifresi",
+      "warehouseCode": "Depo ID",
+      "errorSound": "Hata uyarısı"
+    },
+    "hints": {
+      "apiUrl": "API URL tüm servisler için kullanılır. Adresin doğruluğunu kontrol edin."
     },
     "placeholders": {
       "apiUrl": "https://example.com/api",
-      "companyCode": "Şirket Kodu (opsiyonel)",
-      "companyPassword": "Şirket Şifresi (opsiyonel)",
-      "warehouseCode": "Depo Id (varsayılan: 3)"
+      "companyCode": "Opsiyonel",
+      "companyPassword": "Opsiyonel",
+      "warehouseCode": "Varsayılan: 3"
     },
     "boxModeDesc": {
-      "title": "Mevcut Açık Koliye Ekle",
+      "title": "Mevcut açık koliye ekle",
       "subtitle": "Aynı siparişin açık kolisi varsa yeni açmak yerine ona ekler."
     },
     "weightModeDesc": {
-      "title": "Koli Kapatırken Ağırlık Sorma",
-      "subtitle": "Kapama butonuna basınca brüt/net kg modalını atlayıp doğrudan kapatır."
+      "title": "Kapatırken ağırlık sorma",
+      "subtitle": "Brüt/net kg adımını atlayarak koliyi doğrudan kapatır."
     },
     "stockControlDesc": {
-      "title": "Stok Kontrolü Yapılmasın",
-      "subtitle": "Koli oluşturma, ürün ekleme ve silme işlemlerinde stok/depo kontrolü uygulanmaz."
+      "title": "Stok kontrolü yapılmasın",
+      "subtitle": "Koli oluşturma, ürün ekleme ve silmede stok/depo kontrolü uygulanmaz."
     },
     "buttons": {
       "save": "Kaydet",
       "reset": "Sıfırla"
-    },
-    "help": {
-      "title": "Yardım",
-      "text": "API URL bilgisi tüm servisler için kullanılır. Doğruluğundan emin olunuz."
     },
     "alerts": {
       "urlRequired": "URL alanı zorunludur",
@@ -78,16 +77,17 @@
       "toastSuccess": "Ayarlar başarıyla kaydedildi"
     }
   },
-
   "login": {
-    "welcome": "Hoş Geldiniz",
-    "subtitle": "Hesap Girişi",
+    "welcome": "Hoş geldiniz",
+    "subtitle": "Hesap girişi",
     "labels": {
-      "user": "Kullanıcı Adı",
+      "user": "Kullanıcı adı",
       "password": "Şifre",
       "rememberMe": "Beni hatırla"
     },
     "rememberMeHint": "Bu cihazda oturum açık kalır. Ortak kullanılan cihazlarda kapatın.",
+    "showPassword": "Şifreyi göster",
+    "hidePassword": "Şifreyi gizle",
     "placeholders": {
       "user": "Kullanıcı adınızı girin",
       "password": "Şifrenizi girin"
@@ -98,48 +98,46 @@
     "alerts": {
       "userRequired": "Kullanıcı kodu zorunludur",
       "passwordRequired": "Şifre zorunludur"
-    },
-    "footer": "Güvenli kurumsal kimlik doğrulama"
+    }
   },
-
   "orderReceipts": {
     "headerTitle": "Sipariş Seçimi",
     "searchPlaceholder": "Sipariş No veya Cari Ara...",
-    "receiptPrefix": "Fiş: ",
+    "receiptPrefix": "Sipariş No",
     "loading": "Siparişler yükleniyor...",
     "errorTitle": "Yükleme Hatası",
     "defaultErrorMsg": "Siparişler alınırken bir hata oluştu",
     "emptySearch": "Aramanıza uygun sipariş bulunamadı",
     "emptyList": "Henüz bir sipariş fişi yok",
-    "noOrderLink": "Sipariş bağlantısı yapılmayacak",
-    "noOrderDesc": "Siparişten bağımsız koli oluştur",
+    "noOrderLink": "Siparişsiz koli oluştur",
+    "noOrderDesc": "Koli bir siparişe bağlanmaz",
     "headerTitleEmpty": "Sipariş Seçimi (Boş Koli)",
     "selectForEmpty": "Koli oluşturulacak siparişi seçin",
     "creating": "Koli oluşturuluyor...",
     "createErrorTitle": "Koli Oluşturulamadı",
-    "createErrorMsg": "Koli oluşturulurken bir hata oluştu"
+    "createErrorMsg": "Koli oluşturulurken bir hata oluştu",
+    "countLabel": "sipariş"
   },
-
   "koliListesi": {
     "loading": "Koli listesi yükleniyor...",
     "errorTitle": "Hata Koli Listesi",
     "defaultError": "Bir hata oluştu",
     "searchPlaceholder": "Koli ara, Enter'a bas...",
     "clearSearch": "Aramayı temizle",
-    "orderNoLabel": "Sipariş No",
+    "receiptNoPrefix": "Sipariş No",
     "allLoaded": "Tüm koliler yüklendi",
     "emptySearch": "Aramanızla eşleşen koli bulunamadı",
     "emptyList": "Koli bulunamadı",
     "newBox": "Yeni Koli",
     "quickCreateOrder": "Siparişten koli",
     "quickCreateEmpty": "Boş koli",
-    "scan": "Barkod",
+    "scan": "Koli Ara",
     "selectedCount": "{{count}} Koli Seçildi",
     "createReceipt": "İrsaliye Oluştur",
     "bulkReceiptError": "Toplu irsaliye oluşturulurken bir hata oluştu.",
-    "bulkReceiptSuccess": "Seçilen koliler için {{receiptNo}} nolu irsaliye başarıyla oluşturuldu."
+    "bulkReceiptSuccess": "Seçilen koliler için {{receiptNo}} nolu irsaliye başarıyla oluşturuldu.",
+    "countLabel": "koli"
   },
-
   "koliDetay": {
     "headerFallback": "Koli Detay",
     "boxNo": "Koli No: ",
@@ -191,9 +189,9 @@
     "placeholderAdd": "Eklenecek barkodu okutun...",
     "placeholderDelete": "Silinecek barkodu okutun...",
     "emptyBox": "Kolide henüz bir şey yok",
-    "btnCreateReceipt": "İrsaliye\nOluştur",
-    "btnOpenBox": "Koli\nAçma",
-    "btnCloseBox": "Koli\nKapatma",
+    "btnCreateReceipt": "İrsaliye Oluştur",
+    "btnOpenBox": "Koli Açma",
+    "btnCloseBox": "Koli Kapatma",
     "btnDeleteBox": "Koli Sil",
     "ok": "Tamam",
     "cancel": "İptal",
@@ -222,9 +220,11 @@
       "message": "Sipariş miktarı aşılıyor, yine de eklemek istiyor musunuz?",
       "cancelBtn": "Vazgeç",
       "confirmBtn": "Evet, Ekle"
-    }
+    },
+    "itemCountLabel": "ürün kalemi",
+    "scanFailed": "Okutma başarısız",
+    "closeNotice": "Bildirimi kapat"
   },
-
   "irsKoli": {
     "headerTitle": "İrsaliye Oluştur",
     "boxPrefix": "Koli #{{id}}",
@@ -237,36 +237,41 @@
     "statusClosed": "Kapalı",
     "submitButton": "Seçilenleri İrsaliye Yap ({{count}})",
     "receiptCreateFail": "İrsaliye oluşturulamadı.",
-    "receiptCreateSuccess": "İrsaliye başarıyla oluşturuldu."
+    "receiptCreateSuccess": "İrsaliye başarıyla oluşturuldu.",
+    "hint": "İrsaliye için kolileri seçin.",
+    "selectAll": "Tümünü seç",
+    "clearGroup": "Seçimi kaldır",
+    "groupBoxes": "{{count}} koli",
+    "groupBoxes_one": "{{count}} koli",
+    "groupSelected": "{{count}} seçili",
+    "noOrderGroup": "Siparişsiz",
+    "openBox": "Koli {{no}} detayını aç"
   },
-
   "dashboard": {
     "createWaybillTitle": "İrsaliye Oluştur",
     "createWaybillSubtitle": "Kolileri seçerek yeni irsaliye oluşturun",
-    "greeting": "Hoşgeldiniz,",
-    "quickAccess": "Hızlı Erişim",
+    "greeting": "Hoş geldiniz,",
+    "quickAccess": "Hızlı erişim",
     "boxListTitle": "Koli Listesi",
-    "boxListSubtitle": "Kolilerinize buradan ulaşabilirsiniz"
+    "boxListSubtitle": "Kolilerinize buradan ulaşabilirsiniz",
+    "logout": "Çıkış yap"
   },
-
   "createKoli": {
     "headerTitle": "Yeni Koli",
-    "title": "Koli Oluştur",
+    "title": "Koli oluştur",
     "subtitle": "Nasıl koli oluşturmak istediğinizi seçin",
-    "subtitleSingle": "Siparişten malzeme okutarak koli oluşturun",
+    "subtitleSingle": "Siparişten malzeme okutarak koli oluşturun.",
     "orderOptionTitle": "Sipariş",
     "orderOptionDesc": "Siparişten malzeme ekleme",
     "emptyOptionTitle": "Boş Koli",
     "emptyOptionDesc": "Sipariş seçin, malzeme okutmadan koli oluşturulsun"
   },
-
   "navigation": {
     "dashboard": "Ana Sayfa",
     "koliListesi": "Koli Listesi",
     "createKoli": "Yeni Koli",
     "barcodeScanner": "Barkod Okuyucu"
   },
-
   "scanner": {
     "headerTitle": "Barkod Okutun",
     "placeholder": "Okutun veya yazın...",
@@ -317,6 +322,8 @@
       "printError": "Yazdırma hatası",
       "printButton": "Yazdır",
       "cancelButton": "İptal"
-    }
+    },
+    "scanFailed": "Okutma başarısız",
+    "closeNotice": "Bildirimi kapat"
   }
 }

@@ -1,13 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Stack, useRouter } from "expo-router";
-import {
-  Settings,
-  RefreshCw,
-  Save,
-  CheckCircle,
-  CheckSquare,
-  Square,
-} from "lucide-react-native";
+import { Check, RefreshCw, Save } from "lucide-react-native";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Audio, InterruptionModeAndroid } from "expo-av";
 import {
@@ -25,6 +18,7 @@ import {
   Easing,
   Vibration,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme, ThemeMode } from "@/constants/theme";
@@ -34,6 +28,7 @@ import i18n from "../locales/i18n";
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const { theme, themeMode, setThemeMode } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const {
     apiBaseUrl,
@@ -261,6 +256,77 @@ export default function SettingsScreen() {
     { id: "light", label: t("settings.themeOptions.light") },
   ];
 
+  const soundOptions = SOUND_OPTIONS.map((option) => ({
+    id: option.id,
+    label: t(`settings.sounds.${option.id}`, { defaultValue: option.name }),
+    file: option.file,
+  }));
+
+  // Tema, dil ve hata uyarısı aynı segment kontrolüyle seçilir.
+  const renderSegment = <T extends { id: string; label: string }>(
+    label: string,
+    options: T[],
+    selectedId: string,
+    onSelect: (option: T) => void,
+  ) => (
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <View
+        style={styles.segment}
+        accessibilityRole="radiogroup"
+        accessibilityLabel={label}
+      >
+        {options.map((option) => {
+          const active = selectedId === option.id;
+          return (
+            <Pressable
+              key={option.id}
+              style={[
+                styles.segmentOption,
+                active && styles.segmentOptionActive,
+              ]}
+              onPress={() => onSelect(option)}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: active }}
+            >
+              <Text
+                style={[styles.segmentText, active && styles.segmentTextActive]}
+                numberOfLines={1}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+
+  // Açık/kapalı tercihler: satırın tamamı dokunulabilir, anahtar sağda.
+  const renderSwitch = (
+    title: string,
+    subtitle: string,
+    value: boolean,
+    onToggle: () => void,
+  ) => (
+    <Pressable
+      style={styles.switchRow}
+      onPress={onToggle}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={title}
+      accessibilityHint={subtitle}
+    >
+      <View style={styles.switchTextContainer}>
+        <Text style={styles.switchTitle}>{title}</Text>
+        <Text style={styles.hint}>{subtitle}</Text>
+      </View>
+      <View style={[styles.switchTrack, value && styles.switchTrackOn]}>
+        <View style={[styles.switchThumb, value && styles.switchThumbOn]} />
+      </View>
+    </Pressable>
+  );
+
   return (
     <>
       <Stack.Screen
@@ -268,7 +334,7 @@ export default function SettingsScreen() {
           headerShown: true,
           title: t("settings.headerTitle"),
           headerStyle: {
-            backgroundColor: theme.colors.canvas,
+            backgroundColor: theme.colors.header,
           },
           headerTintColor: theme.colors.ink,
           headerTitleStyle: {
@@ -283,113 +349,73 @@ export default function SettingsScreen() {
         >
           <ScrollView
             style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: insets.bottom + theme.spacing.xl },
+            ]}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.content}>
-              <View style={styles.header}>
-                <View style={styles.iconContainer}>
-                  <Settings
-                    size={36}
-                    color={theme.colors.primary}
-                    strokeWidth={2}
-                  />
-                </View>
-                <Text style={styles.title}>{t("settings.pageTitle")}</Text>
-                <Text style={styles.subtitle}>
-                  {t("settings.pageSubtitle")}
-                </Text>
+            <View style={styles.header}>
+              <Text style={styles.title} accessibilityRole="header">
+                {t("settings.pageTitle")}
+              </Text>
+              <Text style={styles.subtitle}>{t("settings.pageSubtitle")}</Text>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle} accessibilityRole="header">
+                {t("settings.sections.appearance")}
+              </Text>
+              {renderSegment(
+                t("settings.theme"),
+                themeOptionsList,
+                themeMode,
+                (option) => setThemeMode(option.id),
+              )}
+              {renderSegment(
+                t("settings.language"),
+                languageOptions,
+                i18n.language,
+                (option) => i18n.changeLanguage(option.id),
+              )}
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle} accessibilityRole="header">
+                {t("settings.sections.connection")}
+              </Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{t("settings.labels.apiUrl")}</Text>
+                <TextInput
+                  style={[
+                    inputStyle("url"),
+                    styles.multilineInput,
+                    error ? styles.inputError : null,
+                  ]}
+                  placeholder={t("settings.placeholders.apiUrl")}
+                  placeholderTextColor={theme.colors.inkSubtle}
+                  value={url}
+                  onChangeText={(text) => {
+                    setUrl(text);
+                    if (error) validateUrl(text);
+                  }}
+                  onFocus={() => setFocusedField("url")}
+                  onBlur={() => setFocusedField(null)}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  editable={!isSaving}
+                  accessibilityLabel={t("settings.labels.apiUrl")}
+                  testID="api-url-input"
+                  multiline
+                />
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                <Text style={styles.hint}>{t("settings.hints.apiUrl")}</Text>
               </View>
 
-              <View style={styles.form}>
-                {/* Theme selector */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{t("settings.theme")}</Text>
-                  <View style={styles.segment}>
-                    {themeOptionsList.map((option) => {
-                      const active = themeMode === option.id;
-                      return (
-                        <Pressable
-                          key={option.id}
-                          style={[
-                            styles.segmentOption,
-                            active && styles.segmentOptionActive,
-                          ]}
-                          onPress={() => setThemeMode(option.id)}
-                        >
-                          <Text
-                            style={[
-                              styles.segmentText,
-                              active && styles.segmentTextActive,
-                            ]}
-                          >
-                            {option.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                {/* Language selector */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{t("settings.language")}</Text>
-                  <View style={styles.segment}>
-                    {languageOptions.map((option) => {
-                      const active = i18n.language === option.id;
-                      return (
-                        <Pressable
-                          key={option.id}
-                          style={[
-                            styles.segmentOption,
-                            active && styles.segmentOptionActive,
-                          ]}
-                          onPress={() => i18n.changeLanguage(option.id)}
-                        >
-                          <Text
-                            style={[
-                              styles.segmentText,
-                              active && styles.segmentTextActive,
-                            ]}
-                          >
-                            {option.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
-                    {t("settings.labels.apiUrl")}
-                  </Text>
-                  <TextInput
-                    style={[
-                      inputStyle("url"),
-                      styles.multilineInput,
-                      error ? styles.inputError : null,
-                    ]}
-                    placeholder={t("settings.placeholders.apiUrl")}
-                    placeholderTextColor={theme.colors.inkSubtle}
-                    value={url}
-                    onChangeText={(text) => {
-                      setUrl(text);
-                      if (error) validateUrl(text);
-                    }}
-                    onFocus={() => setFocusedField("url")}
-                    onBlur={() => setFocusedField(null)}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="url"
-                    editable={!isSaving}
-                    testID="api-url-input"
-                    multiline
-                  />
-                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                </View>
-
-                <View style={styles.inputGroup}>
+              <View style={styles.inputRow}>
+                <View style={[styles.inputGroup, styles.inputRowItem]}>
                   <Text style={styles.label}>
                     {t("settings.labels.companyCode")}
                   </Text>
@@ -404,11 +430,12 @@ export default function SettingsScreen() {
                     autoCapitalize="none"
                     autoCorrect={false}
                     editable={!isSaving}
+                    accessibilityLabel={t("settings.labels.companyCode")}
                     testID="company-code-input"
                   />
                 </View>
 
-                <View style={styles.inputGroup}>
+                <View style={[styles.inputGroup, styles.inputRowItem]}>
                   <Text style={styles.label}>
                     {t("settings.labels.companyPassword")}
                   </Text>
@@ -424,187 +451,110 @@ export default function SettingsScreen() {
                     autoCorrect={false}
                     secureTextEntry
                     editable={!isSaving}
+                    accessibilityLabel={t("settings.labels.companyPassword")}
                     testID="company-password-input"
                   />
                 </View>
+              </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
-                    {t("settings.labels.warehouseCode")}
-                  </Text>
-                  <TextInput
-                    style={inputStyle("whCode")}
-                    placeholder={t("settings.placeholders.warehouseCode")}
-                    placeholderTextColor={theme.colors.inkSubtle}
-                    value={whCode}
-                    onChangeText={setWhCode}
-                    onFocus={() => setFocusedField("whCode")}
-                    onBlur={() => setFocusedField(null)}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="numeric"
-                    editable={!isSaving}
-                    testID="warehouse-id-input"
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  {t("settings.labels.warehouseCode")}
+                </Text>
+                <TextInput
+                  style={inputStyle("whCode")}
+                  placeholder={t("settings.placeholders.warehouseCode")}
+                  placeholderTextColor={theme.colors.inkSubtle}
+                  value={whCode}
+                  onChangeText={setWhCode}
+                  onFocus={() => setFocusedField("whCode")}
+                  onBlur={() => setFocusedField(null)}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="numeric"
+                  editable={!isSaving}
+                  accessibilityLabel={t("settings.labels.warehouseCode")}
+                  testID="warehouse-id-input"
+                />
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle} accessibilityRole="header">
+                {t("settings.sections.preferences")}
+              </Text>
+              {renderSegment(
+                t("settings.labels.errorSound"),
+                soundOptions,
+                selectedSound,
+                (option) => {
+                  setSelectedSound(option.id);
+                  playErrorSound(option.file);
+                },
+              )}
+              {renderSwitch(
+                t("settings.boxModeDesc.title"),
+                t("settings.boxModeDesc.subtitle"),
+                existingBoxMode,
+                () => setExistingBoxMode(!existingBoxMode),
+              )}
+              {renderSwitch(
+                t("settings.weightModeDesc.title"),
+                t("settings.weightModeDesc.subtitle"),
+                skipWeightMode,
+                () => setSkipWeightMode(!skipWeightMode),
+              )}
+              {renderSwitch(
+                t("settings.stockControlDesc.title"),
+                t("settings.stockControlDesc.subtitle"),
+                skipStockMode,
+                () => setSkipStockMode(!skipStockMode),
+              )}
+            </View>
+
+            <View style={styles.buttonRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.secondaryButton,
+                  pressed && styles.secondaryButtonPressed,
+                  isSaving && styles.buttonDisabled,
+                ]}
+                onPress={handleReset}
+                disabled={isSaving}
+                testID="reset-button"
+              >
+                <RefreshCw size={20} color={theme.colors.ink} />
+                <Text style={styles.secondaryButtonText}>
+                  {t("settings.buttons.reset")}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.primaryButton,
+                  pressed && styles.primaryButtonPressed,
+                  isSaving && styles.buttonDisabled,
+                ]}
+                onPress={handleSave}
+                disabled={isSaving}
+                testID="save-button"
+              >
+                {isSaving ? (
+                  <ActivityIndicator
+                    color={theme.colors.onConfirm}
+                    size="small"
                   />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
-                    {t("settings.labels.errorSound")}
-                  </Text>
-                  <View style={styles.soundSelectorContainer}>
-                    {SOUND_OPTIONS.map((option) => {
-                      const active = selectedSound === option.id;
-                      return (
-                        <Pressable
-                          key={option.id}
-                          style={[
-                            styles.soundOption,
-                            active && styles.soundOptionSelected,
-                          ]}
-                          onPress={() => {
-                            setSelectedSound(option.id);
-                            playErrorSound(option.file);
-                          }}
-                        >
-                          <Text
-                            style={[
-                              styles.soundOptionText,
-                              active && styles.soundOptionTextSelected,
-                            ]}
-                          >
-                            {t(`settings.sounds.${option.id}`, {
-                              defaultValue: option.name,
-                            })}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
-                    {t("settings.labels.boxMode")}
-                  </Text>
-                  <Pressable
-                    style={styles.checkboxContainer}
-                    onPress={() => setExistingBoxMode(!existingBoxMode)}
-                  >
-                    {existingBoxMode ? (
-                      <CheckSquare size={24} color={theme.colors.primary} />
-                    ) : (
-                      <Square size={24} color={theme.colors.inkSubtle} />
-                    )}
-                    <View style={styles.checkboxTextContainer}>
-                      <Text style={styles.checkboxTitle}>
-                        {t("settings.boxModeDesc.title")}
-                      </Text>
-                      <Text style={styles.checkboxSubtitle}>
-                        {t("settings.boxModeDesc.subtitle")}
-                      </Text>
-                    </View>
-                  </Pressable>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
-                    {t("settings.labels.skipWeightMode")}
-                  </Text>
-                  <Pressable
-                    style={styles.checkboxContainer}
-                    onPress={() => setSkipWeightMode(!skipWeightMode)}
-                  >
-                    {skipWeightMode ? (
-                      <CheckSquare size={24} color={theme.colors.primary} />
-                    ) : (
-                      <Square size={24} color={theme.colors.inkSubtle} />
-                    )}
-                    <View style={styles.checkboxTextContainer}>
-                      <Text style={styles.checkboxTitle}>
-                        {t("settings.weightModeDesc.title")}
-                      </Text>
-                      <Text style={styles.checkboxSubtitle}>
-                        {t("settings.weightModeDesc.subtitle")}
-                      </Text>
-                    </View>
-                  </Pressable>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
-                    {t("settings.labels.stockControlMode")}
-                  </Text>
-                  <Pressable
-                    style={styles.checkboxContainer}
-                    onPress={() => setSkipStockMode(!skipStockMode)}
-                  >
-                    {skipStockMode ? (
-                      <CheckSquare size={24} color={theme.colors.primary} />
-                    ) : (
-                      <Square size={24} color={theme.colors.inkSubtle} />
-                    )}
-                    <View style={styles.checkboxTextContainer}>
-                      <Text style={styles.checkboxTitle}>
-                        {t("settings.stockControlDesc.title")}
-                      </Text>
-                      <Text style={styles.checkboxSubtitle}>
-                        {t("settings.stockControlDesc.subtitle")}
-                      </Text>
-                    </View>
-                  </Pressable>
-                </View>
-
-                <View style={styles.buttonGroup}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.button,
-                      styles.primaryButton,
-                      pressed && styles.primaryButtonPressed,
-                      isSaving && styles.buttonDisabled,
-                    ]}
-                    onPress={handleSave}
-                    disabled={isSaving}
-                    testID="save-button"
-                  >
-                    {isSaving ? (
-                      <ActivityIndicator
-                        color={theme.colors.onPrimary}
-                        size="small"
-                      />
-                    ) : (
-                      <>
-                        <Save size={20} color={theme.colors.onPrimary} />
-                        <Text style={styles.primaryButtonText}>
-                          {t("settings.buttons.save")}
-                        </Text>
-                      </>
-                    )}
-                  </Pressable>
-
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.button,
-                      styles.secondaryButton,
-                      pressed && styles.secondaryButtonPressed,
-                      isSaving && styles.buttonDisabled,
-                    ]}
-                    onPress={handleReset}
-                    disabled={isSaving}
-                    testID="reset-button"
-                  >
-                    <RefreshCw size={20} color={theme.colors.ink} />
-                    <Text style={styles.secondaryButtonText}>
-                      {t("settings.buttons.reset")}
+                ) : (
+                  <>
+                    <Save size={20} color={theme.colors.onConfirm} />
+                    <Text style={styles.primaryButtonText}>
+                      {t("settings.buttons.save")}
                     </Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={styles.helpBox}>
-                <Text style={styles.helpTitle}>{t("settings.help.title")}</Text>
-                <Text style={styles.helpText}>{t("settings.help.text")}</Text>
-              </View>
+                  </>
+                )}
+              </Pressable>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -613,6 +563,7 @@ export default function SettingsScreen() {
           style={[
             styles.toastContainer,
             {
+              bottom: insets.bottom + theme.spacing.xxl,
               opacity: toastOpacity,
               transform: [{ translateY: toastTranslateY }],
             },
@@ -620,7 +571,9 @@ export default function SettingsScreen() {
           pointerEvents="none"
         >
           <View style={styles.toastContent}>
-            <CheckCircle size={22} color={theme.colors.success} />
+            <View style={styles.toastMark}>
+              <Check size={20} color={theme.colors.noticeOkInk} strokeWidth={2.4} />
+            </View>
             <Text style={styles.toastText}>
               {t("settings.alerts.toastSuccess")}
             </Text>
@@ -652,236 +605,223 @@ const makeStyles = (theme: Theme) => {
     },
     scrollContent: {
       flexGrow: 1,
-    },
-    content: {
-      flex: 1,
-      paddingHorizontal: spacing.xl,
-      paddingVertical: spacing.xxl,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.xl,
     },
     header: {
-      alignItems: "center",
-      marginBottom: spacing.xxl,
-    },
-    iconContainer: {
-      width: 72,
-      height: 72,
-      borderRadius: radius.xl,
-      backgroundColor: colors.surface1,
-      borderWidth: 1,
-      borderColor: colors.hairline,
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: spacing.md,
+      marginBottom: spacing.xl,
     },
     title: {
-      ...type.displayLg,
+      ...type.pageTitle,
       color: colors.ink,
       marginBottom: spacing.xs,
     },
     subtitle: {
       ...type.body,
       color: colors.inkMuted,
-      textAlign: "center",
     },
-    form: {
+    // Görünüm, Bağlantı ve depo, Çalışma tercihleri: ince çizgiyle ayrılır.
+    section: {
       gap: spacing.lg,
+      paddingBottom: spacing.xxl,
+      marginBottom: spacing.xxl,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.hairlineStrong,
+    },
+    sectionTitle: {
+      ...type.labelStrong,
+      color: colors.inkMuted,
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
     },
     inputGroup: {
       gap: spacing.xs,
     },
+    inputRow: {
+      flexDirection: "row",
+      gap: spacing.md,
+    },
+    inputRowItem: {
+      flex: 1,
+    },
     label: {
-      ...type.label,
+      ...type.labelMd,
+      color: colors.ink,
+    },
+    hint: {
+      ...type.hint,
       color: colors.inkMuted,
-      textTransform: "uppercase",
     },
     segment: {
       flexDirection: "row",
-      backgroundColor: colors.surface2,
-      borderRadius: radius.md,
+      backgroundColor: theme.isDark ? colors.surface1 : colors.raised,
+      borderRadius: radius.control,
+      borderWidth: 1,
+      borderColor: theme.isDark ? colors.hairlineStrong : "transparent",
       padding: spacing.xxs,
       gap: spacing.xxs,
     },
     segmentOption: {
       flex: 1,
-      paddingVertical: spacing.sm,
+      minHeight: 48,
+      paddingHorizontal: spacing.xs,
       borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: "transparent",
       alignItems: "center",
       justifyContent: "center",
     },
     segmentOptionActive: {
-      backgroundColor: colors.surface4,
+      backgroundColor: theme.isDark ? colors.surface3 : colors.surface1,
+      borderColor: theme.isDark ? colors.controlLine : colors.hairline,
     },
     segmentText: {
-      ...type.button,
-      color: colors.inkSubtle,
+      ...type.labelMd,
+      color: colors.inkMuted,
     },
     segmentTextActive: {
       color: colors.ink,
     },
     input: {
       ...type.body,
-      backgroundColor: colors.surface2,
-      borderRadius: radius.md,
+      backgroundColor: colors.surface1,
+      borderRadius: radius.control,
       paddingHorizontal: spacing.md,
-      minHeight: 50,
+      minHeight: 56,
       color: colors.ink,
       borderWidth: 1,
-      borderColor: colors.hairlineStrong,
+      borderColor: colors.controlLine,
     },
     multilineInput: {
-      paddingTop: spacing.md,
+      minHeight: 72,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.sm,
       textAlignVertical: "top",
     },
+    // Odak halkası nötr; kırmızı halka hata durumuyla karışır.
     inputFocused: {
       borderWidth: 2,
-      borderColor: colors.primaryRing,
+      borderColor: colors.ink,
     },
     inputError: {
       borderWidth: 2,
       borderColor: colors.error,
     },
     errorText: {
-      ...type.bodySm,
+      ...type.hint,
       color: colors.error,
     },
-    buttonGroup: {
+    switchRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.md,
+    },
+    switchTextContainer: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    switchTitle: {
+      ...type.labelStrong,
+      color: colors.ink,
+    },
+    switchTrack: {
+      width: 40,
+      height: 24,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.controlLine,
+      backgroundColor: colors.surface3,
+    },
+    switchTrackOn: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    switchThumb: {
+      position: "absolute",
+      top: 3,
+      left: 3,
+      width: 16,
+      height: 16,
+      borderRadius: radius.pill,
+      backgroundColor: colors.inkMuted,
+    },
+    switchThumbOn: {
+      left: 19,
+      backgroundColor: colors.onPrimary,
+    },
+    buttonRow: {
+      flexDirection: "row",
       gap: spacing.sm,
-      marginTop: spacing.xs,
     },
     button: {
-      borderRadius: radius.md,
-      paddingVertical: 14,
-      paddingHorizontal: spacing.lg,
-      minHeight: 48,
+      borderRadius: radius.control,
+      borderWidth: 1,
+      paddingHorizontal: spacing.sm,
+      minHeight: 56,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: spacing.xs,
     },
     primaryButton: {
-      backgroundColor: colors.primary,
+      flex: 1.5,
+      backgroundColor: colors.confirm,
+      borderColor: colors.confirm,
     },
     primaryButtonPressed: {
-      backgroundColor: colors.primaryPress,
+      backgroundColor: colors.confirmPress,
+      borderColor: colors.confirmPress,
     },
     primaryButtonText: {
-      ...type.button,
-      color: colors.onPrimary,
+      ...type.labelStrong,
+      color: colors.onConfirm,
     },
     secondaryButton: {
-      backgroundColor: colors.surface2,
-      borderWidth: 1,
+      flex: 1,
+      backgroundColor: colors.surface1,
       borderColor: colors.hairlineStrong,
     },
     secondaryButtonPressed: {
       backgroundColor: colors.surface3,
     },
     secondaryButtonText: {
-      ...type.button,
+      ...type.labelStrong,
       color: colors.ink,
     },
     buttonDisabled: {
       opacity: 0.5,
     },
-    helpBox: {
-      marginTop: spacing.xl,
-      padding: spacing.md,
-      backgroundColor: colors.primaryTint,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.hairlineStrong,
-    },
-    helpTitle: {
-      ...type.label,
-      textTransform: "uppercase",
-      color: colors.primary,
-      marginBottom: spacing.xs,
-    },
-    helpText: {
-      ...type.bodySm,
-      color: colors.inkMuted,
-      lineHeight: 20,
-    },
     toastContainer: {
       position: "absolute",
-      bottom: spacing.xxl,
-      left: spacing.lg,
-      right: spacing.lg,
+      left: spacing.md,
+      right: spacing.md,
       alignItems: "center",
       zIndex: 99,
     },
     toastContent: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.surface3,
-      paddingHorizontal: spacing.lg,
+      backgroundColor: colors.notice,
+      paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      borderRadius: radius.md,
-      borderLeftWidth: 4,
-      borderLeftColor: colors.success,
+      borderRadius: radius.control,
+      borderWidth: 1,
+      borderColor: colors.noticeLine,
       gap: spacing.sm,
-      elevation: 5,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
+      ...theme.noticeShadow,
+    },
+    toastMark: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.pill,
+      backgroundColor: colors.noticeOkTile,
+      alignItems: "center",
+      justifyContent: "center",
     },
     toastText: {
       ...type.body,
       color: colors.ink,
       fontWeight: "600",
-    },
-    soundSelectorContainer: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
-    soundOption: {
-      flex: 1,
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.xxs,
-      borderRadius: radius.md,
-      backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.hairlineStrong,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    soundOptionSelected: {
-      backgroundColor: colors.primaryTint,
-      borderColor: colors.primary,
-    },
-    soundOptionText: {
-      ...type.bodySm,
-      color: colors.inkMuted,
-      fontWeight: "600",
-      textAlign: "center",
-    },
-    soundOptionTextSelected: {
-      color: colors.ink,
-    },
-    checkboxContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: colors.surface1,
-      padding: spacing.md,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.hairline,
-      gap: spacing.sm,
-    },
-    checkboxTextContainer: {
-      flex: 1,
-    },
-    checkboxTitle: {
-      ...type.body,
-      fontWeight: "600",
-      color: colors.ink,
-      marginBottom: 2,
-    },
-    checkboxSubtitle: {
-      ...type.bodySm,
-      color: colors.inkMuted,
-      lineHeight: 16,
     },
   });
 };

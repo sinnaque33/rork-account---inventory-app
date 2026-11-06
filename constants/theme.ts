@@ -1,4 +1,4 @@
-import { Platform, TextStyle } from "react-native";
+import { Platform, TextStyle, ViewStyle } from "react-native";
 
 /**
  * Extreme design system tokens (see DESIGN-extreme.md).
@@ -37,12 +37,18 @@ export interface ThemeColors {
   hairline: string;
   hairlineStrong: string;
   scrim: string;
+  // Outline of inputs, switches and the selected segment (≥3:1 on canvas)
+  controlLine: string;
 
   // Semantic
   success: string;
   successDeep: string;
   onSuccess: string;
   successTint: string;
+  // Filled green action with a white label (Kaydet); the success hue is too light for white text
+  confirm: string;
+  confirmPress: string;
+  onConfirm: string;
 
   error: string;
   errorDeep: string;
@@ -64,6 +70,36 @@ export interface ThemeColors {
   statusClosed: string;
   statusShipped: string;
   statusEmpty: string;
+
+  // Redesigned screens (ui-history v14): list cards, tiles and bottom notices
+  raised: string;
+  header: string;
+  card: string;
+  cardLine: string;
+  band: string;
+  bandLine: string;
+  readMuted: string;
+  koliTile: string;
+  koliInk: string;
+  koliHero: string;
+  koliHeroDeep: string;
+  irs: string;
+  irsTile: string;
+  irsInk: string;
+  okTile: string;
+  okInk: string;
+  notice: string;
+  noticeLine: string;
+  noticeOkTile: string;
+  noticeOkInk: string;
+  errTile: string;
+  errInk: string;
+  errLine: string;
+  warnTile: string;
+  warnInk: string;
+  // Login stays white on the light theme: the logo artwork has a white ground
+  loginPage: string;
+  loginField: string;
 }
 
 export const darkColors: ThemeColors = {
@@ -89,11 +125,15 @@ export const darkColors: ThemeColors = {
   hairline: "#2B2930",
   hairlineStrong: "#3A3742",
   scrim: "rgba(0,0,0,0.66)",
+  controlLine: "#797380",
 
   success: "#23C277",
   successDeep: "#159C5B",
   onSuccess: "#06130C",
   successTint: "#0E2419",
+  confirm: "#15834E",
+  confirmPress: "#106A3F",
+  onConfirm: "#FFFFFF",
 
   error: "#FF3340",
   errorDeep: "#B0121C",
@@ -114,6 +154,34 @@ export const darkColors: ThemeColors = {
   statusClosed: "#23C277",
   statusShipped: "#5B5BF0",
   statusEmpty: "#76747C",
+
+  raised: "#242228",
+  header: "#0C0B0D",
+  card: "#1B191E",
+  cardLine: "#36323C",
+  band: "#141317",
+  bandLine: "#2B2830",
+  readMuted: "#C6BFCE",
+  koliTile: "#3B1A20",
+  koliInk: "#F23643",
+  koliHero: "#CC2434",
+  koliHeroDeep: "#8E1016",
+  irs: "#5250E0",
+  irsTile: "#23224D",
+  irsInk: "#B6B2FF",
+  okTile: "#123224",
+  okInk: "#6FDCA5",
+  notice: "#26242A",
+  noticeLine: "#3A3742",
+  noticeOkTile: "#0E2419",
+  noticeOkInk: "#23C277",
+  errTile: "#3A0F14",
+  errInk: "#FF5C66",
+  errLine: "#FF3340",
+  warnTile: "#2A2008",
+  warnInk: "#F5A524",
+  loginPage: "#0C0B0D",
+  loginField: "#161518",
 };
 
 /**
@@ -127,28 +195,32 @@ export const lightColors: ThemeColors = {
   primaryDeep: "#9E1318",
   primaryPress: "#7C0F14",
   onPrimary: "#FFFFFF",
-  primaryTint: "#FBE9EA",
+  primaryTint: "#FDE6E8",
   primaryRing: "#DA2128",
 
-  ink: "#161518",
-  inkMuted: "#5A5860",
-  inkSubtle: "#76747C",
+  ink: "#14161B",
+  inkMuted: "#474D57",
+  inkSubtle: "#5A606B",
   inkTertiary: "#9A98A0",
   inkDisabled: "#C2C0C7",
 
-  canvas: "#FFFFFF",
-  surface1: "#F5F5F6",
-  surface2: "#ECECEE",
-  surface3: "#E2E2E5",
-  surface4: "#D7D7DB",
-  hairline: "#E2E2E5",
-  hairlineStrong: "#CFCFD4",
+  canvas: "#EEF0F3",
+  surface1: "#FFFFFF",
+  surface2: "#E4E7EC",
+  surface3: "#DADEE4",
+  surface4: "#CFD3DA",
+  hairline: "#D3D7DE",
+  hairlineStrong: "#C9CED6",
   scrim: "rgba(0,0,0,0.45)",
+  controlLine: "#7A808B",
 
   success: "#159C5B",
   successDeep: "#0E7A45",
   onSuccess: "#FFFFFF",
-  successTint: "#E4F6EC",
+  successTint: "#DCF3E6",
+  confirm: "#147B48",
+  confirmPress: "#0F5F38",
+  onConfirm: "#FFFFFF",
 
   error: "#D32030",
   errorDeep: "#B0121C",
@@ -163,12 +235,40 @@ export const lightColors: ThemeColors = {
   info: "#3E3EC4",
   infoDeep: "#2D2D9C",
   onInfo: "#FFFFFF",
-  infoTint: "#E8E8FB",
+  infoTint: "#E9E8FD",
 
   statusOpen: "#B5740C",
   statusClosed: "#159C5B",
   statusShipped: "#3E3EC4",
   statusEmpty: "#76747C",
+
+  raised: "#E4E7EC",
+  header: "#FFFFFF",
+  card: "#FFFFFF",
+  cardLine: "#D3D7DE",
+  band: "#F5F6F8",
+  bandLine: "#E2E5EA",
+  readMuted: "#474D57",
+  koliTile: "#FDE6E8",
+  koliInk: "#DA2128",
+  koliHero: "#C62132",
+  koliHeroDeep: "#8E1016",
+  irs: "#4B48D4",
+  irsTile: "#E9E8FD",
+  irsInk: "#3D39A8",
+  okTile: "#DCF3E6",
+  okInk: "#0B6337",
+  notice: "#FFFFFF",
+  noticeLine: "#D3D7DE",
+  noticeOkTile: "#DCF3E6",
+  noticeOkInk: "#0B6337",
+  errTile: "#FDE4E6",
+  errInk: "#B3141C",
+  errLine: "#D32030",
+  warnTile: "#FBF0DA",
+  warnInk: "#8A570A",
+  loginPage: "#FFFFFF",
+  loginField: "#EEF0F3",
 };
 
 // --- Spacing (base 4px) ---
@@ -193,6 +293,8 @@ export const radius = {
   xl: 18,
   xxl: 24,
   pill: 9999,
+  // Inputs, segments and form buttons of the redesigned screens
+  control: 12,
 } as const;
 
 // --- Font families ---
@@ -312,12 +414,85 @@ export const type = {
     lineHeight: 16,
     letterSpacing: 0.2,
   },
+  // Form scale of the redesigned screens (login, settings): nothing below 14 px.
+  heroTitle: {
+    fontFamily: fonts.display,
+    fontSize: 30,
+    fontWeight: "600",
+    lineHeight: 39,
+    letterSpacing: -0.6,
+  },
+  pageTitle: {
+    fontFamily: fonts.display,
+    fontSize: 24,
+    fontWeight: "600",
+    lineHeight: 31,
+  },
+  labelMd: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 20,
+  },
+  labelStrong: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
+  },
+  hint: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    fontWeight: "400",
+    lineHeight: 21,
+  },
+  // Codes and numbers: the sans with tabular numerals, never a monospace face.
+  codeLg: {
+    fontFamily: fonts.sans,
+    fontSize: 20,
+    fontWeight: "700",
+    lineHeight: 26,
+    fontVariant: ["tabular-nums"],
+  },
+  codeMd: {
+    fontFamily: fonts.sans,
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 22,
+    fontVariant: ["tabular-nums"],
+  },
+  quantity: {
+    fontFamily: fonts.sans,
+    fontSize: 24,
+    fontWeight: "600",
+    lineHeight: 29,
+    fontVariant: ["tabular-nums"],
+  },
 } satisfies Record<string, TextStyle>;
+
+// Card elevation exists only on the light theme; dark cards are separated by line.
+const noShadow = {};
+const lightCardShadow = {
+  shadowColor: "#14161B",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.07,
+  shadowRadius: 6,
+  elevation: 2,
+};
+const lightNoticeShadow = {
+  shadowColor: "#14161B",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.14,
+  shadowRadius: 12,
+  elevation: 6,
+};
 
 export interface Theme {
   mode: ThemeMode;
   isDark: boolean;
   colors: ThemeColors;
+  cardShadow: ViewStyle;
+  noticeShadow: ViewStyle;
   spacing: typeof spacing;
   radius: typeof radius;
   type: typeof type;
@@ -329,6 +504,8 @@ export function buildTheme(mode: ThemeMode): Theme {
     mode,
     isDark: mode === "dark",
     colors: mode === "dark" ? darkColors : lightColors,
+    cardShadow: mode === "dark" ? noShadow : lightCardShadow,
+    noticeShadow: mode === "dark" ? noShadow : lightNoticeShadow,
     spacing,
     radius,
     type,

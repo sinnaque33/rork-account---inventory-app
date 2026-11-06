@@ -10,7 +10,7 @@ export default function AppLayout() {
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: theme.colors.canvas,
+          backgroundColor: theme.colors.header,
         },
         headerTintColor: theme.colors.ink,
         headerTitleStyle: {
