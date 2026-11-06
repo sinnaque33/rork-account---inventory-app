@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-06",
+  "gitCommit": "e49528dd1dd92d9b21928b0ba39638ae677803e7",
+  "appVersion": "1.0.0",
+  "note": "İkinci arşiv: dokuz ekranın yeni tasarımı uygulamada.",
+  "changedScreens": [
+    "barcode-scanner",
+    "create-koli",
+    "dashboard",
+    "irskoli-listesi",
+    "koli-detay",
+    "koli-listesi",
+    "login",
+    "order-receipts",
+    "settings"
+  ],
+  "screenNotes": {
+    "login": "Hoş geldiniz ekranı; açık temada beyaz sayfa.",
+    "settings": "Uygulama ayarları; açık temada seçili seçenek beyaz.",
+    "dashboard": "İki kart aynı boyda, çıkış düğmesi başlıkta.",
+    "koli-listesi": "Düz liste; her kolide sipariş no. Altta eşit boyda Koli Ara ve Yeni Koli. Yazılar bir boy küçük.",
+    "koli-detay": "Kırmızı sipariş kartı, miktar sağ üstte, okutma hatası altta bildirim. Klavye yalnız alana dokununca açılır.",
+    "create-koli": "Sipariş seçeneği tek satırlık kart.",
+    "order-receipts": "Düz liste, kartta sipariş no ve cari. Yazılar bir boy küçük.",
+    "irskoli-listesi": "Siparişe göre gruplu seçim, Tümünü seç, satırın sağındaki okla koli detayı. Yazılar bir boy küçük.",
+    "barcode-scanner": "Okutma alanı 18 px, diğer yazılar bir boy küçük. Hata altta bildirim. Klavye yalnız alana dokununca açılır."
+  },
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden"
+  },
+  "fixture": "../../fixtures-api.json"
+}

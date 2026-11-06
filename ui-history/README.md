@@ -15,7 +15,7 @@ Bu klasör React Native uygulamasının kaynak koddan yeniden çizilmiş HTML/CS
 
 Seçimler `#screen=koli-detay&a=2026-10-15&b=2026-10-15` biçiminde URL'de tutulur; yenileme ve tarayıcı geri/ileri düğmeleri desteklenir. Telefon teması tarayıcı izin verirse `ui-history-phone-theme` localStorage anahtarında tutulur; depolama engellenirse koyu temadan başlar ve düğme yine çalışır. Eski görüntüleyici tema tercihi artık kullanılmaz.
 
-İlk arşivde tek gerçek tarih vardır. İkinci arşiv tarihi ancak uygulamadaki yeni bir tasarım kaydedildiğinde görünür. **AI İyileştirme** alanında 16 Ekim 2026 tarihli ikinci Impeccable önerisi yer alır: dokuz ekran, açık/koyu tema, kırmızı/yeşil işlem vurguları, aynı mock veri ve ekran başına notlar. **Onay bekliyor; ana koda uygulanmadı.** İlk öneri korunur. [İkinci önerinin kararları](experiments/2026-10-16-impeccable-v2/DESIGN.md), [ilk önerinin ekran farkları](experiments/2026-10-16-impeccable-v1/DESIGN.md).
+**AI İyileştirme** alanında 16 Ekim 2026 tarihli ikinci Impeccable önerisi yer alır: dokuz ekran, açık/koyu tema, kırmızı/yeşil işlem vurguları, aynı mock veri ve ekran başına notlar. **Onay bekliyor; ana koda uygulanmadı.** İlk öneri korunur. [İkinci önerinin kararları](experiments/2026-10-16-impeccable-v2/DESIGN.md), [ilk önerinin ekran farkları](experiments/2026-10-16-impeccable-v1/DESIGN.md).
 
 Koli Listesi ve Koli Detayı için hazırlanan **üçüncü öneri** büyük koli/ürün başlıkları, ayrı miktar alanı ve daha okunabilir yardımcı bilgiler getirdi. [Okunabilirlik kararları ve ölçüler](experiments/2026-10-16-impeccable-v3/DESIGN.md). Kontrol komutu: `node ui-history/tools/check-themes.cjs --readability`.
 
@@ -43,6 +43,18 @@ Görüntüleyici artık dokuz ekranın hepsinde **sekizinci öneriyi** gösterir
 - Koli Detayı: Okutma başarılı, Okutma hatalı, Miktar aşımı.
 
 Seçili durum adreste `durum=` olarak tutulur; A slotu orijinal ekranı gösterir. [Seri okutma bildirimi](experiments/2026-10-23-impeccable-v8/DESIGN.md). Yeniden üretim: `node ui-history/tools/build-inline-feedback-revision.cjs --replace`. Kontrol: `node ui-history/tools/check-themes.cjs --states` (v8'i denetler).
+
+**26 Ekim 2026:** Giriş ve Ayarlar önerileri uygulamaya aktarıldı, yalnız tasarım olarak. Diğer yedi ekran öneri olarak kalır. Aktarımın ayrıntıları v8'in [DESIGN.md](experiments/2026-10-23-impeccable-v8/DESIGN.md) dosyasında. Arşive bu iki ekranın yeni uygulama hâli henüz kaydedilmedi; A/B slotları 15 Ekim kaydını gösterir.
+
+**27 Ekim 2026:** Koli Listesi, test sunucusunun gerçek yanıtıyla (`fixtures-api.json`) yeniden çizildi. Gerçek listede depo ve durum yok; `SipExp` siparişin açıklaması ve boş gelebilir. 15 Ekim arşivindeki uydurma depo satırları da kullanıcının isteğiyle düzeltildi. Koli Detayı da gerçek ürün satırlarıyla (`h1_Malzeme Adı`, `h2_Barkod`, `sh_Miktar`, `sh_Renk`, `sh_Lot Adeti`) arşivde ve öneride yeniden çizildi. İrsaliye Oluştur da gerçek yanıtla çizildi: durum alanı gelmediği için rozetler kaldırıldı, koliler siparişe göre gruplandı. Görüntüleyici Koli Listesi, Koli Detayı ve İrsaliye Oluştur'da **dokuzuncu öneriyi**, diğer ekranlarda v8'i gösterir.
+
+Koli Detayı için **onuncu öneri** (ürün tablosu) kullanıcı tarafından reddedildi; kart görünümü tercih edildi. Yerine **on birinci öneri**: v9 kartı iyileştirildi, miktar sağ üstte, kart yarı yükseklikte. **On ikinci öneri** (kullanıcı geri bildirimi): kodlar sabit genişlikli yazı tipinden çıktı, Ana Sayfa kartları eşit boy, Koli Listesi siparişe göre gruplu, Koli Detayı kartı v9 düzeninde ama miktar v11'deki gibi, Sipariş Seçimi gerçek veriyle cariye göre gruplu. [Kararlar](experiments/2026-10-27-impeccable-v12/DESIGN.md); yeniden üretim: `node ui-history/tools/build-readability-v12-revision.cjs --replace`. **On üçüncü öneri**: yalnız açık tema renkleri (tek nötr gri sayfa, beyaz kartlar, kart gölgesi, nötr koyu yazılar, beyaz bildirim); dokuz ekranın hepsi güncel önerilerinden taşındı. [Kararlar](experiments/2026-10-27-impeccable-v13/DESIGN.md); yeniden üretim: `node ui-history/tools/build-light-theme-revision.cjs --replace`. Görüntüleyici bütün ekranlarda v13'ü gösterir. [Kararlar](experiments/2026-10-27-impeccable-v11/DESIGN.md). Yeniden üretim: `node ui-history/tools/build-detail-cards-revision.cjs --replace`. [Kararlar](experiments/2026-10-27-impeccable-v9/DESIGN.md). Yeniden üretim: `node ui-history/tools/build-api-list-revision.cjs --replace`.
+
+**4 Kasım 2026:** Sorumlu arkadaşın geri bildirimiyle **on dördüncü öneri**: Koli Listesi ve Sipariş Seçimi'ndeki gruplama kaldırıldı, her kayıt yeniden bir kart. Sipariş numarası etiketli kaldı; diğer ekranlar v13 ile aynı. [Düz listeler](experiments/2026-11-04-impeccable-v14/DESIGN.md). Yeniden üretim: `node ui-history/tools/build-flat-lists-revision.cjs --replace`.
+
+**5 Kasım 2026:** **On beşinci öneri**: İrsaliye Oluştur'da her satırın sağında koli detayını açan ok; seçim sol tarafta aynı kalır. [İrsaliyeden koliye git](experiments/2026-11-05-impeccable-v15/DESIGN.md). Yeniden üretim: `node ui-history/tools/build-box-link-revision.cjs --replace`.
+
+**6 Kasım 2026:** Dokuz ekranın yeni tasarımı uygulamaya aktarıldı ve **ikinci arşiv** kaydedildi: `versions/2026-11-06`. A ve B telefonlarında bu tarih seçilerek ilk arşivle karşılaştırılabilir. Yeniden üretim: `node ui-history/tools/build-archive-2026-11-06.cjs --replace`.
 
 ## İçerik
 

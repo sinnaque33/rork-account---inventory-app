@@ -100,17 +100,17 @@ function testViewer(name,setup,script,width=1440){
 const behavior=`
   await wait();const shell=getComputedStyle(document.body).backgroundColor,hash=location.hash;
   check(document.documentElement.dataset.theme==='dark','viewer dark');
-  check(q('#screen-ai iframe').src.includes('impeccable-v8/'),'new revision');
+  check(q('#screen-ai iframe').src.includes('impeccable-v15/'),'new revision');
   q('#theme-toggle').click();await wait();
   check(getComputedStyle(document.body).backgroundColor===shell,'viewer unchanged');check(location.hash===hash,'selection hash unchanged');
   for(const slot of ['a','b','ai'])check(q('#screen-'+slot+' iframe').src.includes('/previews/'),'light '+slot);
   check(q('#screen-a iframe').src===q('#screen-b iframe').src,'light fallback uses old source');check(q('#meta-b .inherited'),'fallback label');
   for(const option of q('#screen-select').options){q('#screen-select').value=option.value;q('#screen-select').dispatchEvent(new Event('change'));await wait();for(const slot of ['a','b','ai'])check(q('#screen-'+slot+' iframe').src.includes('-light/screens/'+option.value+'.html'),'light switch '+slot+' '+option.value);}
-  for(const [slug,revision] of ['login','settings','dashboard','create-koli','koli-listesi','koli-detay','irskoli-listesi','barcode-scanner','order-receipts'].map(slug=>[slug,'v8'])){q('#screen-select').value=slug;q('#screen-select').dispatchEvent(new Event('change'));await wait();check(q('#screen-ai iframe').src.includes('impeccable-'+revision+'-light/'),'newest revision '+revision+' '+slug);check(q('#meta-ai .proposal-notes li'),'revision notes '+slug);}
+  for(const [slug,revision] of ['login','settings','dashboard','create-koli','koli-listesi','koli-detay','irskoli-listesi','barcode-scanner','order-receipts'].map(slug=>[slug,'v15'])){q('#screen-select').value=slug;q('#screen-select').dispatchEvent(new Event('change'));await wait();check(q('#screen-ai iframe').src.includes('impeccable-'+revision+'-light/'),'newest revision '+revision+' '+slug);check(q('#meta-ai .proposal-notes li'),'revision notes '+slug);}
   q('#screen-select').value='koli-detay';q('#screen-select').dispatchEvent(new Event('change'));await wait();
   const chips=[...document.querySelectorAll('#states-ai .state-chips button')];check(chips.length===4&&chips[0].getAttribute('aria-pressed')==='true','state chips');
   chips.find(b=>b.textContent==='Okutma hatalı').click();await wait();
-  check(q('#screen-ai iframe').src.includes('impeccable-v8-light/states/koli-detay--okutma-hatali.html'),'state frame');check(location.hash.includes('durum=okutma-hatali'),'state in hash');check(document.activeElement?.dataset.state==='okutma-hatali','state focus kept');check(q('#meta-ai .proposal-notes li').textContent.startsWith('Başarı bildirimiyle aynı'),'state notes');
+  check(q('#screen-ai iframe').src.includes('impeccable-v15-light/states/koli-detay--okutma-hatali.html'),'state frame');check(location.hash.includes('durum=okutma-hatali'),'state in hash');check(document.activeElement?.dataset.state==='okutma-hatali','state focus kept');check(q('#meta-ai .proposal-notes li').textContent.startsWith('Başarı bildirimiyle aynı'),'state notes');
   q('#meta-ai .preview-button').click();check(q('#preview-body iframe').src===q('#screen-ai iframe').src,'state preview');q('#preview-close').click();await wait();
   q('#screen-select').value='barcode-scanner';q('#screen-select').dispatchEvent(new Event('change'));await wait();check(!location.hash.includes('durum='),'state reset on screen change');
   q('#screen-select').value='login';q('#screen-select').dispatchEvent(new Event('change'));await wait();check(!q('#states-ai .state-chips'),'no chips without states');

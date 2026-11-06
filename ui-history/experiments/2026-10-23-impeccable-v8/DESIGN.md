@@ -51,3 +51,28 @@ Metinler: “Okutma başarısız” uygulamadaki “İşlem Başarısız” yeri
 - Koyu ve açık temada ekran görüntüleriyle göz kontrolü yapıldı; görüntüler arşive eklenmedi.
 
 Statik, scriptsiz öneri; ses ve süreler notlarda tarif edilir. Native cihazda doğrulanmadı.
+
+## Uygulamaya aktarım (26 Ekim 2026)
+
+Kullanıcının isteğiyle **Giriş** ve **Ayarlar** uygulamaya aktarıldı, yalnız tasarım olarak. Diğer yedi ekran öneri olarak kalır; bu revizyonun durumu `pending_approval` kalır.
+
+- **Kaynak:** bu revizyondaki `login.html` ve `settings.html` (v6 düzeltmeleriyle v2 tasarımı).
+- **Dosyalar:** `app/login.tsx`, `app/settings.tsx`, `constants/theme.ts`, `locales/tr.json`, `locales/en.json`.
+- **Değişmeyenler:** giriş ve kaydetme akışı, doğrulamalar, ses önizlemesi, sıfırlama onayı, testID'ler.
+- **Yeni token'lar:**
+  - `controlLine` (#797380 / #85808D);
+  - `confirm` (#15834E / #147B48), basılı hâli ve `onConfirm`;
+  - `radius.control` 12;
+  - yazı ölçeği: `heroTitle` 30, `pageTitle` 24, `labelMd` / `labelStrong` / `hint` 14.
+- **Metinler önerideki gibi:**
+  - “Hoş geldiniz”, “Hesap girişi”, “Kullanıcı adı”;
+  - Ayarlar başlığı “API Ayarları” yerine “Ayarlar”, sayfa başlığı “Uygulama ayarları”;
+  - bölüm başlıkları ve kısaltılmış açıklamalar; İngilizce karşılıkları da güncellendi.
+  - Yarım genişlikteki iki alanın yer tutucusu “Opsiyonel” oldu; eski metin bu genişliğe sığmıyordu.
+- **Önerinin çizmediği durumlar:**
+  - giriş hatası, sunucu mesajı dahil, Giriş düğmesinin üstünde tek kutuda; sol şerit yerine ince kırmızı çerçeve ve ikon;
+  - odak çerçevesi nötr (koyu temada açık, açık temada koyu), hata kırmızısıyla karışmaz;
+  - açık anahtar marka kırmızısı, beyaz top;
+  - kayıt bildirimi bu revizyondaki bildirim biçiminde, gölgesiz;
+  - Giriş yüklenirken düğme kırmızı kalır. Eskiden açık temada beyaz yükleniyor işareti zeminde kayboluyordu.
+- **Doğrulama:** `npx tsc --noEmit` ve `npx eslint` temiz. Expo web önizlemesinde iki tema, alan hataları, odak, açık anahtar ve kayıt bildirimi ekran görüntüleriyle kontrol edildi. Native cihazda denenmedi.

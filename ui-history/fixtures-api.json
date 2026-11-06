@@ -1,0 +1,321 @@
+{
+  "description": "Test sunucusunun gerçek yanıtları (müşteri verisi değil). Kullanıcı uygulama logundan aktardı, 2026-10-27. fixtures.json'un uydurma kolilerinin yerine geçer.",
+  "koliListesi": {
+    "request": {
+      "name": "koliListesi",
+      "offSet": 0,
+      "pageLen": 7
+    },
+    "items": [
+      {
+        "PackageNo": "00000151-022",
+        "ReceiptNo": "00000151",
+        "SipExp": "24 KIŞ STOK SİPARİŞİ",
+        "id": "114"
+      },
+      {
+        "PackageNo": "00000003-005",
+        "ReceiptNo": "00000003",
+        "SipExp": "25 YAZ EBEBEK TEMA ERKEK BEBEK ADVENTURE İNTERNET",
+        "id": "113"
+      },
+      {
+        "PackageNo": "00000151-021",
+        "ReceiptNo": "00000151",
+        "SipExp": "24 KIŞ STOK SİPARİŞİ",
+        "id": "112"
+      },
+      {
+        "PackageNo": "00000003-004",
+        "ReceiptNo": "00000003",
+        "SipExp": "25 YAZ EBEBEK TEMA ERKEK BEBEK ADVENTURE İNTERNET",
+        "id": "111"
+      },
+      {
+        "PackageNo": "00000561-007",
+        "ReceiptNo": "00000561",
+        "SipExp": "",
+        "id": "110"
+      },
+      {
+        "PackageNo": "00000561-006",
+        "ReceiptNo": "00000561",
+        "SipExp": "",
+        "id": "109"
+      },
+      {
+        "PackageNo": "00000561-005",
+        "ReceiptNo": "00000561",
+        "SipExp": "",
+        "id": "107"
+      }
+    ]
+  },
+  "koliDetay": {
+    "note": "Kullanıcının açtığı üç kolinin koliDetay yanıtı (id → items). Bu kolilerin koli numarası logda yok.",
+    "items": {
+      "6": [
+        {
+          "h1_Malzeme Adı": "25YBBTETKM009",
+          "sh_Renk": "SARI",
+          "sh_Miktar": "2",
+          "h2_Barkod": "8682214716308",
+          "sh_Lot Adeti": "0"
+        }
+      ],
+      "7": [
+        {
+          "h1_Malzeme Adı": "T4121",
+          "sh_Renk": "BEJ",
+          "sh_Miktar": "20",
+          "h2_Barkod": "9870000273251",
+          "sh_Lot Adeti": "4"
+        }
+      ],
+      "8": [
+        {
+          "h1_Malzeme Adı": "T4121",
+          "sh_Renk": "BEJ",
+          "sh_Miktar": "10",
+          "h2_Barkod": "9870000273251",
+          "sh_Lot Adeti": "2"
+        },
+        {
+          "h1_Malzeme Adı": "Z1112",
+          "sh_Renk": "PETROL YEŞİL",
+          "sh_Miktar": "4",
+          "h2_Barkod": "9870000274418",
+          "sh_Lot Adeti": "1"
+        }
+      ]
+    }
+  },
+  "irsKoliListesi": {
+    "request": {
+      "name": "irsKoliListesi",
+      "offSet": 0,
+      "pageLen": 15
+    },
+    "note": "Durum (Status) alanı gelmiyor.",
+    "items": [
+      {
+        "id": "114",
+        "PackageNo": "00000151-022",
+        "ReceiptNo": "00000151",
+        "SipExp": "24 KIŞ STOK SİPARİŞİ"
+      },
+      {
+        "id": "113",
+        "PackageNo": "00000003-005",
+        "ReceiptNo": "00000003",
+        "SipExp": "25 YAZ EBEBEK TEMA ERKEK BEBEK ADVENTURE İNTERNET"
+      },
+      {
+        "id": "112",
+        "PackageNo": "00000151-021",
+        "ReceiptNo": "00000151",
+        "SipExp": "24 KIŞ STOK SİPARİŞİ"
+      },
+      {
+        "id": "111",
+        "PackageNo": "00000003-004",
+        "ReceiptNo": "00000003",
+        "SipExp": "25 YAZ EBEBEK TEMA ERKEK BEBEK ADVENTURE İNTERNET"
+      },
+      {
+        "id": "110",
+        "PackageNo": "00000561-007",
+        "ReceiptNo": "00000561",
+        "SipExp": ""
+      },
+      {
+        "id": "109",
+        "PackageNo": "00000561-006",
+        "ReceiptNo": "00000561",
+        "SipExp": ""
+      },
+      {
+        "id": "107",
+        "PackageNo": "00000561-005",
+        "ReceiptNo": "00000561",
+        "SipExp": ""
+      },
+      {
+        "id": "106",
+        "PackageNo": "00000561-004",
+        "ReceiptNo": "00000561",
+        "SipExp": ""
+      },
+      {
+        "id": "105",
+        "PackageNo": "00000561-003",
+        "ReceiptNo": "00000561",
+        "SipExp": ""
+      },
+      {
+        "id": "104",
+        "PackageNo": "00000151-020",
+        "ReceiptNo": "00000151",
+        "SipExp": "24 KIŞ STOK SİPARİŞİ"
+      },
+      {
+        "id": "103",
+        "PackageNo": "00000151-019",
+        "ReceiptNo": "00000151",
+        "SipExp": "24 KIŞ STOK SİPARİŞİ"
+      },
+      {
+        "id": "102",
+        "PackageNo": "00000562-006",
+        "ReceiptNo": "00000562",
+        "SipExp": ""
+      },
+      {
+        "id": "101",
+        "PackageNo": "00000082-002",
+        "ReceiptNo": "00000082",
+        "SipExp": "25 YAZ EBEBEK YENİDOĞAN ORGANİC SLEEPY CAT MAĞAZA"
+      },
+      {
+        "id": "100",
+        "PackageNo": "00000357-007",
+        "ReceiptNo": "00000357",
+        "SipExp": ""
+      },
+      {
+        "id": "99",
+        "PackageNo": "00000151-018",
+        "ReceiptNo": "00000151",
+        "SipExp": "24 KIŞ STOK SİPARİŞİ"
+      }
+    ]
+  },
+  "orderReceipts": {
+    "request": {
+      "name": "orderReceipts"
+    },
+    "note": "İlk 24 kayıt, servisin sırasıyla (müşteri adına göre sıralı). Logda yaklaşık 350 kayıt vardı; hepsi tek sayfada geliyor.",
+    "items": [
+      {
+        "RecId": "495",
+        "ReceiptNo": "00000151",
+        "CurrentAccountName": "BEBETTO TEKSTİL A.Ş"
+      },
+      {
+        "RecId": "1407",
+        "ReceiptNo": "00000357",
+        "CurrentAccountName": "BEBETTO TEKSTİL A.Ş"
+      },
+      {
+        "RecId": "2348",
+        "ReceiptNo": "00000561",
+        "CurrentAccountName": "BEBETTO TEKSTİL A.Ş"
+      },
+      {
+        "RecId": "2349",
+        "ReceiptNo": "00000562",
+        "CurrentAccountName": "BEBETTO TEKSTİL A.Ş"
+      },
+      {
+        "RecId": "1754",
+        "ReceiptNo": "00000481",
+        "CurrentAccountName": "ARTEKS TEKSTİL MOBİLYA GIDA VE MAKİNE SAN.DIŞ TİC .A.Ş"
+      },
+      {
+        "RecId": "365",
+        "ReceiptNo": "00000122",
+        "CurrentAccountName": "FEDEX  EXPRESS  TURKEY TAŞIMACILIK TİC.LTD.ŞTİ."
+      },
+      {
+        "RecId": "255",
+        "ReceiptNo": "00000015",
+        "CurrentAccountName": "AL KOUKH TEKSTİL İÇ VE DIŞ TİC.LTD.ŞTİ"
+      },
+      {
+        "RecId": "711",
+        "ReceiptNo": "00000238",
+        "CurrentAccountName": "AL KOUKH TEKSTİL İÇ VE DIŞ TİC.LTD.ŞTİ"
+      },
+      {
+        "RecId": "263",
+        "ReceiptNo": "00000023",
+        "CurrentAccountName": "BEBETTO VAN Mirbadin GÜNALP"
+      },
+      {
+        "RecId": "622",
+        "ReceiptNo": "00000193",
+        "CurrentAccountName": "BEBETTO VAN Mirbadin GÜNALP"
+      },
+      {
+        "RecId": "1598",
+        "ReceiptNo": "00000457",
+        "CurrentAccountName": "BEBETTO VAN Mirbadin GÜNALP"
+      },
+      {
+        "RecId": "254",
+        "ReceiptNo": "00000014",
+        "CurrentAccountName": "CİVİL MAĞAZACILIK  A.Ş"
+      },
+      {
+        "RecId": "388",
+        "ReceiptNo": "00000131",
+        "CurrentAccountName": "CİVİL MAĞAZACILIK  A.Ş"
+      },
+      {
+        "RecId": "390",
+        "ReceiptNo": "00000132",
+        "CurrentAccountName": "CİVİL MAĞAZACILIK  A.Ş"
+      },
+      {
+        "RecId": "298",
+        "ReceiptNo": "00000058",
+        "CurrentAccountName": "DİKKAT BEBEK VAR KADİR KARA"
+      },
+      {
+        "RecId": "1596",
+        "ReceiptNo": "00000456",
+        "CurrentAccountName": "DİKKAT BEBEK VAR KADİR KARA"
+      },
+      {
+        "RecId": "243",
+        "ReceiptNo": "00000003",
+        "CurrentAccountName": "EBEBEK MAĞAZACILIK A.Ş"
+      },
+      {
+        "RecId": "245",
+        "ReceiptNo": "00000005",
+        "CurrentAccountName": "EBEBEK MAĞAZACILIK A.Ş"
+      },
+      {
+        "RecId": "248",
+        "ReceiptNo": "00000008",
+        "CurrentAccountName": "EBEBEK MAĞAZACILIK A.Ş"
+      },
+      {
+        "RecId": "250",
+        "ReceiptNo": "00000010",
+        "CurrentAccountName": "EBEBEK MAĞAZACILIK A.Ş"
+      },
+      {
+        "RecId": "251",
+        "ReceiptNo": "00000011",
+        "CurrentAccountName": "EBEBEK MAĞAZACILIK A.Ş"
+      },
+      {
+        "RecId": "253",
+        "ReceiptNo": "00000013",
+        "CurrentAccountName": "EBEBEK MAĞAZACILIK A.Ş"
+      },
+      {
+        "RecId": "256",
+        "ReceiptNo": "00000016",
+        "CurrentAccountName": "EBEBEK MAĞAZACILIK A.Ş"
+      },
+      {
+        "RecId": "266",
+        "ReceiptNo": "00000026",
+        "CurrentAccountName": "EBEBEK MAĞAZACILIK A.Ş"
+      }
+    ]
+  }
+}

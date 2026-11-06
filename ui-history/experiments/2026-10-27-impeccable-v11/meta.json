@@ -1,0 +1,61 @@
+{
+  "id": "2026-10-27-impeccable-v11",
+  "date": "2026-10-27",
+  "revision": 11,
+  "previous": "2026-10-27-impeccable-v9",
+  "status": "pending_approval",
+  "basedOn": "2026-10-15",
+  "label": "Impeccable · Koli Detayı ürün kartı",
+  "note": "On birinci öneri: Koli Detayı’nın v9 ürün kartı iyileştirildi (kullanıcı tabloyu değil kartı tercih etti). Miktar sağ üstte, kartlar yarı yükseklikte. Veri test sunucusunun koliDetay yanıtı. Ana koda uygulanmadı.",
+  "skill": "impeccable / layout",
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden",
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "screenNotes": {
+    "koli-detay": [
+      "v9 kartı korunur: karo, kart dili, renkler. Etiketli alt bölüm kaldırıldı; kart ~170 px’ten ~110 px’e indi, ekranda daha çok ürün görünür.",
+      "Miktar kartın sağ üst köşesinde, büyük ve yeşil: kartlar arasında hep aynı dikey hizada, okutma sırasında göz tek çizgide iner.",
+      "Barkod ürün kodunun altında; renk küçük bir etiket, yanında “2 lot”. Birim yanıtta yok, yazılmaz; sunucunun ekleyeceği yeni alanlar aynı satıra düşer."
+    ]
+  },
+  "states": {
+    "koli-detay": [
+      {
+        "id": "okutma-basarili",
+        "name": "Okutma başarılı",
+        "notes": [
+          "Bildirim altta, 2 sn. Eklenen ürünün kartı yeşil çerçeveli, miktarı yeni değeriyle (10 → 11).",
+          "Ses yok, dokunma gerekmez; yeni okutma eskisinin yerine geçer.",
+          "Silme modunda aynı bildirim “Ürün silindi” der."
+        ]
+      },
+      {
+        "id": "okutma-hatali",
+        "name": "Okutma hatalı",
+        "notes": [
+          "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Liste değişmez.",
+          "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; neden metni örnektir.",
+          "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır."
+        ]
+      },
+      {
+        "id": "miktar-asimi",
+        "name": "Miktar aşımı",
+        "notes": [
+          "Karar gerektiği için okutmayı durduran tek durum: alttan pencere, uygulamadaki metin ve “Hayır / Evet”.",
+          "Okutulan barkod, listedeki T4121’in gerçek barkodu.",
+          "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+        ]
+      }
+    ]
+  }
+}

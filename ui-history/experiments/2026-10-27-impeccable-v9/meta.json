@@ -1,0 +1,71 @@
+{
+  "id": "2026-10-27-impeccable-v9",
+  "date": "2026-10-27",
+  "revision": 9,
+  "previous": "2026-10-23-impeccable-v8",
+  "status": "pending_approval",
+  "basedOn": "2026-10-15",
+  "label": "Impeccable · Koli ekranları gerçek veriyle",
+  "note": "Dokuzuncu öneri: Koli Listesi, Koli Detayı ve İrsaliye Oluştur test sunucusunun gerçek yanıtlarıyla. Listede depo ve durum yok; SipExp siparişin açıklamasıdır. Detayda miktar, barkod ve lot adeti gerçek alanlardan. Diğer ekranlar v8’de. Ana koda uygulanmadı.",
+  "skill": "impeccable / refine",
+  "profile": {
+    "width": 390,
+    "height": 844,
+    "platform": "android",
+    "theme": "dark",
+    "language": "tr",
+    "keyboard": "hidden",
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "screenNotes": {
+    "koli-listesi": [
+      "Veri: test sunucusunun koliListesi yanıtı (ilk sayfa, 7 koli). Depo (Explanation) ve açık/kapalı durumu bu yanıtta yok; kartlardan kaldırıldı.",
+      "Koli no siparişin numarasıyla başlar (00000151-022): sipariş kısmı soluk, kolinin sırası koyu. Ayrı Sipariş No satırı ve alt şerit kaldırıldı; aynı numarayı tekrar ediyordu. Ekranda 7 kolinin 6’sı görünür.",
+      "SipExp müşteri adı değil, siparişin açıklaması: en fazla iki satır. Boş gelen kolide satır hiç çizilmez, kart kısalır."
+    ],
+    "koli-detay": [
+      "Veri: test sunucusunun koliDetay yanıtı (id 8, iki ürün); başlık listedeki ilk koliden (00000151-022). Görsel, beden ve birim yanıtta yok.",
+      "Asıl miktar (sh_Miktar) miktar kutusunda; uygulamada küçük yeşil satırdaydı, kutuda barkod duruyordu. Barkod ürün kodunun altında.",
+      "Renk ve Lot adeti alt satırda; etiketler alan adlarından gelir. Durum seçicide: Okutma başarılı, Okutma hatalı, Miktar aşımı."
+    ],
+    "irskoli-listesi": [
+      "Veri: test sunucusunun irsKoliListesi yanıtı (ilk sayfa, 15 koli, 6 sipariş). Durum (açık/kapalı) yanıtta yok: rozetler ve pasif satırlar kaldırıldı.",
+      "Koliler siparişe göre gruplu: başlıkta sipariş no, açıklama ve “5 koli · 2 seçili”. Sipariş sırası servisin sırası (en yeni önce). Farklı siparişlerin kolileri tek irsaliyede birleşirse bu artık görünür.",
+      "Grup başlığında “Tümünü seç” (yeni davranış önerisi): bir siparişin bütün kolileri tek dokunuşla. Açık koli kuralı için servisin durum alanı göndermesi gerekir."
+    ]
+  },
+  "states": {
+    "koli-detay": [
+      {
+        "id": "okutma-basarili",
+        "name": "Okutma başarılı",
+        "notes": [
+          "Bildirim altta, 2 sn; eklenen satır yeşil çerçeveli ve yeni miktarıyla (10 → 11). Ses yok, dokunma gerekmez.",
+          "Bildirim ürün kodunu, rengi ve yeni miktarı söyler; yanıtta birim olmadığı için birim yazılmaz.",
+          "Yeni okutma eskisinin yerine geçer; silme modunda “Ürün silindi”."
+        ]
+      },
+      {
+        "id": "okutma-hatali",
+        "name": "Okutma hatalı",
+        "notes": [
+          "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Liste değişmez.",
+          "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; neden metni örnektir.",
+          "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır."
+        ]
+      },
+      {
+        "id": "miktar-asimi",
+        "name": "Miktar aşımı",
+        "notes": [
+          "Karar gerektiği için okutmayı durduran tek durum: alttan pencere, uygulamadaki metin ve “Hayır / Evet”.",
+          "Okutulan barkod, kolideki T4121’in gerçek barkodu.",
+          "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+        ]
+      }
+    ]
+  }
+}

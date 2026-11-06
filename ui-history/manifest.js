@@ -109,6 +109,68 @@ window.UI_HISTORY = {
           "settings"
         ]
       }
+    },
+    {
+      "date": "2026-11-06",
+      "gitCommit": "e49528dd1dd92d9b21928b0ba39638ae677803e7",
+      "appVersion": "1.0.0",
+      "note": "İkinci arşiv: dokuz ekranın yeni tasarımı uygulamada.",
+      "changedScreens": [
+        "barcode-scanner",
+        "create-koli",
+        "dashboard",
+        "irskoli-listesi",
+        "koli-detay",
+        "koli-listesi",
+        "login",
+        "order-receipts",
+        "settings"
+      ],
+      "screenNotes": {
+        "login": "Hoş geldiniz ekranı; açık temada beyaz sayfa.",
+        "settings": "Uygulama ayarları; açık temada seçili seçenek beyaz.",
+        "dashboard": "İki kart aynı boyda, çıkış düğmesi başlıkta.",
+        "koli-listesi": "Düz liste; her kolide sipariş no. Altta eşit boyda Koli Ara ve Yeni Koli. Yazılar bir boy küçük.",
+        "koli-detay": "Kırmızı sipariş kartı, miktar sağ üstte, okutma hatası altta bildirim. Klavye yalnız alana dokununca açılır.",
+        "create-koli": "Sipariş seçeneği tek satırlık kart.",
+        "order-receipts": "Düz liste, kartta sipariş no ve cari. Yazılar bir boy küçük.",
+        "irskoli-listesi": "Siparişe göre gruplu seçim, Tümünü seç, satırın sağındaki okla koli detayı. Yazılar bir boy küçük.",
+        "barcode-scanner": "Okutma alanı 18 px, diğer yazılar bir boy küçük. Hata altta bildirim. Klavye yalnız alana dokununca açılır."
+      },
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "platform": "android",
+        "theme": "dark",
+        "language": "tr",
+        "keyboard": "hidden"
+      },
+      "fixture": "../../fixtures-api.json",
+      "files": [
+        "barcode-scanner",
+        "create-koli",
+        "dashboard",
+        "irskoli-listesi",
+        "koli-detay",
+        "koli-listesi",
+        "login",
+        "order-receipts",
+        "settings"
+      ],
+      "lightPreview": {
+        "id": "archive-2026-11-06-light",
+        "files": [
+          "barcode-scanner",
+          "create-koli",
+          "dashboard",
+          "irskoli-listesi",
+          "koli-detay",
+          "koli-listesi",
+          "login",
+          "order-receipts",
+          "settings"
+        ]
+      }
     }
   ],
   "experiments": [
@@ -842,6 +904,844 @@ window.UI_HISTORY = {
       ],
       "lightPreview": {
         "id": "2026-10-23-impeccable-v8-light",
+        "files": [
+          "barcode-scanner",
+          "create-koli",
+          "dashboard",
+          "irskoli-listesi",
+          "koli-detay",
+          "koli-listesi",
+          "login",
+          "order-receipts",
+          "settings"
+        ]
+      }
+    },
+    {
+      "id": "2026-10-27-impeccable-v10",
+      "date": "2026-10-27",
+      "revision": 10,
+      "previous": "2026-10-27-impeccable-v9",
+      "status": "rejected",
+      "basedOn": "2026-10-15",
+      "label": "Impeccable · Koli Detayı ürün tablosu",
+      "note": "Onuncu öneri: Koli Detayı’nda ürünler kart yerine tek tabloda. Sütun başlıkları bir kez, miktarlar tek sütunda, en altta toplam. Veri test sunucusunun koliDetay yanıtı. Ana koda uygulanmadı.",
+      "skill": "impeccable / layout",
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "platform": "android",
+        "theme": "dark",
+        "language": "tr",
+        "keyboard": "hidden",
+        "themes": [
+          "dark",
+          "light"
+        ]
+      },
+      "screenNotes": {
+        "koli-detay": [
+          "Ürünler tek tabloda: Ürün · Lot · Miktar başlıkları bir kez yazılır. Yanıtta görsel olmadığı için ikon karosu kaldırıldı; satır başına üç blok yerine tek satır.",
+          "Solda ürün kodu, altında renk, en altta barkod (sabit genişlikli, soluk). Miktarlar sağda, alt alta hizalı ve yeşil: okutma sırasında göz tek sütunda iner.",
+          "Tablonun sonunda toplam lot ve toplam miktar; özet satırında da “toplam miktar”. Birim yanıtta olmadığı için yazılmaz. Sunucunun ekleyeceği yeni sh_ alanları renk satırına düşer."
+        ]
+      },
+      "states": {
+        "koli-detay": [
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Bildirim altta, 2 sn. Eklenen satır yeşil zeminli, miktarı yeşil ve yeni değeriyle (10 → 11); toplam da güncellenir.",
+              "Ses yok, dokunma gerekmez; yeni okutma eskisinin yerine geçer.",
+              "Silme modunda aynı bildirim “Ürün silindi” der."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Tablo değişmez.",
+              "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; neden metni örnektir.",
+              "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır."
+            ]
+          },
+          {
+            "id": "miktar-asimi",
+            "name": "Miktar aşımı",
+            "notes": [
+              "Karar gerektiği için okutmayı durduran tek durum: alttan pencere, uygulamadaki metin ve “Hayır / Evet”.",
+              "Okutulan barkod, tablodaki T4121’in gerçek barkodu.",
+              "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+            ]
+          }
+        ]
+      },
+      "rejectedNote": "Kullanıcı (2026-10-27): kart görünümü daha iyiydi; istenen kartın iyileştirilmesiydi. Yerine v11.",
+      "files": [
+        "koli-detay"
+      ],
+      "lightPreview": {
+        "id": "2026-10-27-impeccable-v10-light",
+        "files": [
+          "koli-detay"
+        ]
+      }
+    },
+    {
+      "id": "2026-10-27-impeccable-v11",
+      "date": "2026-10-27",
+      "revision": 11,
+      "previous": "2026-10-27-impeccable-v9",
+      "status": "pending_approval",
+      "basedOn": "2026-10-15",
+      "label": "Impeccable · Koli Detayı ürün kartı",
+      "note": "On birinci öneri: Koli Detayı’nın v9 ürün kartı iyileştirildi (kullanıcı tabloyu değil kartı tercih etti). Miktar sağ üstte, kartlar yarı yükseklikte. Veri test sunucusunun koliDetay yanıtı. Ana koda uygulanmadı.",
+      "skill": "impeccable / layout",
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "platform": "android",
+        "theme": "dark",
+        "language": "tr",
+        "keyboard": "hidden",
+        "themes": [
+          "dark",
+          "light"
+        ]
+      },
+      "screenNotes": {
+        "koli-detay": [
+          "v9 kartı korunur: karo, kart dili, renkler. Etiketli alt bölüm kaldırıldı; kart ~170 px’ten ~110 px’e indi, ekranda daha çok ürün görünür.",
+          "Miktar kartın sağ üst köşesinde, büyük ve yeşil: kartlar arasında hep aynı dikey hizada, okutma sırasında göz tek çizgide iner.",
+          "Barkod ürün kodunun altında; renk küçük bir etiket, yanında “2 lot”. Birim yanıtta yok, yazılmaz; sunucunun ekleyeceği yeni alanlar aynı satıra düşer."
+        ]
+      },
+      "states": {
+        "koli-detay": [
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Bildirim altta, 2 sn. Eklenen ürünün kartı yeşil çerçeveli, miktarı yeni değeriyle (10 → 11).",
+              "Ses yok, dokunma gerekmez; yeni okutma eskisinin yerine geçer.",
+              "Silme modunda aynı bildirim “Ürün silindi” der."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Liste değişmez.",
+              "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; neden metni örnektir.",
+              "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır."
+            ]
+          },
+          {
+            "id": "miktar-asimi",
+            "name": "Miktar aşımı",
+            "notes": [
+              "Karar gerektiği için okutmayı durduran tek durum: alttan pencere, uygulamadaki metin ve “Hayır / Evet”.",
+              "Okutulan barkod, listedeki T4121’in gerçek barkodu.",
+              "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+            ]
+          }
+        ]
+      },
+      "files": [
+        "koli-detay"
+      ],
+      "lightPreview": {
+        "id": "2026-10-27-impeccable-v11-light",
+        "files": [
+          "koli-detay"
+        ]
+      }
+    },
+    {
+      "id": "2026-10-27-impeccable-v12",
+      "date": "2026-10-27",
+      "revision": 12,
+      "previous": "2026-10-27-impeccable-v11",
+      "status": "pending_approval",
+      "basedOn": "2026-10-15",
+      "label": "Impeccable · Okunabilirlik ve gruplama",
+      "note": "On ikinci öneri: kullanıcı geri bildirimi. Kodlar sabit genişlikli yazı tipinden çıktı; Ana Sayfa kartları eşit boy; Koli Listesi siparişe göre gruplu; Koli Detayı kartı v9 düzeninde, miktar v11’deki gibi; Sipariş Seçimi cariye göre gruplu. İrsaliye v9’da kalır. Ana koda uygulanmadı.",
+      "skill": "impeccable / typeset + layout",
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "platform": "android",
+        "theme": "dark",
+        "language": "tr",
+        "keyboard": "hidden",
+        "themes": [
+          "dark",
+          "light"
+        ]
+      },
+      "screenNotes": {
+        "dashboard": [
+          "İki kart aynı yükseklikte: alt metni iki satıra inen İrsaliye kartı Koli Listesi’ni de kendi boyuna çeker.",
+          "Metinler, renkler ve düzen v8 ile aynı."
+        ],
+        "koli-listesi": [
+          "Koliler siparişe göre gruplu: başlıkta “Sipariş No 00000151”, siparişin açıklaması ve koli sayısı. Sipariş numarası artık açıkça yazıyor.",
+          "Her satır bir koli: “Koli 022” büyük, altında tam koli no. Satır 64 px, dokunma alanı satırın tamamı.",
+          "Sıra servisin sırası (en yeni önce); bir sipariş ilk göründüğü yerde toplanır. Sayfalama gelirse aynı siparişin sonraki kolileri aynı gruba eklenir.",
+          "Kodlar sabit genişlikli yazı tipinden çıktı: aynı yazı tipi, rakamlar eşit genişlikte."
+        ],
+        "koli-detay": [
+          "Üst kısım v11 ile aynı.",
+          "Kart v9 düzeninde: ürün kodu, altında “Barkod …”, ince çizginin altında etiketli Renk ve Lot adeti.",
+          "Miktar v11’deki gibi sağ üstte, büyük ve yeşil; bütün kartlarda aynı hizada."
+        ],
+        "order-receipts": [
+          "Veri test sunucusunun orderReceipts yanıtından (ilk 24 kayıt). Kartın ikinci satırı depo değil cari (CurrentAccountName); depo yok.",
+          "Servis siparişleri cariye göre sıralı döndürüyor ve çoğu carinin birden çok siparişi var: her cari bir kart, başlıkta cari adı (en fazla iki satır) ve sipariş sayısı, satırlarda “Sipariş No 00000151”, 56 px.",
+          "Koli Listesi ile aynı grup dili. Uygulamadaki önek “Fiş:”; öneride “Sipariş No”.",
+          "Siparişsiz koli seçeneği ve arama (sipariş no veya cari) v8 ile aynı."
+        ],
+        "barcode-scanner": [
+          "Sipariş ve barkod sabit genişlikli yazı tipinden çıktı; barkod aralığı daraldı.",
+          "Sipariş çipi ve altındaki cari gerçek veriyle: 00000151, BEBETTO TEKSTİL A.Ş.",
+          "Düzen ve durumlar v8 ile aynı."
+        ]
+      },
+      "states": {
+        "koli-detay": [
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Bildirim altta, 2 sn. Eklenen ürünün kartı yeşil çerçeveli, miktarı yeni değeriyle (10 → 11).",
+              "Ses yok, dokunma gerekmez; yeni okutma eskisinin yerine geçer.",
+              "Silme modunda aynı bildirim “Ürün silindi” der."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Liste değişmez.",
+              "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; neden metni örnektir.",
+              "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır."
+            ]
+          },
+          {
+            "id": "miktar-asimi",
+            "name": "Miktar aşımı",
+            "notes": [
+              "Karar gerektiği için okutmayı durduran tek durum: alttan pencere, uygulamadaki metin ve “Hayır / Evet”.",
+              "Okutulan barkod, listedeki T4121’in gerçek barkodu.",
+              "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+            ]
+          }
+        ],
+        "barcode-scanner": [
+          {
+            "id": "gonderiliyor",
+            "name": "Gönderiliyor",
+            "notes": [
+              "Gönder’e basılınca düğmede yükleniyor işareti döner ve düğme pasifleşir; çift gönderim olmaz. Uygulamadaki davranış.",
+              "Barkod alanı yanıt gelene kadar kilitli ve soluk; ses ve titreşim yok."
+            ]
+          },
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Okutma başarılıysa koli açılır ve doğrudan yeni kolinin detayına geçilir: 00000151-023, ilk ürün 1 adet. Uygulamadaki davranış; araya tam ekran parlama girmez.",
+              "Altta 2 sn kalan bildirim “Başarılı” ve sunucunun açıklamasını gösterir; buradaki açıklama metni örnektir.",
+              "Okutma alanı yeniden odaklanır; sonraki ürün hemen okutulabilir."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Ekran kırmızıya boyanmaz: hata, başarı bildirimiyle aynı yerde ve biçimde çıkar; kırmızı ikon, kırmızı çerçeve, 500 ms titreşim ve Ayarlar’daki hata sesi.",
+              "Okutma alanı kırmızı çerçeveli, okutulan barkod alanda kalır; yeniden okutunca yerine yazılır.",
+              "Bildirim kendiliğinden kapanmaz: sonraki okutmada ya da × ile kapanır. Neden sunucunun açıklamasıdır; yoksa uygulamanın metni."
+            ]
+          }
+        ]
+      },
+      "files": [
+        "barcode-scanner",
+        "dashboard",
+        "koli-detay",
+        "koli-listesi",
+        "order-receipts"
+      ],
+      "lightPreview": {
+        "id": "2026-10-27-impeccable-v12-light",
+        "files": [
+          "barcode-scanner",
+          "dashboard",
+          "koli-detay",
+          "koli-listesi",
+          "order-receipts"
+        ]
+      }
+    },
+    {
+      "id": "2026-10-27-impeccable-v13",
+      "date": "2026-10-27",
+      "revision": 13,
+      "previous": "2026-10-27-impeccable-v12",
+      "status": "pending_approval",
+      "basedOn": "2026-10-15",
+      "label": "Impeccable · Açık tema renkleri",
+      "note": "On üçüncü öneri: yalnız açık tema renkleri (kullanıcı: koyu tema iyi, açık temada okunabilirlik zayıf). Ekranlar güncel önerilerinden (v12, İrsaliye v9, Giriş/Ayarlar/Koli Oluştur v8) taşındı. Ana koda uygulanmadı.",
+      "skill": "impeccable / colorize",
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "platform": "android",
+        "theme": "dark",
+        "language": "tr",
+        "keyboard": "hidden",
+        "themes": [
+          "dark",
+          "light"
+        ]
+      },
+      "screenNotes": {
+        "login": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Kaynak: v2 girişi; düzen ve metinler korundu.",
+          "“Beni hatırla” işareti orijinaldeki gibi marka kırmızısı, güvenlik kilidi nötr: yeşil yalnız tamamlama anlamında kalır.",
+          "Ayarlar ve şifre göster düğmeleri 48 px dokunma alanında; açıklama ve alt bilgi 14 px."
+        ],
+        "settings": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Kaynak: v2 ayarları; bölümler, anahtarlar ve değerler korundu.",
+          "Bağlantı alanları orijinal sırada: API URL ve hemen altında açıklaması, Şirket kodu ile Şirket şifresi yan yana, en son Depo ID.",
+          "Bölüm başlıkları markanın büyük harfli etiket stilinde; segmentler 48 px, anahtarlar ayarın adıyla okunur."
+        ],
+        "create-koli": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Kaynak: v2 Yeni Koli; tek seçenek korundu.",
+          "Sipariş seçeneği fiş ikonuyla, Sipariş Seçimi’ndeki gibi; karo koli kırmızısında.",
+          "Seçenek başlığı 16 px kalın, açıklaması 13 → 14 px: Sipariş Seçimi’ndeki siparişsiz koli seçeneğiyle aynı ölçüde."
+        ],
+        "irskoli-listesi": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Veri: test sunucusunun irsKoliListesi yanıtı (ilk sayfa, 15 koli, 6 sipariş). Durum (açık/kapalı) yanıtta yok: rozetler ve pasif satırlar kaldırıldı.",
+          "Koliler siparişe göre gruplu: başlıkta sipariş no, açıklama ve “5 koli · 2 seçili”. Sipariş sırası servisin sırası (en yeni önce). Farklı siparişlerin kolileri tek irsaliyede birleşirse bu artık görünür.",
+          "Grup başlığında “Tümünü seç” (yeni davranış önerisi): bir siparişin bütün kolileri tek dokunuşla. Açık koli kuralı için servisin durum alanı göndermesi gerekir."
+        ],
+        "dashboard": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "İki kart aynı yükseklikte: alt metni iki satıra inen İrsaliye kartı Koli Listesi’ni de kendi boyuna çeker.",
+          "Metinler, renkler ve düzen v8 ile aynı."
+        ],
+        "koli-listesi": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Koliler siparişe göre gruplu: başlıkta “Sipariş No 00000151”, siparişin açıklaması ve koli sayısı. Sipariş numarası artık açıkça yazıyor.",
+          "Her satır bir koli: “Koli 022” büyük, altında tam koli no. Satır 64 px, dokunma alanı satırın tamamı.",
+          "Sıra servisin sırası (en yeni önce); bir sipariş ilk göründüğü yerde toplanır. Sayfalama gelirse aynı siparişin sonraki kolileri aynı gruba eklenir.",
+          "Kodlar sabit genişlikli yazı tipinden çıktı: aynı yazı tipi, rakamlar eşit genişlikte."
+        ],
+        "koli-detay": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Üst kısım v11 ile aynı.",
+          "Kart v9 düzeninde: ürün kodu, altında “Barkod …”, ince çizginin altında etiketli Renk ve Lot adeti.",
+          "Miktar v11’deki gibi sağ üstte, büyük ve yeşil; bütün kartlarda aynı hizada."
+        ],
+        "order-receipts": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Veri test sunucusunun orderReceipts yanıtından (ilk 24 kayıt). Kartın ikinci satırı depo değil cari (CurrentAccountName); depo yok.",
+          "Servis siparişleri cariye göre sıralı döndürüyor ve çoğu carinin birden çok siparişi var: her cari bir kart, başlıkta cari adı (en fazla iki satır) ve sipariş sayısı, satırlarda “Sipariş No 00000151”, 56 px.",
+          "Koli Listesi ile aynı grup dili. Uygulamadaki önek “Fiş:”; öneride “Sipariş No”.",
+          "Siparişsiz koli seçeneği ve arama (sipariş no veya cari) v8 ile aynı."
+        ],
+        "barcode-scanner": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Sipariş ve barkod sabit genişlikli yazı tipinden çıktı; barkod aralığı daraldı.",
+          "Sipariş çipi ve altındaki cari gerçek veriyle: 00000151, BEBETTO TEKSTİL A.Ş.",
+          "Düzen ve durumlar v8 ile aynı."
+        ]
+      },
+      "states": {
+        "koli-detay": [
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Bildirim altta, 2 sn. Eklenen ürünün kartı yeşil çerçeveli, miktarı yeni değeriyle (10 → 11).",
+              "Ses yok, dokunma gerekmez; yeni okutma eskisinin yerine geçer.",
+              "Silme modunda aynı bildirim “Ürün silindi” der."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Liste değişmez.",
+              "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; neden metni örnektir.",
+              "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır."
+            ]
+          },
+          {
+            "id": "miktar-asimi",
+            "name": "Miktar aşımı",
+            "notes": [
+              "Karar gerektiği için okutmayı durduran tek durum: alttan pencere, uygulamadaki metin ve “Hayır / Evet”.",
+              "Okutulan barkod, listedeki T4121’in gerçek barkodu.",
+              "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+            ]
+          }
+        ],
+        "barcode-scanner": [
+          {
+            "id": "gonderiliyor",
+            "name": "Gönderiliyor",
+            "notes": [
+              "Gönder’e basılınca düğmede yükleniyor işareti döner ve düğme pasifleşir; çift gönderim olmaz. Uygulamadaki davranış.",
+              "Barkod alanı yanıt gelene kadar kilitli ve soluk; ses ve titreşim yok."
+            ]
+          },
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Okutma başarılıysa koli açılır ve doğrudan yeni kolinin detayına geçilir: 00000151-023, ilk ürün 1 adet. Uygulamadaki davranış; araya tam ekran parlama girmez.",
+              "Altta 2 sn kalan bildirim “Başarılı” ve sunucunun açıklamasını gösterir; buradaki açıklama metni örnektir.",
+              "Okutma alanı yeniden odaklanır; sonraki ürün hemen okutulabilir."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Ekran kırmızıya boyanmaz: hata, başarı bildirimiyle aynı yerde ve biçimde çıkar; kırmızı ikon, kırmızı çerçeve, 500 ms titreşim ve Ayarlar’daki hata sesi.",
+              "Okutma alanı kırmızı çerçeveli, okutulan barkod alanda kalır; yeniden okutunca yerine yazılır.",
+              "Bildirim kendiliğinden kapanmaz: sonraki okutmada ya da × ile kapanır. Neden sunucunun açıklamasıdır; yoksa uygulamanın metni."
+            ]
+          }
+        ]
+      },
+      "files": [
+        "barcode-scanner",
+        "create-koli",
+        "dashboard",
+        "irskoli-listesi",
+        "koli-detay",
+        "koli-listesi",
+        "login",
+        "order-receipts",
+        "settings"
+      ],
+      "lightPreview": {
+        "id": "2026-10-27-impeccable-v13-light",
+        "files": [
+          "barcode-scanner",
+          "create-koli",
+          "dashboard",
+          "irskoli-listesi",
+          "koli-detay",
+          "koli-listesi",
+          "login",
+          "order-receipts",
+          "settings"
+        ]
+      }
+    },
+    {
+      "id": "2026-10-27-impeccable-v9",
+      "date": "2026-10-27",
+      "revision": 9,
+      "previous": "2026-10-23-impeccable-v8",
+      "status": "pending_approval",
+      "basedOn": "2026-10-15",
+      "label": "Impeccable · Koli ekranları gerçek veriyle",
+      "note": "Dokuzuncu öneri: Koli Listesi, Koli Detayı ve İrsaliye Oluştur test sunucusunun gerçek yanıtlarıyla. Listede depo ve durum yok; SipExp siparişin açıklamasıdır. Detayda miktar, barkod ve lot adeti gerçek alanlardan. Diğer ekranlar v8’de. Ana koda uygulanmadı.",
+      "skill": "impeccable / refine",
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "platform": "android",
+        "theme": "dark",
+        "language": "tr",
+        "keyboard": "hidden",
+        "themes": [
+          "dark",
+          "light"
+        ]
+      },
+      "screenNotes": {
+        "koli-listesi": [
+          "Veri: test sunucusunun koliListesi yanıtı (ilk sayfa, 7 koli). Depo (Explanation) ve açık/kapalı durumu bu yanıtta yok; kartlardan kaldırıldı.",
+          "Koli no siparişin numarasıyla başlar (00000151-022): sipariş kısmı soluk, kolinin sırası koyu. Ayrı Sipariş No satırı ve alt şerit kaldırıldı; aynı numarayı tekrar ediyordu. Ekranda 7 kolinin 6’sı görünür.",
+          "SipExp müşteri adı değil, siparişin açıklaması: en fazla iki satır. Boş gelen kolide satır hiç çizilmez, kart kısalır."
+        ],
+        "koli-detay": [
+          "Veri: test sunucusunun koliDetay yanıtı (id 8, iki ürün); başlık listedeki ilk koliden (00000151-022). Görsel, beden ve birim yanıtta yok.",
+          "Asıl miktar (sh_Miktar) miktar kutusunda; uygulamada küçük yeşil satırdaydı, kutuda barkod duruyordu. Barkod ürün kodunun altında.",
+          "Renk ve Lot adeti alt satırda; etiketler alan adlarından gelir. Durum seçicide: Okutma başarılı, Okutma hatalı, Miktar aşımı."
+        ],
+        "irskoli-listesi": [
+          "Veri: test sunucusunun irsKoliListesi yanıtı (ilk sayfa, 15 koli, 6 sipariş). Durum (açık/kapalı) yanıtta yok: rozetler ve pasif satırlar kaldırıldı.",
+          "Koliler siparişe göre gruplu: başlıkta sipariş no, açıklama ve “5 koli · 2 seçili”. Sipariş sırası servisin sırası (en yeni önce). Farklı siparişlerin kolileri tek irsaliyede birleşirse bu artık görünür.",
+          "Grup başlığında “Tümünü seç” (yeni davranış önerisi): bir siparişin bütün kolileri tek dokunuşla. Açık koli kuralı için servisin durum alanı göndermesi gerekir."
+        ]
+      },
+      "states": {
+        "koli-detay": [
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Bildirim altta, 2 sn; eklenen satır yeşil çerçeveli ve yeni miktarıyla (10 → 11). Ses yok, dokunma gerekmez.",
+              "Bildirim ürün kodunu, rengi ve yeni miktarı söyler; yanıtta birim olmadığı için birim yazılmaz.",
+              "Yeni okutma eskisinin yerine geçer; silme modunda “Ürün silindi”."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Liste değişmez.",
+              "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; neden metni örnektir.",
+              "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır."
+            ]
+          },
+          {
+            "id": "miktar-asimi",
+            "name": "Miktar aşımı",
+            "notes": [
+              "Karar gerektiği için okutmayı durduran tek durum: alttan pencere, uygulamadaki metin ve “Hayır / Evet”.",
+              "Okutulan barkod, kolideki T4121’in gerçek barkodu.",
+              "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+            ]
+          }
+        ]
+      },
+      "files": [
+        "irskoli-listesi",
+        "koli-detay",
+        "koli-listesi"
+      ],
+      "lightPreview": {
+        "id": "2026-10-27-impeccable-v9-light",
+        "files": [
+          "irskoli-listesi",
+          "koli-detay",
+          "koli-listesi"
+        ]
+      }
+    },
+    {
+      "id": "2026-11-04-impeccable-v14",
+      "date": "2026-11-04",
+      "revision": 14,
+      "previous": "2026-10-27-impeccable-v13",
+      "status": "pending_approval",
+      "basedOn": "2026-10-15",
+      "label": "Impeccable · Düz listeler",
+      "note": "On dördüncü öneri: sorumlu arkadaşın geri bildirimi. Koli Listesi ve Sipariş Seçimi’ndeki gruplama kaldırıldı, listeler eskisi gibi kayıt başına bir kart. Diğer ekranlar v13 ile aynı. Ana koda uygulanmadı.",
+      "skill": "impeccable / layout",
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "platform": "android",
+        "theme": "dark",
+        "language": "tr",
+        "keyboard": "hidden",
+        "themes": [
+          "dark",
+          "light"
+        ]
+      },
+      "screenNotes": {
+        "login": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Kaynak: v2 girişi; düzen ve metinler korundu.",
+          "“Beni hatırla” işareti orijinaldeki gibi marka kırmızısı, güvenlik kilidi nötr: yeşil yalnız tamamlama anlamında kalır.",
+          "Ayarlar ve şifre göster düğmeleri 48 px dokunma alanında; açıklama ve alt bilgi 14 px."
+        ],
+        "settings": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Kaynak: v2 ayarları; bölümler, anahtarlar ve değerler korundu.",
+          "Bağlantı alanları orijinal sırada: API URL ve hemen altında açıklaması, Şirket kodu ile Şirket şifresi yan yana, en son Depo ID.",
+          "Bölüm başlıkları markanın büyük harfli etiket stilinde; segmentler 48 px, anahtarlar ayarın adıyla okunur."
+        ],
+        "create-koli": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Kaynak: v2 Yeni Koli; tek seçenek korundu.",
+          "Sipariş seçeneği fiş ikonuyla, Sipariş Seçimi’ndeki gibi; karo koli kırmızısında.",
+          "Seçenek başlığı 16 px kalın, açıklaması 13 → 14 px: Sipariş Seçimi’ndeki siparişsiz koli seçeneğiyle aynı ölçüde."
+        ],
+        "irskoli-listesi": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Veri: test sunucusunun irsKoliListesi yanıtı (ilk sayfa, 15 koli, 6 sipariş). Durum (açık/kapalı) yanıtta yok: rozetler ve pasif satırlar kaldırıldı.",
+          "Koliler siparişe göre gruplu: başlıkta sipariş no, açıklama ve “5 koli · 2 seçili”. Sipariş sırası servisin sırası (en yeni önce). Farklı siparişlerin kolileri tek irsaliyede birleşirse bu artık görünür.",
+          "Grup başlığında “Tümünü seç” (yeni davranış önerisi): bir siparişin bütün kolileri tek dokunuşla. Açık koli kuralı için servisin durum alanı göndermesi gerekir."
+        ],
+        "dashboard": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "İki kart aynı yükseklikte: alt metni iki satıra inen İrsaliye kartı Koli Listesi’ni de kendi boyuna çeker.",
+          "Metinler, renkler ve düzen v8 ile aynı."
+        ],
+        "koli-listesi": [
+          "Gruplama kaldırıldı: her koli bir kart, servisin sırasıyla (en yeni önce).",
+          "Kartta koli no, altında “Sipariş No 00000151” ve siparişin açıklaması (en fazla iki satır, boşsa çizilmez).",
+          "Listenin sonundaki “Tüm koliler yüklendi” satırı geri geldi."
+        ],
+        "koli-detay": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Üst kısım v11 ile aynı.",
+          "Kart v9 düzeninde: ürün kodu, altında “Barkod …”, ince çizginin altında etiketli Renk ve Lot adeti.",
+          "Miktar v11’deki gibi sağ üstte, büyük ve yeşil; bütün kartlarda aynı hizada."
+        ],
+        "order-receipts": [
+          "Gruplama kaldırıldı: her sipariş bir kart, servisin sırasıyla.",
+          "Kartta “Sipariş No 00000151”, altında cari (CurrentAccountName, en fazla iki satır). Uygulamadaki önek “Fiş:”; öneride “Sipariş No”.",
+          "Siparişsiz koli seçeneği ve arama (sipariş no veya cari) aynı."
+        ],
+        "barcode-scanner": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Sipariş ve barkod sabit genişlikli yazı tipinden çıktı; barkod aralığı daraldı.",
+          "Sipariş çipi ve altındaki cari gerçek veriyle: 00000151, BEBETTO TEKSTİL A.Ş.",
+          "Düzen ve durumlar v8 ile aynı."
+        ]
+      },
+      "states": {
+        "koli-detay": [
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Bildirim altta, 2 sn. Eklenen ürünün kartı yeşil çerçeveli, miktarı yeni değeriyle (10 → 11).",
+              "Ses yok, dokunma gerekmez; yeni okutma eskisinin yerine geçer.",
+              "Silme modunda aynı bildirim “Ürün silindi” der."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Liste değişmez.",
+              "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; neden metni örnektir.",
+              "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır."
+            ]
+          },
+          {
+            "id": "miktar-asimi",
+            "name": "Miktar aşımı",
+            "notes": [
+              "Karar gerektiği için okutmayı durduran tek durum: alttan pencere, uygulamadaki metin ve “Hayır / Evet”.",
+              "Okutulan barkod, listedeki T4121’in gerçek barkodu.",
+              "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+            ]
+          }
+        ],
+        "barcode-scanner": [
+          {
+            "id": "gonderiliyor",
+            "name": "Gönderiliyor",
+            "notes": [
+              "Gönder’e basılınca düğmede yükleniyor işareti döner ve düğme pasifleşir; çift gönderim olmaz. Uygulamadaki davranış.",
+              "Barkod alanı yanıt gelene kadar kilitli ve soluk; ses ve titreşim yok."
+            ]
+          },
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Okutma başarılıysa koli açılır ve doğrudan yeni kolinin detayına geçilir: 00000151-023, ilk ürün 1 adet. Uygulamadaki davranış; araya tam ekran parlama girmez.",
+              "Altta 2 sn kalan bildirim “Başarılı” ve sunucunun açıklamasını gösterir; buradaki açıklama metni örnektir.",
+              "Okutma alanı yeniden odaklanır; sonraki ürün hemen okutulabilir."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Ekran kırmızıya boyanmaz: hata, başarı bildirimiyle aynı yerde ve biçimde çıkar; kırmızı ikon, kırmızı çerçeve, 500 ms titreşim ve Ayarlar’daki hata sesi.",
+              "Okutma alanı kırmızı çerçeveli, okutulan barkod alanda kalır; yeniden okutunca yerine yazılır.",
+              "Bildirim kendiliğinden kapanmaz: sonraki okutmada ya da × ile kapanır. Neden sunucunun açıklamasıdır; yoksa uygulamanın metni."
+            ]
+          }
+        ]
+      },
+      "files": [
+        "barcode-scanner",
+        "create-koli",
+        "dashboard",
+        "irskoli-listesi",
+        "koli-detay",
+        "koli-listesi",
+        "login",
+        "order-receipts",
+        "settings"
+      ],
+      "lightPreview": {
+        "id": "2026-11-04-impeccable-v14-light",
+        "files": [
+          "barcode-scanner",
+          "create-koli",
+          "dashboard",
+          "irskoli-listesi",
+          "koli-detay",
+          "koli-listesi",
+          "login",
+          "order-receipts",
+          "settings"
+        ]
+      }
+    },
+    {
+      "id": "2026-11-05-impeccable-v15",
+      "date": "2026-11-05",
+      "revision": 15,
+      "previous": "2026-11-04-impeccable-v14",
+      "status": "approved",
+      "basedOn": "2026-10-15",
+      "label": "Impeccable · İrsaliyeden koliye git",
+      "note": "On beşinci öneri: İrsaliye Oluştur’da her satırın sağında koliyi açan ok. Seçim satırın solunda aynı kalır. Diğer ekranlar v14 ile aynı. Uygulamaya aktarıldı (2026-11-06).",
+      "skill": "impeccable / layout",
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "platform": "android",
+        "theme": "dark",
+        "language": "tr",
+        "keyboard": "hidden",
+        "themes": [
+          "dark",
+          "light"
+        ]
+      },
+      "screenNotes": {
+        "login": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Kaynak: v2 girişi; düzen ve metinler korundu.",
+          "“Beni hatırla” işareti orijinaldeki gibi marka kırmızısı, güvenlik kilidi nötr: yeşil yalnız tamamlama anlamında kalır.",
+          "Ayarlar ve şifre göster düğmeleri 48 px dokunma alanında; açıklama ve alt bilgi 14 px."
+        ],
+        "settings": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Kaynak: v2 ayarları; bölümler, anahtarlar ve değerler korundu.",
+          "Bağlantı alanları orijinal sırada: API URL ve hemen altında açıklaması, Şirket kodu ile Şirket şifresi yan yana, en son Depo ID.",
+          "Bölüm başlıkları markanın büyük harfli etiket stilinde; segmentler 48 px, anahtarlar ayarın adıyla okunur."
+        ],
+        "create-koli": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Kaynak: v2 Yeni Koli; tek seçenek korundu.",
+          "Sipariş seçeneği fiş ikonuyla, Sipariş Seçimi’ndeki gibi; karo koli kırmızısında.",
+          "Seçenek başlığı 16 px kalın, açıklaması 13 → 14 px: Sipariş Seçimi’ndeki siparişsiz koli seçeneğiyle aynı ölçüde."
+        ],
+        "irskoli-listesi": [
+          "Her satır iki hedefli: sol taraf seçer (eskisi gibi), sağdaki ok koli detayını açar. Ok, Koli Listesi’ndeki okla aynı anlamda.",
+          "Ok alanı 56 px genişliğinde, satır boyunca; ince bir çizgi iki hedefi ayırır, yanlış dokunma seçimi bozmaz.",
+          "Detaydan geri dönünce seçimler, arama ve kaydırma yeri korunur.",
+          "Veri: test sunucusunun irsKoliListesi yanıtı (ilk sayfa, 15 koli, 6 sipariş). Durum (açık/kapalı) yanıtta yok: rozetler ve pasif satırlar kaldırıldı.",
+          "Koliler siparişe göre gruplu: başlıkta sipariş no, açıklama ve “5 koli · 2 seçili”. Sipariş sırası servisin sırası (en yeni önce). Farklı siparişlerin kolileri tek irsaliyede birleşirse bu artık görünür.",
+          "Grup başlığında “Tümünü seç” (yeni davranış önerisi): bir siparişin bütün kolileri tek dokunuşla. Açık koli kuralı için servisin durum alanı göndermesi gerekir."
+        ],
+        "dashboard": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "İki kart aynı yükseklikte: alt metni iki satıra inen İrsaliye kartı Koli Listesi’ni de kendi boyuna çeker.",
+          "Metinler, renkler ve düzen v8 ile aynı."
+        ],
+        "koli-listesi": [
+          "Gruplama kaldırıldı: her koli bir kart, servisin sırasıyla (en yeni önce).",
+          "Kartta koli no, altında “Sipariş No 00000151” ve siparişin açıklaması (en fazla iki satır, boşsa çizilmez).",
+          "Listenin sonundaki “Tüm koliler yüklendi” satırı geri geldi."
+        ],
+        "koli-detay": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Üst kısım v11 ile aynı.",
+          "Kart v9 düzeninde: ürün kodu, altında “Barkod …”, ince çizginin altında etiketli Renk ve Lot adeti.",
+          "Miktar v11’deki gibi sağ üstte, büyük ve yeşil; bütün kartlarda aynı hizada."
+        ],
+        "order-receipts": [
+          "Gruplama kaldırıldı: her sipariş bir kart, servisin sırasıyla.",
+          "Kartta “Sipariş No 00000151”, altında cari (CurrentAccountName, en fazla iki satır). Uygulamadaki önek “Fiş:”; öneride “Sipariş No”.",
+          "Siparişsiz koli seçeneği ve arama (sipariş no veya cari) aynı."
+        ],
+        "barcode-scanner": [
+          "Açık tema: bütün ekranlarda aynı nötr gri sayfa ve üstünde beyaz kartlar, gerçek kart gölgesi; yazılar morumsu griden nötr koyu griye. Koyu tema değişmedi.",
+          "Sipariş ve barkod sabit genişlikli yazı tipinden çıktı; barkod aralığı daraldı.",
+          "Sipariş çipi ve altındaki cari gerçek veriyle: 00000151, BEBETTO TEKSTİL A.Ş.",
+          "Düzen ve durumlar v8 ile aynı."
+        ]
+      },
+      "states": {
+        "koli-detay": [
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Bildirim altta, 2 sn. Eklenen ürünün kartı yeşil çerçeveli, miktarı yeni değeriyle (10 → 11).",
+              "Ses yok, dokunma gerekmez; yeni okutma eskisinin yerine geçer.",
+              "Silme modunda aynı bildirim “Ürün silindi” der."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Başarı bildirimiyle aynı yer ve biçim; kırmızı ikon ve çerçeve, 500 ms titreşim ve hata sesi. Liste değişmez.",
+              "Okutma alanı kırmızı çerçeveli ve okutulan barkodu gösterir; neden metni örnektir.",
+              "Bildirim sonraki okutmaya kadar kalır, × ile de kapanır."
+            ]
+          },
+          {
+            "id": "miktar-asimi",
+            "name": "Miktar aşımı",
+            "notes": [
+              "Karar gerektiği için okutmayı durduran tek durum: alttan pencere, uygulamadaki metin ve “Hayır / Evet”.",
+              "Okutulan barkod, listedeki T4121’in gerçek barkodu.",
+              "Siparişte olmayan ürün okutulursa aynı pencere “Sipariş Dışı Ürün” başlığıyla açılır."
+            ]
+          }
+        ],
+        "barcode-scanner": [
+          {
+            "id": "gonderiliyor",
+            "name": "Gönderiliyor",
+            "notes": [
+              "Gönder’e basılınca düğmede yükleniyor işareti döner ve düğme pasifleşir; çift gönderim olmaz. Uygulamadaki davranış.",
+              "Barkod alanı yanıt gelene kadar kilitli ve soluk; ses ve titreşim yok."
+            ]
+          },
+          {
+            "id": "okutma-basarili",
+            "name": "Okutma başarılı",
+            "notes": [
+              "Okutma başarılıysa koli açılır ve doğrudan yeni kolinin detayına geçilir: 00000151-023, ilk ürün 1 adet. Uygulamadaki davranış; araya tam ekran parlama girmez.",
+              "Altta 2 sn kalan bildirim “Başarılı” ve sunucunun açıklamasını gösterir; buradaki açıklama metni örnektir.",
+              "Okutma alanı yeniden odaklanır; sonraki ürün hemen okutulabilir."
+            ]
+          },
+          {
+            "id": "okutma-hatali",
+            "name": "Okutma hatalı",
+            "notes": [
+              "Ekran kırmızıya boyanmaz: hata, başarı bildirimiyle aynı yerde ve biçimde çıkar; kırmızı ikon, kırmızı çerçeve, 500 ms titreşim ve Ayarlar’daki hata sesi.",
+              "Okutma alanı kırmızı çerçeveli, okutulan barkod alanda kalır; yeniden okutunca yerine yazılır.",
+              "Bildirim kendiliğinden kapanmaz: sonraki okutmada ya da × ile kapanır. Neden sunucunun açıklamasıdır; yoksa uygulamanın metni."
+            ]
+          }
+        ]
+      },
+      "files": [
+        "barcode-scanner",
+        "create-koli",
+        "dashboard",
+        "irskoli-listesi",
+        "koli-detay",
+        "koli-listesi",
+        "login",
+        "order-receipts",
+        "settings"
+      ],
+      "lightPreview": {
+        "id": "2026-11-05-impeccable-v15-light",
         "files": [
           "barcode-scanner",
           "create-koli",
