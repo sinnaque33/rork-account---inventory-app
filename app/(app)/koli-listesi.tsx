@@ -6,6 +6,7 @@ import {
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
+  ChevronRight,
   Package,
   Search,
   Plus,
@@ -15,7 +16,6 @@ import {
   FileText,
   ShoppingCart,
   PackagePlus,
-  ChevronRight,
 } from "lucide-react-native";
 import { useMemo, useState, useCallback, useRef } from "react";
 import {
@@ -31,6 +31,7 @@ import {
   View,
   Vibration,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +48,7 @@ export default function KoliListesiScreen() {
   const { push } = useSafeNavigation();
   const { credentials } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const queryClient = useQueryClient();
 
@@ -262,7 +264,7 @@ export default function KoliListesiScreen() {
     } else {
       //todo recId gönder
       push(
-        `/(app)/koli-detay?id=${item.id}&packageNo=${item.PackageNo || ""}&receiptNo=${item.ReceiptNo || ""}&recId=${item.id || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
+        `/(app)/koli-detay?id=${item.id}&packageNo=${encodeURIComponent(item.PackageNo || "")}&receiptNo=${encodeURIComponent(item.ReceiptNo || "")}&recId=${item.id || ""}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
       );
     }
   };
@@ -308,8 +310,6 @@ export default function KoliListesiScreen() {
       (selected) => selected.id === item.id,
     );
 
-    const hasOrderInfo = !!item.ReceiptNo || !!item.SipExp;
-
     return (
       <TouchableOpacity
         style={[styles.card, isSelected && styles.cardSelected]}
@@ -326,37 +326,19 @@ export default function KoliListesiScreen() {
             ]}
           >
             {isSelected ? (
-              <CheckCircle2 size={22} color={theme.colors.onPrimary} />
+              <CheckCircle2 size={24} color={theme.colors.onPrimary} />
             ) : (
-              <Package size={22} color={theme.colors.primary} />
+              <Package size={24} color={theme.colors.koliInk} />
             )}
           </View>
           <View style={styles.itemInfo}>
-            <Text style={styles.packageNo} numberOfLines={1}>
-              {item.PackageNo}
-            </Text>
-            {item.Explanation ? (
-              <Text style={styles.explanation} numberOfLines={2}>
-                {item.Explanation}
-              </Text>
-            ) : null}
-          </View>
-          {/* Seçim modunda ok gizlenir; dokunuş detaya değil seçime gider. */}
-          {!isSelectionMode && (
-            <ChevronRight size={20} color={theme.colors.inkSubtle} />
-          )}
-        </View>
-
-        {hasOrderInfo && (
-          <View style={styles.cardBody}>
+            <Text style={styles.packageNo}>{item.PackageNo}</Text>
             {item.ReceiptNo ? (
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>
-                  {t("koliListesi.orderNoLabel")}
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>
+                  {t("koliListesi.receiptNoPrefix")}
                 </Text>
-                <Text style={styles.receiptNo} numberOfLines={1}>
-                  {item.ReceiptNo}
-                </Text>
+                <Text style={styles.receiptNo}>{item.ReceiptNo}</Text>
               </View>
             ) : null}
             {item.SipExp ? (
@@ -364,8 +346,15 @@ export default function KoliListesiScreen() {
                 {item.SipExp}
               </Text>
             ) : null}
+            {item.Explanation ? (
+              <Text style={styles.explanation}>{item.Explanation}</Text>
+            ) : null}
           </View>
-        )}
+          {/* Seçim modunda ok gizlenir; dokunuş detaya değil seçime gider. */}
+          {!isSelectionMode && (
+            <ChevronRight size={20} color={theme.colors.inkSubtle} />
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -436,6 +425,14 @@ export default function KoliListesiScreen() {
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.3}
+        ListHeaderComponent={
+          allItems.length > 0 ? (
+            <Text style={styles.countText}>
+              <Text style={styles.countValue}>{allItems.length}</Text>{" "}
+              {t("koliListesi.countLabel")}
+            </Text>
+          ) : null
+        }
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
           isSearching ? (
@@ -475,7 +472,7 @@ export default function KoliListesiScreen() {
               <Animated.View
                 style={[
                   styles.fabMenuItem,
-                  styles.fabMenuItemTop,
+                  { bottom: insets.bottom + 156 },
                   fabMenuItemStyle(1),
                 ]}
               >
@@ -501,7 +498,7 @@ export default function KoliListesiScreen() {
               <Animated.View
                 style={[
                   styles.fabMenuItem,
-                  styles.fabMenuItemBottom,
+                  { bottom: insets.bottom + 92 },
                   fabMenuItemStyle(0),
                 ]}
               >
@@ -529,65 +526,78 @@ export default function KoliListesiScreen() {
             </>
           )}
 
-          {/* Menü açıkken barkod FAB'ı yerini menü öğelerine bırakır. */}
-          <Animated.View
+          <View
             style={[
-              styles.fabSecondaryContainer,
-              {
-                opacity: fabMenuAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 0],
-                }),
-              },
+              styles.footer,
+              { paddingBottom: insets.bottom + theme.spacing.xs },
             ]}
-            pointerEvents={fabMenuOpen ? "none" : "auto"}
           >
-            <TouchableOpacity
-              style={styles.fabSecondary}
-              onPress={() => {
-                push({
-                  pathname: "/(app)/barcode-scanner",
-                  params: { mode: "search" },
-                });
-              }}
-              activeOpacity={0.8}
-              testID="barcode-scanner-button"
-            >
-              <ScanBarcode size={26} color={theme.colors.primary} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => {
-              if (fabMenuOpen) {
-                closeFabMenu();
-                return;
-              }
-              push("/(app)/create-koli");
-            }}
-            onLongPress={() => {
-              if (!fabMenuOpen) openFabMenu();
-            }}
-            delayLongPress={300}
-            activeOpacity={0.8}
-            testID="create-koli-button"
-          >
+            {/* Menü açıkken barkod düğmesi yerini menü öğelerine bırakır. */}
             <Animated.View
-              style={{
-                transform: [
-                  {
-                    rotate: fabMenuAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ["0deg", "45deg"],
-                    }),
-                  },
-                ],
-              }}
+              style={[
+                styles.footerScan,
+                {
+                  opacity: fabMenuAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 0],
+                  }),
+                },
+              ]}
+              pointerEvents={fabMenuOpen ? "none" : "auto"}
             >
-              <Plus size={28} color={theme.colors.onPrimary} />
+              <TouchableOpacity
+                style={styles.scanButton}
+                onPress={() => {
+                  push({
+                    pathname: "/(app)/barcode-scanner",
+                    params: { mode: "search" },
+                  });
+                }}
+                activeOpacity={0.8}
+                testID="barcode-scanner-button"
+              >
+                <ScanBarcode size={20} color={theme.colors.ink} />
+                <Text style={styles.scanButtonText}>
+                  {t("koliListesi.scan")}
+                </Text>
+              </TouchableOpacity>
             </Animated.View>
-          </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.newBoxButton}
+              onPress={() => {
+                if (fabMenuOpen) {
+                  closeFabMenu();
+                  return;
+                }
+                push("/(app)/create-koli");
+              }}
+              onLongPress={() => {
+                if (!fabMenuOpen) openFabMenu();
+              }}
+              delayLongPress={300}
+              activeOpacity={0.8}
+              testID="create-koli-button"
+            >
+              <Animated.View
+                style={{
+                  transform: [
+                    {
+                      rotate: fabMenuAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ["0deg", "45deg"],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <Plus size={20} color={theme.colors.onPrimary} />
+              </Animated.View>
+              <Text style={styles.newBoxButtonText}>
+                {t("koliListesi.newBox")}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </>
       )}
 
@@ -650,21 +660,24 @@ const makeStyles = (theme: Theme) => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.isDark ? colors.canvas : colors.surface1,
+      backgroundColor: colors.canvas,
     },
     searchContainer: {
       backgroundColor: colors.canvas,
-      padding: spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.hairline,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
     },
     searchInputContainer: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.surface2,
+      minHeight: 48,
+      backgroundColor: colors.card,
       borderRadius: radius.pill,
-      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.controlLine,
+      paddingHorizontal: spacing.lg,
       gap: spacing.sm,
+      ...theme.cardShadow,
     },
     searchInput: {
       ...type.body,
@@ -673,7 +686,21 @@ const makeStyles = (theme: Theme) => {
       color: colors.ink,
     },
     content: {
-      padding: spacing.md,
+      paddingTop: spacing.xxs,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    countText: {
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.readMuted,
+      paddingHorizontal: spacing.xxs,
+      marginBottom: spacing.sm,
+    },
+    countValue: {
+      color: colors.ink,
+      fontWeight: "700" as const,
     },
     centerContainer: {
       flex: 1,
@@ -684,12 +711,14 @@ const makeStyles = (theme: Theme) => {
       padding: spacing.xl,
     },
     loadingText: {
-      ...type.body,
+      ...type.hint,
       color: colors.inkMuted,
       marginTop: spacing.xs,
     },
     errorTitle: {
       ...type.cardTitle,
+      fontSize: 16,
+      lineHeight: 21,
       color: colors.ink,
       marginTop: spacing.xs,
     },
@@ -705,120 +734,139 @@ const makeStyles = (theme: Theme) => {
       gap: spacing.sm,
     },
     emptyText: {
-      ...type.body,
+      ...type.hint,
       color: colors.inkMuted,
       textAlign: "center",
     },
-    // Kart, liste zemininden net ayrılsın diye koyu temada bir basamak
-    // yukarıdaki yüzeyi, açık temada gri zemin üstünde beyaz kartı kullanır.
     card: {
-      backgroundColor: theme.isDark ? colors.surface2 : colors.canvas,
+      backgroundColor: colors.card,
       borderRadius: radius.lg,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
       marginBottom: spacing.sm,
       borderWidth: 1,
-      borderColor: colors.hairlineStrong,
-      overflow: "hidden",
-      elevation: theme.isDark ? 0 : 2,
-      shadowColor: colors.ink,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.isDark ? 0 : 0.08,
-      shadowRadius: 6,
+      borderColor: colors.cardLine,
+      ...theme.cardShadow,
     },
     cardSelected: {
       borderColor: colors.primary,
+      borderWidth: 2,
       backgroundColor: colors.primaryTint,
     },
     cardHeader: {
       flexDirection: "row",
       alignItems: "center",
       gap: spacing.sm,
-      padding: spacing.md,
     },
     iconContainer: {
       width: 44,
       height: 44,
-      borderRadius: radius.md,
-      backgroundColor: colors.primaryTint,
+      borderRadius: radius.control,
+      backgroundColor: colors.koliTile,
       alignItems: "center",
       justifyContent: "center",
     },
     itemInfo: {
       flex: 1,
+      minWidth: 0,
       gap: spacing.xxs,
     },
     packageNo: {
-      ...type.cardTitle,
+      ...type.codeLg,
+      fontSize: 19,
+      lineHeight: 25,
       color: colors.ink,
     },
     explanation: {
-      ...type.bodySm,
-      color: colors.inkMuted,
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.readMuted,
     },
-    cardBody: {
-      borderTopWidth: 1,
-      borderTopColor: colors.hairline,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      gap: spacing.xxs,
-    },
-    metaRow: {
+    receiptRow: {
       flexDirection: "row",
       alignItems: "baseline",
-      gap: spacing.xs,
+      gap: spacing.xxs,
     },
-    metaLabel: {
-      ...type.label,
-      color: colors.inkSubtle,
-      textTransform: "uppercase",
+    receiptLabel: {
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.readMuted,
     },
     receiptNo: {
-      ...type.mono,
-      flexShrink: 1,
+      ...type.codeMd,
+      fontSize: 15,
+      lineHeight: 21,
       color: colors.ink,
+      flexShrink: 1,
     },
     sipExp: {
-      ...type.bodySm,
-      color: colors.inkMuted,
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      fontWeight: "600" as const,
+      letterSpacing: 0.3,
+      color: colors.readMuted,
     },
     footerLoader: {
       paddingVertical: spacing.lg,
       alignItems: "center",
     },
     footerText: {
-      ...type.bodySm,
-      color: colors.inkSubtle,
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.readMuted,
     },
-    fab: {
-      position: "absolute",
-      right: spacing.lg,
-      bottom: 64,
-      width: 56,
-      height: 56,
-      borderRadius: radius.pill,
-      backgroundColor: colors.primary,
+    footer: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      paddingTop: spacing.xs,
+      paddingHorizontal: spacing.md,
+      backgroundColor: colors.canvas,
+      borderTopWidth: 1,
+      borderTopColor: colors.cardLine,
+    },
+    footerScan: {
+      flex: 1,
+    },
+    scanButton: {
+      flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
+      gap: spacing.xs,
+      minHeight: 56,
+      borderRadius: radius.control,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.cardLine,
+      ...theme.cardShadow,
+    },
+    scanButtonText: {
+      ...type.body,
+      fontWeight: "600" as const,
+      color: colors.ink,
+    },
+    newBoxButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      minHeight: 56,
+      borderRadius: radius.control,
+      backgroundColor: colors.koliHero,
       elevation: 6,
       shadowColor: colors.primary,
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.35,
       shadowRadius: 12,
     },
-    fabSecondaryContainer: {
-      position: "absolute",
-      right: spacing.lg,
-      bottom: 132,
-    },
-    fabSecondary: {
-      width: 52,
-      height: 52,
-      borderRadius: radius.pill,
-      backgroundColor: colors.surface1,
-      borderWidth: 2,
-      borderColor: colors.primary,
-      alignItems: "center",
-      justifyContent: "center",
-      elevation: 4,
+    newBoxButtonText: {
+      ...type.body,
+      fontWeight: "600" as const,
+      color: colors.onPrimary,
     },
     fabScrim: {
       ...StyleSheet.absoluteFillObject,
@@ -832,12 +880,6 @@ const makeStyles = (theme: Theme) => {
       alignItems: "center",
       gap: spacing.sm,
     },
-    fabMenuItemBottom: {
-      bottom: 132,
-    },
-    fabMenuItemTop: {
-      bottom: 196,
-    },
     fabMenuLabelPill: {
       backgroundColor: colors.surface1,
       borderWidth: 1,
@@ -849,6 +891,8 @@ const makeStyles = (theme: Theme) => {
     },
     fabMenuLabel: {
       ...type.button,
+      fontSize: 14,
+      lineHeight: 17,
       color: colors.ink,
     },
     fabMenuButton: {
@@ -867,9 +911,9 @@ const makeStyles = (theme: Theme) => {
       bottom: 0,
       left: 0,
       right: 0,
-      backgroundColor: colors.surface1,
+      backgroundColor: colors.card,
       borderTopWidth: 1,
-      borderTopColor: colors.hairline,
+      borderTopColor: colors.cardLine,
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.lg,
       paddingBottom: spacing.xxxl,
@@ -888,6 +932,8 @@ const makeStyles = (theme: Theme) => {
     },
     selectionCountText: {
       ...type.cardTitle,
+      fontSize: 16,
+      lineHeight: 21,
       flex: 1,
       color: colors.ink,
       marginLeft: spacing.sm,
@@ -905,6 +951,8 @@ const makeStyles = (theme: Theme) => {
     },
     bulkActionText: {
       ...type.button,
+      fontSize: 14,
+      lineHeight: 17,
       color: colors.primary,
     },
   });

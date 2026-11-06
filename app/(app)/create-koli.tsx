@@ -1,4 +1,4 @@
-import { PackagePlus, ShoppingCart } from "lucide-react-native";
+import { ChevronRight, FileText, PackagePlus } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import {
   StyleSheet,
@@ -59,15 +59,18 @@ export default function CreateKoliScreen() {
                 activeOpacity={0.7}
                 testID="receipt-barcode-button"
               >
-                <View style={styles.iconCircle}>
-                  <ShoppingCart size={32} color={theme.colors.onPrimary} />
+                <View style={styles.iconTile}>
+                  <FileText size={24} color={theme.colors.koliInk} />
                 </View>
-                <Text style={styles.optionTitle}>
-                  {t("createKoli.orderOptionTitle")}
-                </Text>
-                <Text style={styles.optionDescription}>
-                  {t("createKoli.orderOptionDesc")}
-                </Text>
+                <View style={styles.optionText}>
+                  <Text style={styles.optionTitle}>
+                    {t("createKoli.orderOptionTitle")}
+                  </Text>
+                  <Text style={styles.optionDescription}>
+                    {t("createKoli.orderOptionDesc")}
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={theme.colors.inkSubtle} />
               </TouchableOpacity>
 
               {SHOW_EMPTY_BOX_OPTION && (
@@ -85,15 +88,18 @@ export default function CreateKoliScreen() {
                   activeOpacity={0.7}
                   testID="empty-koli-button"
                 >
-                  <View style={[styles.iconCircle, styles.iconCircleTinted]}>
-                    <PackagePlus size={32} color={theme.colors.primary} />
+                  <View style={styles.iconTile}>
+                    <PackagePlus size={24} color={theme.colors.koliInk} />
                   </View>
-                  <Text style={styles.optionTitle}>
-                    {t("createKoli.emptyOptionTitle")}
-                  </Text>
-                  <Text style={styles.optionDescription}>
-                    {t("createKoli.emptyOptionDesc")}
-                  </Text>
+                  <View style={styles.optionText}>
+                    <Text style={styles.optionTitle}>
+                      {t("createKoli.emptyOptionTitle")}
+                    </Text>
+                    <Text style={styles.optionDescription}>
+                      {t("createKoli.emptyOptionDesc")}
+                    </Text>
+                  </View>
+                  <ChevronRight size={20} color={theme.colors.inkSubtle} />
                 </TouchableOpacity>
               )}
             </View>
@@ -119,53 +125,52 @@ const makeStyles = (theme: Theme) => {
       padding: spacing.lg,
     },
     title: {
-      ...type.displayLg,
+      ...type.pageTitle,
       color: colors.ink,
       marginBottom: spacing.xs,
     },
     subtitle: {
       ...type.body,
       color: colors.inkMuted,
-      marginBottom: spacing.xxl,
+      marginBottom: spacing.xl,
     },
     buttonsContainer: {
       gap: spacing.md,
       marginBottom: spacing.xl,
     },
     optionButton: {
-      backgroundColor: colors.surface1,
-      borderRadius: radius.lg,
-      padding: spacing.xl,
+      flexDirection: "row",
       alignItems: "center",
+      gap: spacing.md,
+      backgroundColor: colors.card,
+      borderRadius: radius.control,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.md,
       borderWidth: 1,
-      borderColor: colors.hairline,
+      borderColor: colors.cardLine,
+      ...theme.cardShadow,
     },
-    iconCircle: {
-      width: 80,
-      height: 80,
-      borderRadius: radius.pill,
-      backgroundColor: colors.primary,
+    iconTile: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.control,
+      backgroundColor: colors.koliTile,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: spacing.md,
     },
-    // İkincil akış: dolgu yerine tint zemin, böylece birincil kartla arasında
-    // görsel hiyerarşi kalır.
-    iconCircleTinted: {
-      backgroundColor: colors.primaryTint,
-      borderWidth: 1,
-      borderColor: colors.hairline,
+    optionText: {
+      flex: 1,
+      minWidth: 0,
     },
     optionTitle: {
-      ...type.cardTitle,
+      ...type.bodyLg,
+      fontWeight: "700",
       color: colors.ink,
-      marginBottom: spacing.xs,
     },
     optionDescription: {
-      ...type.bodySm,
+      ...type.hint,
       color: colors.inkMuted,
-      textAlign: "center",
-      lineHeight: 20,
+      marginTop: spacing.xxs,
     },
   });
 };

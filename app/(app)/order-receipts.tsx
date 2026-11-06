@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   FileText,
+  PackagePlus,
   Search,
   ChevronRight,
 } from "lucide-react-native";
@@ -234,13 +235,15 @@ export default function OrderReceiptsScreen() {
     >
       <View style={styles.cardHeader}>
         <View style={styles.iconContainer}>
-          <FileText size={22} color={theme.colors.primary} />
+          <FileText size={24} color={theme.colors.koliInk} />
         </View>
         <View style={styles.itemInfo}>
-          <Text style={styles.receiptNo}>
-            {t("orderReceipts.receiptPrefix")}
-            {item.ReceiptNo}
-          </Text>
+          <View style={styles.receiptRow}>
+            <Text style={styles.receiptLabel}>
+              {t("orderReceipts.receiptPrefix")}
+            </Text>
+            <Text style={styles.receiptNo}>{item.ReceiptNo}</Text>
+          </View>
           <Text style={styles.accountName} numberOfLines={2}>
             {item.CurrentAccountName}
           </Text>
@@ -283,50 +286,46 @@ export default function OrderReceiptsScreen() {
         ListHeaderComponent={
           // Boş koli akışının amacı siparişe istinaden koli açmak; "sipariş
           // bağlantısı yok" kartı bu modda anlamsız olduğu için gizlenir.
-          isCreateEmpty ? (
-            <Text style={styles.modeHint}>
-              {t("orderReceipts.selectForEmpty")}
-            </Text>
-          ) : (
-            <TouchableOpacity
-              style={[
-                styles.card,
-                {
-                  borderColor: theme.colors.primary,
-                  borderWidth: 2,
-                  marginBottom: 20,
-                },
-              ]}
-              activeOpacity={0.7}
-              onPress={handleNoOrderSelect}
-            >
-              <View style={styles.cardHeader}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                >
-                  <FileText size={22} color={theme.colors.onPrimary} />
+          <>
+            {isCreateEmpty ? (
+              <Text style={styles.modeHint}>
+                {t("orderReceipts.selectForEmpty")}
+              </Text>
+            ) : (
+              <TouchableOpacity
+                style={[styles.card, styles.noOrderCard]}
+                activeOpacity={0.7}
+                onPress={handleNoOrderSelect}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.iconContainer}>
+                    <PackagePlus size={24} color={theme.colors.koliInk} />
+                  </View>
+                  <View style={styles.itemInfo}>
+                    <Text style={styles.noOrderTitle}>
+                      {t(
+                        "orderReceipts.noOrderLink",
+                        "Sipariş bağlantısı yapılmayacak",
+                      )}
+                    </Text>
+                    <Text style={styles.noOrderDesc}>
+                      {t(
+                        "orderReceipts.noOrderDesc",
+                        "Siparişten bağımsız koli oluştur",
+                      )}
+                    </Text>
+                  </View>
+                  <ChevronRight size={20} color={theme.colors.inkSubtle} />
                 </View>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.receiptNo}>
-                    {t(
-                      "orderReceipts.noOrderLink",
-                      "Sipariş bağlantısı yapılmayacak",
-                    )}
-                  </Text>
-                  <Text style={styles.accountName}>
-                    {t(
-                      "orderReceipts.noOrderDesc",
-                      "Siparişten bağımsız koli oluştur",
-                    )}
-                  </Text>
-                </View>
-                <ChevronRight size={20} color={theme.colors.primary} />
-              </View>
-            </TouchableOpacity>
-          )
+              </TouchableOpacity>
+            )}
+            {filteredItems.length > 0 ? (
+              <Text style={styles.countText}>
+                <Text style={styles.countValue}>{filteredItems.length}</Text>{" "}
+                {t("orderReceipts.countLabel")}
+              </Text>
+            ) : null}
+          </>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -370,27 +369,45 @@ const makeStyles = (theme: Theme) => {
     },
     searchContainer: {
       backgroundColor: colors.canvas,
-      padding: spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.hairline,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
     },
     searchInputContainer: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.surface2,
+      minHeight: 48,
+      backgroundColor: colors.card,
       borderRadius: radius.pill,
-      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.controlLine,
+      paddingHorizontal: spacing.lg,
       gap: spacing.sm,
+      ...theme.cardShadow,
     },
     searchInput: {
-      ...type.body,
+      ...type.bodyLg,
+      fontSize: 15,
+      lineHeight: 22,
       flex: 1,
       paddingVertical: spacing.sm,
       color: colors.ink,
     },
     content: {
-      padding: spacing.md,
+      paddingTop: spacing.xxs,
+      paddingHorizontal: spacing.md,
       paddingBottom: spacing.xxl,
+    },
+    countText: {
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.readMuted,
+      paddingHorizontal: spacing.xxs,
+      marginBottom: spacing.sm,
+    },
+    countValue: {
+      color: colors.ink,
+      fontWeight: "700" as const,
     },
     centerContainer: {
       flex: 1,
@@ -402,11 +419,15 @@ const makeStyles = (theme: Theme) => {
     },
     loadingText: {
       ...type.body,
+      fontSize: 14,
+      lineHeight: 21,
       color: colors.inkMuted,
       marginTop: spacing.xs,
     },
     errorTitle: {
       ...type.cardTitle,
+      fontSize: 16,
+      lineHeight: 21,
       color: colors.ink,
       marginTop: spacing.xs,
     },
@@ -423,22 +444,30 @@ const makeStyles = (theme: Theme) => {
     },
     emptyText: {
       ...type.body,
+      fontSize: 14,
+      lineHeight: 21,
       color: colors.inkMuted,
       textAlign: "center",
     },
     modeHint: {
-      ...type.bodySm,
-      color: colors.inkMuted,
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.readMuted,
       marginBottom: spacing.md,
       paddingHorizontal: spacing.xxs,
     },
     card: {
-      backgroundColor: colors.surface1,
+      backgroundColor: colors.card,
       borderRadius: radius.lg,
       padding: spacing.md,
       marginBottom: spacing.sm,
       borderWidth: 1,
-      borderColor: colors.hairline,
+      borderColor: colors.cardLine,
+      ...theme.cardShadow,
+    },
+    noOrderCard: {
+      marginBottom: spacing.lg,
     },
     cardHeader: {
       flexDirection: "row",
@@ -446,24 +475,54 @@ const makeStyles = (theme: Theme) => {
       gap: spacing.sm,
     },
     iconContainer: {
-      width: 46,
-      height: 46,
-      borderRadius: radius.md,
-      backgroundColor: colors.primaryTint,
+      width: 44,
+      height: 44,
+      borderRadius: radius.control,
+      backgroundColor: colors.koliTile,
       alignItems: "center",
       justifyContent: "center",
     },
     itemInfo: {
       flex: 1,
+      minWidth: 0,
       gap: spacing.xxs,
     },
+    receiptRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      gap: spacing.xxs,
+    },
+    receiptLabel: {
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.readMuted,
+    },
     receiptNo: {
-      ...type.cardTitle,
+      ...type.codeLg,
+      fontSize: 19,
+      lineHeight: 25,
       color: colors.ink,
+      flexShrink: 1,
     },
     accountName: {
-      ...type.bodySm,
-      color: colors.inkMuted,
+      ...type.bodyLg,
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.ink,
+    },
+    noOrderTitle: {
+      ...type.bodyLg,
+      fontSize: 15,
+      lineHeight: 22,
+      fontWeight: "700" as const,
+      color: colors.ink,
+    },
+    noOrderDesc: {
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.readMuted,
     },
     loadingOverlay: {
       position: "absolute",
@@ -478,6 +537,8 @@ const makeStyles = (theme: Theme) => {
     },
     loadingOverlayText: {
       ...type.body,
+      fontSize: 14,
+      lineHeight: 21,
       fontWeight: "600" as const,
       color: "#fff",
       marginTop: spacing.sm,

@@ -1,45 +1,30 @@
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import { Stack } from "expo-router";
 import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowUpRight,
-  LogOut,
   Boxes,
+  ChevronRight,
+  LogOut,
   Truck,
 } from "lucide-react-native";
 import {
   Platform,
   Pressable,
   StyleSheet,
-  StyleProp,
   Text,
   View,
-  ViewStyle,
   ScrollView,
 } from "react-native";
-import Svg, { Path } from "react-native-svg";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
 import { useMemo } from "react";
 
-/** Faint brand chevron (the logo X) — decorative watermark, never interactive. */
-function ChevronWatermark({ style }: { style?: StyleProp<ViewStyle> }) {
-  return (
-    <Svg width={220} height={300} viewBox="0 0 95 100" style={style} pointerEvents="none">
-      <Path d="M0,0 L28,0 L50,50 L28,100 L0,100 L22,50 Z" fill="#DA2128" />
-      <Path d="M40,0 L68,0 L90,50 L68,100 L40,100 L62,50 Z" fill="#DA2128" />
-    </Svg>
-  );
-}
-
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { push } = useSafeNavigation();
 
@@ -59,41 +44,24 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      {/* faint brand watermark in the empty canvas below the cards */}
-      <ChevronWatermark style={styles.watermark} />
-
-      <LinearGradient
-        colors={[theme.colors.surface1, theme.colors.canvas]}
-        style={styles.header}
-      >
-        <View
-          style={[
-            styles.headerContent,
-            { paddingTop: insets.top + theme.spacing.lg },
-          ]}
-        >
-          <View style={styles.headerTop}>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.greeting} numberOfLines={1}>
-                {t("dashboard.greeting")}
-              </Text>
-              <Text style={styles.userName} numberOfLines={2}>
-                {user?.firstName || user?.userName}
-              </Text>
-            </View>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
             <Pressable
               style={({ pressed }) => [
                 styles.logoutButton,
                 pressed && styles.logoutButtonPressed,
               ]}
               onPress={handleLogout}
+              accessibilityRole="button"
+              accessibilityLabel={t("dashboard.logout")}
               testID="logout-button"
             >
-              <LogOut size={20} color={theme.colors.ink} />
+              <LogOut size={24} color={theme.colors.ink} />
             </Pressable>
-          </View>
-        </View>
-      </LinearGradient>
+          ),
+        }}
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -101,6 +69,15 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={true}
       >
         <View style={styles.content}>
+          <View style={styles.greetingBlock}>
+            <Text style={styles.greeting} numberOfLines={1}>
+              {t("dashboard.greeting")}
+            </Text>
+            <Text style={styles.userName} numberOfLines={2}>
+              {user?.firstName || user?.userName}
+            </Text>
+          </View>
+
           <Text style={styles.sectionTitle}>{t("dashboard.quickAccess")}</Text>
 
           <View style={styles.cardGrid}>
@@ -113,23 +90,18 @@ export default function DashboardScreen() {
               onPress={() => handleNavigation("/(app)/koli-listesi")}
               testID="koli-listesi-card"
             >
-              <LinearGradient
-                colors={[theme.colors.primary, theme.colors.primaryDeep]}
-                style={styles.cardGradient}
-              >
-                <View style={styles.cardIcon}>
-                  <Boxes size={32} color="#fff" strokeWidth={2} />
-                </View>
+              <View style={[styles.cardIcon, styles.cardIconKoli]}>
+                <Boxes size={24} color={theme.colors.koliInk} />
+              </View>
+              <View style={styles.cardText}>
                 <Text style={styles.cardTitle}>
                   {t("dashboard.boxListTitle")}
                 </Text>
                 <Text style={styles.cardSubtitle}>
                   {t("dashboard.boxListSubtitle")}
                 </Text>
-                <View style={styles.cardArrow}>
-                  <ArrowUpRight size={18} color="#fff" opacity={0.6} />
-                </View>
-              </LinearGradient>
+              </View>
+              <ChevronRight size={20} color={theme.colors.inkSubtle} />
             </Pressable>
 
             {/* 2. KART: İrsaliye Oluştur */}
@@ -141,13 +113,10 @@ export default function DashboardScreen() {
               onPress={() => handleNavigation("/(app)/irskoli-listesi")}
               testID="irsaliye-olustur-card"
             >
-              <LinearGradient
-                colors={[theme.colors.info, theme.colors.infoDeep]}
-                style={styles.cardGradient}
-              >
-                <View style={styles.cardIcon}>
-                  <Truck size={32} color="#fff" strokeWidth={2} />
-                </View>
+              <View style={[styles.cardIcon, styles.cardIconIrs]}>
+                <Truck size={24} color={theme.colors.irsInk} />
+              </View>
+              <View style={styles.cardText}>
                 <Text style={styles.cardTitle}>
                   {t("dashboard.createWaybillTitle") || "İrsaliye Oluştur"}
                 </Text>
@@ -155,10 +124,8 @@ export default function DashboardScreen() {
                   {t("dashboard.createWaybillSubtitle") ||
                     "Kolileri seçerek yeni irsaliye oluşturun"}
                 </Text>
-                <View style={styles.cardArrow}>
-                  <ArrowUpRight size={18} color="#fff" opacity={0.6} />
-                </View>
-              </LinearGradient>
+              </View>
+              <ChevronRight size={20} color={theme.colors.inkSubtle} />
             </Pressable>
           </View>
         </View>
@@ -174,52 +141,15 @@ const makeStyles = (theme: Theme) => {
       flex: 1,
       backgroundColor: colors.canvas,
     },
-    watermark: {
-      position: "absolute",
-      bottom: -30,
-      left: -70,
-      opacity: 0.04,
-      zIndex: 0,
-    },
-    header: {
-      paddingBottom: spacing.xxl,
-    },
-    headerContent: {
-      paddingHorizontal: spacing.xl,
-      // paddingTop çalışma anında safe-area inset'inden gelir (çentik desteği)
-    },
-    headerTop: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: spacing.md,
-    },
-    headerTextContainer: {
-      flex: 1,
-      minWidth: 0,
-    },
-    greeting: {
-      ...type.body,
-      color: colors.inkMuted,
-      marginBottom: spacing.xxs,
-    },
-    userName: {
-      ...type.displayLg,
-      color: colors.ink,
-    },
     logoutButton: {
-      width: 44,
-      height: 44,
-      flexShrink: 0,
+      width: 48,
+      height: 48,
       borderRadius: radius.pill,
-      backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.hairlineStrong,
       alignItems: "center",
       justifyContent: "center",
     },
     logoutButtonPressed: {
-      backgroundColor: colors.surface3,
+      backgroundColor: colors.surface2,
     },
     scrollView: {
       flex: 1,
@@ -228,54 +158,75 @@ const makeStyles = (theme: Theme) => {
       paddingBottom: spacing.xl,
     },
     content: {
-      paddingHorizontal: spacing.xl,
+      paddingHorizontal: spacing.lg,
       paddingTop: spacing.xl,
     },
-    sectionTitle: {
-      ...type.screenTitle,
+    greetingBlock: {
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xxl,
+    },
+    greeting: {
+      ...type.body,
+      color: colors.inkMuted,
+      marginBottom: spacing.xxs,
+    },
+    userName: {
+      ...type.pageTitle,
       color: colors.ink,
+    },
+    sectionTitle: {
+      ...type.labelStrong,
+      color: colors.inkMuted,
       marginBottom: spacing.md,
     },
     cardGrid: {
       gap: spacing.md,
     },
+    // Sabit minHeight iki kartı aynı boyda tutar: alt metni iki satıra inen
+    // kart da bu yüksekliğe sığar.
     card: {
-      borderRadius: radius.lg,
-      overflow: "hidden",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      minHeight: 112,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.md,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.cardLine,
+      borderRadius: 16,
+      ...theme.cardShadow,
     },
     cardPressed: {
       opacity: 0.92,
       transform: [{ scale: 0.98 }],
     },
-    cardGradient: {
-      padding: spacing.lg,
-      minHeight: 120,
-      justifyContent: "space-between",
-    },
     cardIcon: {
       width: 48,
       height: 48,
-      borderRadius: radius.md,
-      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      borderRadius: radius.control,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: spacing.sm,
+    },
+    cardIconKoli: {
+      backgroundColor: colors.koliTile,
+    },
+    cardIconIrs: {
+      backgroundColor: colors.irsTile,
+    },
+    cardText: {
+      flex: 1,
+      minWidth: 0,
     },
     cardTitle: {
-      ...type.cardTitle,
-      fontSize: 18,
-      color: "#FFFFFF",
-      marginBottom: spacing.xxs,
+      ...type.screenTitle,
+      color: colors.ink,
+      marginBottom: spacing.xs,
     },
     cardSubtitle: {
       ...type.bodySm,
-      color: "#FFFFFF",
-      opacity: 0.85,
-    },
-    cardArrow: {
-      position: "absolute",
-      bottom: spacing.lg,
-      right: spacing.lg,
+      color: colors.inkMuted,
+      lineHeight: 20,
     },
   });
 };
