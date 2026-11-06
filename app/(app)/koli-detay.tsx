@@ -1,8 +1,11 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { Trans, useTranslation } from "react-i18next";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import { useErrorSignal } from "@/hooks/useErrorSignal";
+import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
+import { useManualKeyboard } from "@/hooks/useManualKeyboard";
 import {
   AlertCircle,
   Package,
@@ -16,8 +19,8 @@ import {
   AlertTriangle,
   Printer,
   PackagePlus,
-  Boxes,
   ChevronRight,
+  X,
 } from "lucide-react-native";
 import {
   ActivityIndicator,
@@ -49,13 +52,21 @@ import type { KoliItem } from "@/services/types";
 import PrintBarcodeModal from "../components/PrintBarcodeModal";
 import { ActionButton } from "../components/ActionButton";
 import ReceiptConfirmModal from "../components/ReceiptConfirmModal";
-import ResultModal from "../components/ResultModal";
 
 export default function KoliDetayScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  // Bildirimler alt düğmelerin üstünde durur. Klavye açıkken iOS'ta düğmeler
+  // klavyeyle yükselir, Android'de klavyenin altında kalır.
+  const noticeBase = insets.bottom + 136;
+  const noticeBottom = !keyboardHeight
+    ? noticeBase
+    : Platform.OS === "ios"
+      ? noticeBase + keyboardHeight
+      : keyboardHeight + theme.spacing.md;
   const {
     id,
     packageNo,
@@ -104,6 +115,7 @@ export default function KoliDetayScreen() {
   const [scanMode, setScanMode] = useState<"add" | "delete">("add");
   const [barcode, setBarcode] = useState("");
   const inputRef = useRef<TextInput>(null);
+  const manualKeyboard = useManualKeyboard(inputRef);
   const barcodeValueRef = useRef("");
   const isProcessingRef = useRef(false);
 
@@ -118,13 +130,15 @@ export default function KoliDetayScreen() {
   );
   const [overLimitType, setOverLimitType] = useState<number>(2);
 
-  // --- BİLDİRİM VE HATA MODAL STATE'LERİ ---
-  const [resultModalVisible, setResultModalVisible] = useState(false);
-  const [resultData, setResultData] = useState({
-    title: "",
-    message: "",
-    type: "error",
-  });
+  // Okutma hatası: tam ekran yerine altta bildirim. Sonraki okutmaya ya da
+  // kapat düğmesine kadar kalır, okutmayı engellemez.
+  const [scanError, setScanError] = useState<{
+    title: string;
+    message: string;
+    code: string;
+  } | null>(null);
+  // Son eklenen ürünün barkodu; satırı başarı bildirimi süresince işaretler.
+  const [justScanned, setJustScanned] = useState<string | null>(null);
 
   // --- Toast İçeriği ve Animasyonu ---
   const [toastContent, setToastContent] = useState({
@@ -142,13 +156,13 @@ export default function KoliDetayScreen() {
   // Koli silindikten sonra listeye dönüş zamanlayıcısı
   const backTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sayfa açıldığında veya modal kapandığında inputa odaklan
+  // Sayfa açıldığında inputa odaklan
   useEffect(() => {
     const timer = setTimeout(() => {
       inputRef.current?.focus();
     }, 300);
     return () => clearTimeout(timer);
-  }, [resultModalVisible]);
+  }, []);
 
   // Ekran kapanırken bekleyen toast gizleme zamanlayıcısını iptal et;
   // aksi halde unmount edilmiş component üzerinde animasyon başlatılır.
@@ -162,6 +176,8 @@ export default function KoliDetayScreen() {
 
   const showToast = useCallback(
     (title: string, message: string, type: "success" | "error" = "success") => {
+      // Aynı yerde gösterilirler; yeni bildirim eski okutma hatasının yerine geçer.
+      setScanError(null);
       setToastContent((prev) => ({
         title,
         message,
@@ -203,6 +219,7 @@ export default function KoliDetayScreen() {
 
     if (toastHideTimer.current) clearTimeout(toastHideTimer.current);
     toastHideTimer.current = setTimeout(() => {
+      setJustScanned(null);
       Animated.parallel([
         Animated.timing(toastOpacity, {
           toValue: 0,
@@ -277,20 +294,21 @@ export default function KoliDetayScreen() {
 
       if (isError) {
         playErrorSignal();
-        setResultData({
-          title: t("koliDetay.operationFailed"),
+        setScanError({
+          title: t("koliDetay.scanFailed"),
           message: explanation || t("koliDetay.defaultError"),
-          type: "error",
+          code: variables.scannedBarcode,
         });
-        setResultModalVisible(true);
         setBarcode("");
         barcodeValueRef.current = "";
+        inputRef.current?.focus();
       } else {
         setBarcode("");
         barcodeValueRef.current = "";
         inputRef.current?.focus();
 
         queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
+        if (scanMode === "add") setJustScanned(variables.scannedBarcode);
         showToast(
           t("koliDetay.success"),
           scanMode === "add"
@@ -300,16 +318,16 @@ export default function KoliDetayScreen() {
         );
       }
     },
-    onError: (err: Error) => {
+    onError: (err: Error, variables) => {
       playErrorSignal();
       setBarcode("");
       barcodeValueRef.current = "";
-      setResultData({
+      setScanError({
         title: t("koliDetay.systemError"),
         message: err.message,
-        type: "error",
+        code: variables.scannedBarcode,
       });
-      setResultModalVisible(true);
+      inputRef.current?.focus();
     },
     onSettled: (data) => {
       if (data?.resultErrorType === 2) {
@@ -324,12 +342,26 @@ export default function KoliDetayScreen() {
     if (!finalBarcode || isProcessingRef.current) return;
 
     isProcessingRef.current = true;
+    setScanError(null);
+    // Yeni okutma eski bildirimin yerine geçer; altta iki bildirim üst üste binmez.
+    toastOpacity.setValue(0);
+    toastTranslateY.setValue(50);
 
     barcodeMutation.mutate({
       scannedBarcode: finalBarcode,
       controlType: alwaysIgnoreLimit ? -1 : 3,
     });
   };
+
+  // İrsaliye ekranı yığında açık kalabilir: silinen, yeniden açılan ya da
+  // irsaliyesi kesilen koli oradaki seçimden düşmeli, liste de güncel durumu göstermeli.
+  const removeFromWaybillSelection = useCallback(() => {
+    queryClient.setQueryData<string[]>(["irs-removed-boxes"], (old) => [
+      ...(old || []),
+      String(id),
+    ]);
+    queryClient.invalidateQueries({ queryKey: ["irs-koli-listesi"] });
+  }, [queryClient, id]);
 
   const closeBoxMutation = useMutation({
     mutationFn: async ({
@@ -394,6 +426,7 @@ export default function KoliDetayScreen() {
       setNetWeight("");
       queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+      queryClient.invalidateQueries({ queryKey: ["irs-koli-listesi"] });
     },
     onError: (error) => {
       playErrorSignal();
@@ -447,6 +480,7 @@ export default function KoliDetayScreen() {
       );
       queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+      removeFromWaybillSelection();
     },
     onError: (error) => {
       playErrorSignal();
@@ -508,7 +542,8 @@ export default function KoliDetayScreen() {
           ? {
               ...old,
               pages: old.pages.map((page) =>
-                page.filter((box) => box.id !== deletedId),
+                // Servis id'yi metin olarak gönderiyor; sayıya çevrilmezse eşleşmez.
+                page.filter((box) => Number(box.id) !== deletedId),
               ),
             }
           : old;
@@ -525,7 +560,7 @@ export default function KoliDetayScreen() {
 
       // Sunucu gerçeğiyle uzlaşmak için arka planda tazele.
       queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
-      queryClient.invalidateQueries({ queryKey: ["irs-koli-listesi"] });
+      removeFromWaybillSelection();
       queryClient.invalidateQueries({ queryKey: ["order-boxes"] });
 
       // Toast görünür kalsın diye kısa gecikmeyle listeye dön.
@@ -583,6 +618,7 @@ export default function KoliDetayScreen() {
         );
         queryClient.invalidateQueries({ queryKey: ["koli-detay", id] });
         queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
+        removeFromWaybillSelection();
       }
     },
     onError: (error) => {
@@ -643,16 +679,18 @@ export default function KoliDetayScreen() {
   }, [credentials, trustedOrderRecId, receiptNo, queryClient, t]);
 
   // Koli detayından başka bir koli detayına geçerken stack büyütülmez: geri
-  // tuşu koli detaylarında birikmek yerine doğrudan listeye dönmeli.
+  // tuşu koli detaylarında birikmek yerine detayın açıldığı listeye dönmeli.
+  // İrsaliye ekranı yığında kalırsa seçimi de korunur.
   const openBoxDetail = useCallback(
     (detailParams: Record<string, string | undefined>) => {
       navigation.dispatch((state) => {
-        const koliListesiIndex = state.routes.findIndex(
-          (route) => route.name === "koli-listesi",
+        const listIndex = state.routes.findIndex(
+          (route) =>
+            route.name === "koli-listesi" || route.name === "irskoli-listesi",
         );
 
-        if (koliListesiIndex !== -1) {
-          const newRoutes = state.routes.slice(0, koliListesiIndex + 1);
+        if (listIndex !== -1) {
+          const newRoutes = state.routes.slice(0, listIndex + 1);
           newRoutes.push({ name: "koli-detay", params: detailParams } as any);
 
           return CommonActions.reset({
@@ -792,7 +830,7 @@ export default function KoliDetayScreen() {
         packageNo: box.PackageNo,
         boxCode: box.PackageNo,
         receiptNo: box.ReceiptNo || receiptNo,
-        // sipExp ekranda decodeURIComponent'ten geçtiği için kodlanmış gider.
+        // useLocalSearchParams değeri çözdüğü için sipExp kodlanmış gider.
         sipExp: box.SipExp ? encodeURIComponent(box.SipExp) : sipExp,
         // recId yalnızca gerçekten sipariş RecId'siyse aktarılır; koli
         // listesinden gelen "recId = koli id" değeri yeni kolinin yanlış
@@ -810,9 +848,14 @@ export default function KoliDetayScreen() {
   // artık tüm listeyi yeniden render etmez.
   const renderItem = useCallback(
     ({ item, index }: { item: any; index: number }) => (
-      <KoliDetailRow item={item} index={index} styles={styles} />
+      <KoliDetailRow
+        item={item}
+        index={index}
+        styles={styles}
+        isJust={!!justScanned && isScannedItem(item, justScanned)}
+      />
     ),
-    [styles],
+    [styles, justScanned],
   );
 
   if (koliDetailQuery.isLoading) {
@@ -849,11 +892,7 @@ export default function KoliDetayScreen() {
     >
       <Stack.Screen
         options={{
-          title: packageNo
-            ? `${t("koliDetay.boxNo")}${packageNo}`
-            : boxCode
-              ? `${t("koliDetay.boxNo")}${boxCode}`
-              : t("koliDetay.headerFallback"),
+          title: packageNo || boxCode || t("koliDetay.headerFallback"),
           headerRight: () => (
             <TouchableOpacity
               onPress={() => setShowDeleteBoxConfirm(true)}
@@ -872,79 +911,65 @@ export default function KoliDetayScreen() {
         }}
       />
       {receiptNo || sipExp ? (
-        <View style={styles.receiptBanner}>
-          {/* Sipariş numarası artık bir aksiyon: dokununca aynı siparişe bağlı
-              koliler listelenir. Dokunulabilir olduğu çerçeve, sol vurgu şeridi
-              ve sağdaki koli/ok ikonuyla belli edilir. */}
+        <LinearGradient
+          colors={[theme.colors.koliHero, theme.colors.koliHeroDeep]}
+          start={{ x: 0, y: 0.2 }}
+          end={{ x: 1, y: 0.8 }}
+          style={styles.orderHero}
+        >
           {receiptNo ? (
-            <TouchableOpacity
-              style={styles.orderCard}
-              onPress={openOrderBoxes}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityLabel={`${t("koliDetay.orderNo")}${receiptNo}`}
-              accessibilityHint={t("koliDetay.orderBoxes.openHint")}
-              testID="order-boxes-button"
-            >
-              <View style={styles.orderCardAccent} />
-              <View style={styles.orderCardInfo}>
-                <Text style={styles.orderCardLabel}>
-                  {t("koliDetay.orderNoLabel")}
-                </Text>
-                <Text style={styles.orderCardValue} numberOfLines={1}>
+            <View style={styles.orderHeroRow}>
+              {/* Sipariş numarası bir aksiyon: dokununca aynı siparişe bağlı
+                  koliler listelenir. */}
+              <TouchableOpacity
+                style={styles.orderHeroNo}
+                onPress={openOrderBoxes}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={`${t("koliDetay.orderNo")}${receiptNo}`}
+                accessibilityHint={t("koliDetay.orderBoxes.openHint")}
+                testID="order-boxes-button"
+              >
+                <Text style={styles.orderHeroNoText} numberOfLines={1}>
                   {receiptNo}
                 </Text>
-                {sipExp ? (
-                  // Buton yanında kaldığı için uzun açıklama kartı şişirmesin.
-                  <Text style={styles.sipExpBannerText} numberOfLines={2}>
-                    {decodeURIComponent(sipExp)}
-                  </Text>
-                ) : null}
-              </View>
-              <View style={styles.orderCardAction}>
-                <Boxes size={16} color={theme.colors.primary} />
-                <ChevronRight size={14} color={theme.colors.primary} />
-              </View>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.receiptBannerInfo}>
-              {sipExp ? (
-                <Text style={styles.sipExpBannerText} numberOfLines={2}>
-                  {decodeURIComponent(sipExp)}
-                </Text>
-              ) : null}
-            </View>
-          )}
+                <ChevronRight size={20} color={theme.colors.onPrimary} />
+              </TouchableOpacity>
 
-          {/* Aynı siparişe yeni koli: aksiyon, ait olduğu siparişin yanında
-              durur; alttaki koli aksiyonları çubuğuna dokunmaz. */}
-          {receiptNo ? (
-            <TouchableOpacity
-              style={[
-                styles.newBoxButton,
-                createNewBoxMutation.isPending && styles.disabledButton,
-              ]}
-              onPress={() => setShowNewBoxConfirm(true)}
-              disabled={createNewBoxMutation.isPending}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel={t("koliDetay.btnNewBox")}
-              testID="new-box-button"
-            >
-              {createNewBoxMutation.isPending ? (
-                <ActivityIndicator
-                  size="small"
-                  color={theme.colors.onPrimary}
-                />
-              ) : (
-                <PackagePlus size={18} color={theme.colors.onPrimary} />
-              )}
-              <Text style={styles.newBoxButtonText}>
-                {t("koliDetay.btnNewBox")}
-              </Text>
-            </TouchableOpacity>
+              {/* Aynı siparişe yeni koli: aksiyon, ait olduğu siparişin yanında
+                  durur; alttaki koli aksiyonları çubuğuna dokunmaz. */}
+              <TouchableOpacity
+                style={[
+                  styles.newBoxButton,
+                  createNewBoxMutation.isPending && styles.disabledButton,
+                ]}
+                onPress={() => setShowNewBoxConfirm(true)}
+                disabled={createNewBoxMutation.isPending}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={t("koliDetay.btnNewBox")}
+                testID="new-box-button"
+              >
+                {createNewBoxMutation.isPending ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.koliHero}
+                  />
+                ) : (
+                  <PackagePlus size={20} color={theme.colors.koliHero} />
+                )}
+                <Text style={styles.newBoxButtonText}>
+                  {t("koliDetay.btnNewBox")}
+                </Text>
+              </TouchableOpacity>
+            </View>
           ) : null}
-        </View>
+          {sipExp ? (
+            <Text style={styles.orderHeroNote} numberOfLines={2}>
+              {sipExp}
+            </Text>
+          ) : null}
+        </LinearGradient>
       ) : null}
 
       {/* --- YENİ EKLENEN BARKOD OKUMA ALANI --- */}
@@ -962,17 +987,17 @@ export default function KoliDetayScreen() {
             activeOpacity={0.8}
           >
             <Plus
-              size={18}
+              size={20}
               color={
                 scanMode === "add"
-                  ? theme.colors.onPrimary
-                  : theme.colors.inkSubtle
+                  ? theme.colors.onConfirm
+                  : theme.colors.inkMuted
               }
             />
             <Text
               style={[
                 styles.toggleText,
-                scanMode === "add" && { color: theme.colors.onPrimary },
+                scanMode === "add" && { color: theme.colors.onConfirm },
               ]}
             >
               {t("koliDetay.addMaterial")}
@@ -991,11 +1016,11 @@ export default function KoliDetayScreen() {
             activeOpacity={0.8}
           >
             <Trash2
-              size={18}
+              size={20}
               color={
                 scanMode === "delete"
                   ? theme.colors.onError
-                  : theme.colors.inkSubtle
+                  : theme.colors.error
               }
             />
             <Text
@@ -1013,12 +1038,17 @@ export default function KoliDetayScreen() {
           style={[
             styles.barcodeInputWrapper,
             scanMode === "delete" && { borderColor: theme.colors.error },
+            scanError && { borderColor: theme.colors.errLine },
           ]}
         >
           <ScanBarcode
-            size={22}
+            size={24}
             color={
-              scanMode === "delete" ? theme.colors.error : theme.colors.primary
+              scanError
+                ? theme.colors.errInk
+                : scanMode === "delete"
+                  ? theme.colors.error
+                  : theme.colors.okInk
             }
           />
           <TextInput
@@ -1038,6 +1068,7 @@ export default function KoliDetayScreen() {
             placeholderTextColor={theme.colors.inkSubtle}
             autoFocus
             blurOnSubmit={false}
+            {...manualKeyboard}
           />
           {barcodeMutation.isPending && (
             <ActivityIndicator size="small" color={theme.colors.primary} />
@@ -1051,6 +1082,14 @@ export default function KoliDetayScreen() {
         renderItem={renderItem}
         keyExtractor={(item, index) => `${item.InventoryName}-${index}`}
         contentContainerStyle={styles.content}
+        ListHeaderComponent={
+          items.length > 0 ? (
+            <Text style={styles.countText}>
+              <Text style={styles.countValue}>{items.length}</Text>{" "}
+              {t("koliDetay.itemCountLabel")}
+            </Text>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Package size={48} color={theme.colors.inkSubtle} />
@@ -1081,14 +1120,15 @@ export default function KoliDetayScreen() {
 
         <ActionButton
           text={t("koliDetay.btnOpenBox")}
-          icon={<Unlock size={20} color={theme.colors.success} />}
+          icon={<Unlock size={20} color={theme.colors.ink} />}
           onPress={() => setShowOpenBoxConfirm(true)}
           isLoading={openBoxMutation.isPending}
         />
 
         <ActionButton
           text={t("koliDetay.btnCloseBox")}
-          icon={<Lock size={20} color={theme.colors.primary} />}
+          icon={<Lock size={20} color={theme.colors.onConfirm} />}
+          tone="ok"
           onPress={() => {
             if (skipWeightInput) {
               closeBoxMutation.mutate({});
@@ -1101,17 +1141,6 @@ export default function KoliDetayScreen() {
       </View>
 
       {/* --- MODALLAR --- */}
-      <ResultModal
-        visible={resultModalVisible}
-        onClose={() => {
-          setResultModalVisible(false);
-          inputRef.current?.focus();
-        }}
-        title={resultData.title}
-        message={resultData.message}
-        type={resultData.type as "success" | "error" | "warning"}
-      />
-
       {/* --- ONAY MODALI (Yeni Component) --- */}
       <ReceiptConfirmModal
         visible={showReceiptConfirm}
@@ -1431,10 +1460,46 @@ export default function KoliDetayScreen() {
         </View>
       </Modal>
 
+      {/* OKUTMA HATASI BİLDİRİMİ */}
+      {scanError ? (
+        <View style={[styles.toastContainer, { bottom: noticeBottom }]}>
+          <View
+            style={[styles.toastContent, styles.toastError, styles.toastClosable]}
+            accessibilityRole="alert"
+          >
+            <View style={[styles.toastMark, styles.toastMarkError]}>
+              <X size={20} color={theme.colors.errInk} />
+            </View>
+            <View style={styles.toastBody}>
+              <Text style={[styles.toastTitle, styles.toastTitleError]}>
+                {scanError.title}
+              </Text>
+              <Text style={[styles.toastSubtitle, styles.toastMessageError]}>
+                {scanError.message}
+              </Text>
+              <Text style={styles.toastCode}>{scanError.code}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.toastClose}
+              onPress={() => {
+                setScanError(null);
+                inputRef.current?.focus();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t("koliDetay.closeNotice")}
+              testID="scan-error-close"
+            >
+              <X size={20} color={theme.colors.readMuted} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
+
       <Animated.View
         style={[
           styles.toastContainer,
           {
+            bottom: noticeBottom,
             opacity: toastOpacity,
             transform: [{ translateY: toastTranslateY }],
           },
@@ -1444,18 +1509,23 @@ export default function KoliDetayScreen() {
         <View
           style={[
             styles.toastContent,
-            toastContent.type === "error" && {
-              borderLeftColor: theme.colors.error,
-            },
+            toastContent.type === "error" && styles.toastError,
           ]}
         >
-          {toastContent.type === "success" ? (
-            <CheckCircle size={24} color={theme.colors.success} />
-          ) : (
-            <AlertCircle size={24} color={theme.colors.error} />
-          )}
+          <View
+            style={[
+              styles.toastMark,
+              toastContent.type === "error" && styles.toastMarkError,
+            ]}
+          >
+            {toastContent.type === "success" ? (
+              <CheckCircle size={20} color={theme.colors.noticeOkInk} />
+            ) : (
+              <AlertCircle size={20} color={theme.colors.errInk} />
+            )}
+          </View>
 
-          <View style={{ flex: 1 }}>
+          <View style={styles.toastBody}>
             <Text style={styles.toastTitle}>{toastContent.title}</Text>
             <Text style={styles.toastSubtitle}>{toastContent.message}</Text>
           </View>
@@ -1475,14 +1545,19 @@ export default function KoliDetayScreen() {
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View
+            style={[
+              styles.modalContent,
+              { paddingBottom: insets.bottom + theme.spacing.lg },
+            ]}
+          >
             <View
               style={[
                 styles.resultIconContainer,
-                { backgroundColor: theme.colors.warningTint },
+                { backgroundColor: theme.colors.warnTile },
               ]}
             >
-              <AlertTriangle size={48} color={theme.colors.warning} />
+              <AlertTriangle size={32} color={theme.colors.warnInk} />
             </View>
             <Text style={styles.resultTitle}>
               {overLimitType === 1
@@ -1494,38 +1569,24 @@ export default function KoliDetayScreen() {
                 ? t("koliDetay.outOfOrderMessage")
                 : t("scanner.overLimit.message")}
             </Text>
+            <Text style={styles.limitChip}>{pendingOverLimitBarcode}</Text>
 
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+            <View style={styles.limitActions}>
               <TouchableOpacity
-                style={[
-                  styles.resultButton,
-                  { flex: 1, backgroundColor: theme.colors.surface2 },
-                ]}
+                style={styles.resultButton}
                 onPress={() => {
                   setShowOverLimitModal(false);
                   isProcessingRef.current = false;
                   inputRef.current?.focus();
                 }}
               >
-                <Text
-                  style={[
-                    styles.resultButtonText,
-                    { color: theme.colors.inkMuted },
-                  ]}
-                >
+                <Text style={styles.resultButtonText}>
                   {t("scanner.overLimit.cancelBtn")}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.resultButton,
-                  {
-                    flex: 1,
-                    backgroundColor: theme.colors.warning,
-                    borderColor: theme.colors.warning,
-                  },
-                ]}
+                style={[styles.resultButton, styles.resultButtonWarn]}
                 onPress={() => {
                   setShowOverLimitModal(false);
                   //setAlwaysIgnoreLimit(true);
@@ -1751,6 +1812,21 @@ function getDisplayValue(item: any, key: string): string {
   return String(val);
 }
 
+// Okutulan barkod satırın h2 alanındaysa satır bu okutmanındır.
+function isScannedItem(item: any, code: string): boolean {
+  const h2Key = Object.keys(item).find((key) => key.startsWith("h2_"));
+  return !!h2Key && item[h2Key] === code;
+}
+
+// Servisten "Lot Adeti" gelen alan adı kartta "Lot adeti" yazılır.
+function sentenceCase(text: string): string {
+  return text ? text[0] + text.slice(1).toLocaleLowerCase("tr") : text;
+}
+
+function labelOf(key: string): string {
+  return sentenceCase(key.replace(/^sh_/, ""));
+}
+
 // Liste satırı: memo + useMemo sayesinde ekranın diğer state değişimlerinde
 // (örn. barkod inputu) yeniden render edilmez; base64 dönüşümü ve alan
 // çıkarımı yalnızca item değiştiğinde hesaplanır.
@@ -1758,10 +1834,12 @@ const KoliDetailRow = memo(function KoliDetailRow({
   item,
   index,
   styles,
+  isJust,
 }: {
   item: any;
   index: number;
   styles: KoliDetayStyles;
+  isJust: boolean;
 }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -1775,44 +1853,58 @@ const KoliDetailRow = memo(function KoliDetailRow({
   );
   const hasValidThumbnail = !!base64Thumbnail;
 
-  const { itemTitle, quantityLabel, quantityValue, dynamicFields } =
-    useMemo(() => {
-      const keys = Object.keys(item);
+  const { itemTitle, codeField, corner, facts } = useMemo(() => {
+    const keys = Object.keys(item);
 
-      const h1Key = keys.find((key) => key.startsWith("h1_"));
-      const itemTitle = h1Key
-        ? getDisplayValue(item, h1Key)
-        : item.InventoryName || `${t("koliDetay.itemFallback")}${index + 1}`;
+    const h1Key = keys.find((key) => key.startsWith("h1_"));
+    const itemTitle = h1Key
+      ? getDisplayValue(item, h1Key)
+      : item.InventoryName || `${t("koliDetay.itemFallback")}${index + 1}`;
 
-      const h2Key = keys.find((key) => key.startsWith("h2_"));
-      let quantityLabel = t("koliDetay.quantity");
-      let quantityValue = String(item.Quantity || "");
+    const h2Key = keys.find((key) => key.startsWith("h2_"));
+    let quantityLabel = t("koliDetay.quantity");
+    let quantityValue = String(item.Quantity || "");
+    let h2IsCode = false;
 
-      if (h2Key) {
-        quantityLabel = h2Key.replace("h2_", "");
-        const rawQuantity = item[h2Key];
+    if (h2Key) {
+      quantityLabel = h2Key.replace("h2_", "");
+      const rawQuantity = item[h2Key];
 
-        const isBarcodeOrSerial = /barkod|seri|kod|no|ean/i.test(quantityLabel);
-        const isVeryLargeNumber = String(rawQuantity).trim().length >= 8;
+      const isBarcodeOrSerial = /barkod|seri|kod|no|ean/i.test(quantityLabel);
+      const isVeryLargeNumber = String(rawQuantity).trim().length >= 8;
+      h2IsCode = isBarcodeOrSerial || isVeryLargeNumber;
 
-        quantityValue =
-          rawQuantity &&
-          !isNaN(Number(rawQuantity)) &&
-          !isBarcodeOrSerial &&
-          !isVeryLargeNumber
-            ? Number(rawQuantity).toFixed(2)
-            : String(rawQuantity || "");
-      }
+      quantityValue =
+        rawQuantity &&
+        !isNaN(Number(rawQuantity)) &&
+        !h2IsCode
+          ? Number(rawQuantity).toFixed(2)
+          : String(rawQuantity || "");
+    }
 
-      const dynamicFields = keys
-        .filter((key) => key.startsWith("sh_"))
-        .slice(0, 6);
+    const dynamicFields = keys
+      .filter((key) => key.startsWith("sh_"))
+      .slice(0, 6);
 
-      return { itemTitle, quantityLabel, quantityValue, dynamicFields };
-    }, [item, index, t]);
+    // Miktar sağ üst köşede: servis sh_Miktar gönderiyorsa odur, göndermiyorsa
+    // h2 alanı barkod değilse o alan miktar sayılır.
+    const qtyKey = dynamicFields.find((key) => /^sh_miktar$/i.test(key));
+    const corner = qtyKey
+      ? { label: labelOf(qtyKey), value: getDisplayValue(item, qtyKey) }
+      : !h2IsCode
+        ? { label: quantityLabel, value: quantityValue }
+        : null;
+    const codeField =
+      h2Key && (qtyKey || h2IsCode)
+        ? { label: sentenceCase(quantityLabel), value: quantityValue }
+        : null;
+    const facts = dynamicFields.filter((key) => key !== qtyKey);
+
+    return { itemTitle, codeField, corner, facts };
+  }, [item, index, t]);
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, isJust && styles.cardJust]}>
       <View style={styles.cardContent}>
         {hasValidThumbnail ? (
           <Image
@@ -1822,7 +1914,7 @@ const KoliDetailRow = memo(function KoliDetailRow({
           />
         ) : (
           <View style={styles.iconContainer}>
-            <Package size={24} color={theme.colors.primary} />
+            <Package size={24} color={theme.colors.koliInk} />
           </View>
         )}
 
@@ -1831,38 +1923,39 @@ const KoliDetailRow = memo(function KoliDetailRow({
             {itemTitle}
           </Text>
 
-          <View style={styles.quantityContainer}>
-            <Text style={styles.quantityLabel}>{quantityLabel}: </Text>
-            <Text style={styles.quantityValue}>{quantityValue}</Text>
-          </View>
-
-          {dynamicFields.length > 0 && (
-            <View style={styles.dynamicFieldsContainer}>
-              {dynamicFields.map((key) => {
-                const val = getDisplayValue(item, key);
-                const displayVal = val ? val : " ";
-
-                return (
-                  <View key={key} style={styles.dynamicFieldRow}>
-                    <Text style={styles.fieldLabel}>
-                      {key.replace("sh_", "")}:
-                    </Text>
-                    <Text
-                      style={[
-                        styles.fieldValue,
-                        { color: theme.colors.success, fontWeight: "700" },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {displayVal}
-                    </Text>
-                  </View>
-                );
-              })}
+          {codeField ? (
+            <View style={styles.codeRow}>
+              <Text style={styles.codeLabel}>{codeField.label}</Text>
+              <Text style={styles.codeValue}>{codeField.value}</Text>
             </View>
-          )}
+          ) : null}
         </View>
+
+        {corner ? (
+          <View style={styles.quantityCorner}>
+            <Text style={styles.quantityLabel}>{corner.label}</Text>
+            <Text style={styles.quantityValue}>{corner.value}</Text>
+          </View>
+        ) : null}
       </View>
+
+      {facts.length > 0 && (
+        <View style={styles.factsRow}>
+          {facts.map((key) => {
+            const val = getDisplayValue(item, key);
+            const displayVal = val ? val : " ";
+
+            return (
+              <View key={key} style={styles.fact}>
+                <Text style={styles.factLabel}>{labelOf(key)}</Text>
+                <Text style={styles.factValue} numberOfLines={1}>
+                  {displayVal}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 });
@@ -1876,130 +1969,110 @@ const makeStyles = (theme: Theme) => {
     },
     topSection: {
       backgroundColor: colors.canvas,
-      padding: spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.hairline,
+      paddingTop: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.xs,
       gap: spacing.sm,
     },
     toggleContainer: {
       flexDirection: "row",
-      backgroundColor: colors.surface2,
-      borderRadius: radius.md,
+      gap: spacing.xxs,
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.cardLine,
       padding: spacing.xxs,
+      ...theme.cardShadow,
     },
     toggleBtn: {
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: spacing.sm,
-      borderRadius: radius.sm,
-      gap: spacing.xxs,
+      minHeight: 44,
+      borderRadius: radius.control,
+      gap: spacing.xs,
     },
     toggleBtnActiveAdd: {
-      backgroundColor: colors.primary,
+      backgroundColor: colors.confirm,
     },
     toggleBtnActiveDelete: {
       backgroundColor: colors.error,
     },
     toggleText: {
-      ...type.button,
-      color: colors.inkSubtle,
+      ...type.labelStrong,
+      color: colors.inkMuted,
     },
     barcodeInputWrapper: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.hairlineStrong,
-      borderRadius: radius.md,
+      backgroundColor: colors.card,
+      borderWidth: 2,
+      borderColor: colors.okInk,
+      borderRadius: radius.control,
       paddingHorizontal: spacing.md,
-      height: 50,
+      minHeight: 56,
       gap: spacing.sm,
+      ...theme.cardShadow,
     },
     barcodeInputTop: {
       ...type.bodyLg,
       flex: 1,
-      fontWeight: "600",
+      fontVariant: ["tabular-nums"],
       color: colors.ink,
     },
     content: {
-      padding: spacing.md,
+      paddingTop: spacing.xxs,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.xl,
     },
-    // Sipariş bilgisi sakin bir bilgi satırı; dolu renkli şerit yerine nötr
-    // yüzey + ince ayraç kullanılır, vurgu metnin ve butonun kendisinde kalır.
-    receiptBanner: {
-      backgroundColor: colors.surface1,
+    countText: {
+      ...type.labelMd,
+      color: colors.readMuted,
+      paddingHorizontal: spacing.xxs,
+      marginBottom: spacing.sm,
+    },
+    countValue: {
+      color: colors.ink,
+      fontWeight: "700" as const,
+    },
+    orderHero: {
+      marginTop: spacing.sm,
+      marginHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.lg,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.hairline,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.md,
-    },
-    receiptBannerInfo: {
-      flex: 1,
+      paddingLeft: spacing.md,
+      paddingRight: spacing.sm,
+      borderRadius: radius.xl,
       gap: spacing.xxs,
     },
-    // Sipariş numarası dokunulabilir bir kart: sol vurgu şeridi + çerçeve onu
-    // banner'ın geri kalanından ayırır, sağdaki ikon çifti aksiyonu duyurur.
-    orderCard: {
-      flex: 1,
+    orderHeroRow: {
       flexDirection: "row",
       alignItems: "center",
       gap: spacing.sm,
-      backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.hairlineStrong,
-      borderRadius: radius.md,
-      paddingVertical: spacing.xs,
-      paddingRight: spacing.sm,
-      paddingLeft: spacing.xs,
-      minHeight: 52,
-      overflow: "hidden",
     },
-    orderCardAccent: {
-      width: 3,
-      alignSelf: "stretch",
-      borderRadius: radius.pill,
-      backgroundColor: colors.primary,
-    },
-    orderCardInfo: {
+    orderHeroNo: {
       flex: 1,
-      gap: 2,
-    },
-    orderCardLabel: {
-      ...type.caption,
-      textTransform: "uppercase",
-      letterSpacing: 0.6,
-      color: colors.inkSubtle,
-    },
-    orderCardValue: {
-      ...type.cardTitle,
-      fontSize: 16,
-      color: colors.ink,
-    },
-    orderCardAction: {
+      minWidth: 0,
+      minHeight: 48,
       flexDirection: "row",
       alignItems: "center",
-      gap: 1,
-      backgroundColor: colors.primaryTint,
-      borderRadius: radius.pill,
-      paddingHorizontal: spacing.xs,
-      paddingVertical: spacing.xxs,
+      gap: spacing.xxs,
     },
-    sipExpBannerText: {
-      ...type.bodySm,
-      fontWeight: "500" as const,
-      color: colors.success,
+    orderHeroNoText: {
+      ...type.codeLg,
+      fontSize: 18,
+      color: colors.onPrimary,
+    },
+    orderHeroNote: {
+      ...type.labelMd,
+      color: colors.onPrimary,
     },
     newBoxButton: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: spacing.xs,
-      backgroundColor: colors.primary,
+      backgroundColor: colors.onPrimary,
       borderRadius: radius.pill,
       paddingHorizontal: spacing.md,
       // Dokunma alanı en az 44pt olmalı (iOS/Android kılavuzu).
@@ -2007,8 +2080,8 @@ const makeStyles = (theme: Theme) => {
       minWidth: 44,
     },
     newBoxButtonText: {
-      ...type.button,
-      color: colors.onPrimary,
+      ...type.labelStrong,
+      color: colors.koliHero,
     },
     centerContainer: {
       flex: 1,
@@ -2045,12 +2118,19 @@ const makeStyles = (theme: Theme) => {
       textAlign: "center",
     },
     card: {
-      backgroundColor: colors.surface1,
+      backgroundColor: colors.card,
       borderRadius: radius.lg,
-      padding: spacing.md,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
       marginBottom: spacing.sm,
       borderWidth: 1,
-      borderColor: colors.hairline,
+      borderColor: colors.cardLine,
+      ...theme.cardShadow,
+    },
+    // Son eklenen ürün: başarı bildirimi süresince.
+    cardJust: {
+      backgroundColor: colors.okTile,
+      borderColor: colors.confirm,
     },
     cardContent: {
       flexDirection: "row",
@@ -2058,81 +2138,103 @@ const makeStyles = (theme: Theme) => {
       gap: spacing.sm,
     },
     iconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: radius.md,
-      backgroundColor: colors.primaryTint,
+      width: 44,
+      height: 44,
+      borderRadius: radius.control,
+      backgroundColor: colors.koliTile,
       alignItems: "center",
       justifyContent: "center",
     },
     thumbnailImage: {
-      width: 48,
-      height: 48,
-      borderRadius: radius.sm,
+      width: 44,
+      height: 44,
+      borderRadius: radius.control,
       backgroundColor: colors.surface2,
     },
     itemInfo: {
       flex: 1,
+      minWidth: 0,
       gap: spacing.xxs,
     },
     itemName: {
-      ...type.cardTitle,
-      fontSize: 15,
+      ...type.codeLg,
       color: colors.ink,
     },
-    quantityContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 2,
-    },
-    quantityLabel: {
-      ...type.bodySm,
-      color: colors.inkMuted,
-    },
-    quantityValue: {
-      ...type.mono,
-      fontWeight: "700" as const,
-      color: colors.success,
-    },
-    dynamicFieldsContainer: {
+    codeRow: {
       flexDirection: "row",
       flexWrap: "wrap",
-      marginTop: spacing.xxs,
-      gap: spacing.xxs,
+      gap: spacing.xs,
     },
-    dynamicFieldRow: {
-      width: "48%",
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 2,
+    codeLabel: {
+      ...type.labelMd,
+      color: colors.readMuted,
     },
-    fieldLabel: {
-      ...type.caption,
-      fontWeight: "700",
-      color: colors.inkSubtle,
-      marginRight: spacing.xxs,
-    },
-    fieldValue: {
-      ...type.caption,
+    codeValue: {
+      ...type.labelMd,
+      fontVariant: ["tabular-nums"],
       color: colors.ink,
+    },
+    quantityCorner: {
+      alignItems: "flex-end",
+      minWidth: 64,
+    },
+    quantityLabel: {
+      ...type.labelMd,
+      color: colors.readMuted,
+    },
+    quantityValue: {
+      ...type.quantity,
+      color: colors.okInk,
+    },
+    factsRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      columnGap: spacing.xl,
+      rowGap: spacing.xs,
+      marginTop: spacing.sm,
+      paddingTop: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: colors.bandLine,
+    },
+    fact: {
+      minWidth: 0,
       flexShrink: 1,
+    },
+    factLabel: {
+      ...type.labelMd,
+      fontWeight: "400" as const,
+      color: colors.readMuted,
+    },
+    factValue: {
+      ...type.bodyLg,
+      fontWeight: "600" as const,
+      color: colors.ink,
     },
     buttonContainer: {
       flexDirection: "row",
-      padding: spacing.md,
-      paddingBottom: spacing.xxl,
-      gap: spacing.sm,
+      flexWrap: "wrap",
+      paddingTop: spacing.xs,
+      paddingHorizontal: spacing.md,
+      gap: spacing.xs,
       backgroundColor: colors.canvas,
       borderTopWidth: 1,
-      borderTopColor: colors.hairline,
+      borderTopColor: colors.cardLine,
     },
 
     modalOverlay: {
       flex: 1,
       backgroundColor: colors.scrim,
-      justifyContent: "center",
+      justifyContent: "flex-end",
+    },
+    modalContent: {
+      width: "100%",
       alignItems: "center",
-      padding: spacing.xl,
+      gap: spacing.sm,
+      backgroundColor: colors.card,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      paddingTop: spacing.xl,
+      paddingHorizontal: spacing.lg,
     },
     resultIconContainer: {
       width: 64,
@@ -2140,21 +2242,52 @@ const makeStyles = (theme: Theme) => {
       borderRadius: radius.pill,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: spacing.md,
     },
     resultTitle: {
-      ...type.cardTitle,
-      fontSize: 18,
+      ...type.pageTitle,
+      fontWeight: "700" as const,
       color: colors.ink,
       textAlign: "center",
-      marginBottom: spacing.xs,
     },
     resultMessage: {
-      ...type.bodySm,
-      color: colors.inkMuted,
+      ...type.bodyLg,
+      color: colors.ink,
       textAlign: "center",
-      marginBottom: spacing.xl,
-      lineHeight: 20,
+    },
+    limitChip: {
+      ...type.labelMd,
+      fontVariant: ["tabular-nums"],
+      color: colors.ink,
+      backgroundColor: colors.raised,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xxs,
+      overflow: "hidden",
+    },
+    limitActions: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      width: "100%",
+      marginTop: spacing.sm,
+    },
+    resultButton: {
+      flex: 1,
+      minHeight: 56,
+      borderRadius: radius.control,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.cardLine,
+      backgroundColor: colors.card,
+    },
+    resultButtonWarn: {
+      backgroundColor: colors.warning,
+      borderColor: colors.warning,
+    },
+    resultButtonText: {
+      ...type.bodyLg,
+      fontWeight: "600" as const,
+      color: colors.ink,
     },
     disabledButton: {
       opacity: 0.6,
@@ -2388,37 +2521,74 @@ const makeStyles = (theme: Theme) => {
     },
     toastContainer: {
       position: "absolute",
-      bottom: 120,
-      left: spacing.lg,
-      right: spacing.lg,
-      alignItems: "center",
+      left: spacing.md,
+      right: spacing.md,
       zIndex: 999,
     },
     toastContent: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.surface3,
-      paddingHorizontal: spacing.lg,
+      backgroundColor: colors.notice,
+      paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      borderRadius: radius.md,
-      borderLeftWidth: 4,
-      borderLeftColor: colors.success,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
-      elevation: 6,
+      borderRadius: radius.control,
+      borderWidth: 1,
+      borderColor: colors.noticeLine,
       gap: spacing.sm,
+      ...theme.noticeShadow,
+    },
+    toastError: {
+      alignItems: "flex-start",
+      borderColor: colors.errLine,
+    },
+    // Kapat düğmesi kendi boşluğunu getirir.
+    toastClosable: {
+      paddingRight: 0,
+    },
+    toastMark: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.noticeOkTile,
+    },
+    toastMarkError: {
+      backgroundColor: colors.errTile,
+    },
+    toastBody: {
+      flex: 1,
+      minWidth: 0,
     },
     toastTitle: {
-      ...type.bodySm,
+      ...type.bodyLg,
       fontWeight: "700" as const,
       color: colors.ink,
     },
+    toastTitleError: {
+      color: colors.errInk,
+    },
     toastSubtitle: {
-      ...type.bodySm,
-      color: colors.inkMuted,
-      flexWrap: "wrap",
+      ...type.labelMd,
+      fontWeight: "400" as const,
+      color: colors.readMuted,
+      marginTop: spacing.xxs,
+    },
+    toastMessageError: {
+      color: colors.ink,
+    },
+    toastCode: {
+      ...type.labelMd,
+      fontVariant: ["tabular-nums"],
+      color: colors.readMuted,
+      marginTop: spacing.xxs,
+    },
+    toastClose: {
+      width: 48,
+      height: 48,
+      marginVertical: -spacing.xs,
+      alignItems: "center",
+      justifyContent: "center",
     },
     errorBox: {
       flexDirection: "row",
@@ -2439,25 +2609,5 @@ const makeStyles = (theme: Theme) => {
       fontWeight: "600" as const,
       flex: 1,
     },
-    modalContent: {
-      width: "100%",
-      maxWidth: 320,
-      backgroundColor: colors.surface1,
-      borderRadius: radius.xxl,
-      padding: spacing.xl,
-      borderWidth: 1,
-      borderColor: colors.hairline,
-    },
-    resultButton: {
-      paddingVertical: spacing.md,
-      borderRadius: radius.md,
-      alignItems: "center",
-      justifyContent: "center",
-      width: "100%",
-      minHeight: 48,
-      borderWidth: 1,
-      borderColor: colors.hairlineStrong,
-    },
-    resultButtonText: { ...type.button },
   });
 };

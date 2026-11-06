@@ -22,6 +22,7 @@ import {
   ScanBarcode,
   CheckCircle,
   AlertTriangle,
+  FileText,
   Home,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,8 +31,9 @@ import type { Theme } from "@/constants/theme";
 import { api } from "@/services/api";
 import { useApiConfig } from "@/contexts/ApiConfigContext";
 import { useErrorSignal } from "@/hooks/useErrorSignal";
+import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
+import { useManualKeyboard } from "@/hooks/useManualKeyboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import ResultModal from "../components/ResultModal";
 import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 
 export default function BarcodeScannerScreen() {
@@ -41,7 +43,10 @@ export default function BarcodeScannerScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const noticeBottom =
+    (keyboardHeight || insets.bottom) + theme.spacing.md;
   const { useExistingBox } = useApiConfig();
   const playErrorSignal = useErrorSignal();
   const params = useLocalSearchParams<{
@@ -55,6 +60,7 @@ export default function BarcodeScannerScreen() {
   const { credentials } = useAuth();
   const queryClient = useQueryClient();
   const inputRef = useRef<TextInput>(null);
+  const manualKeyboard = useManualKeyboard(inputRef);
   const barcodeValueRef = useRef("");
   const isProcessingRef = useRef(false);
 
@@ -64,13 +70,13 @@ export default function BarcodeScannerScreen() {
     params.receiptNo || null,
   );
 
-  // Hata Modalı State'leri
-  const [resultModalVisible, setResultModalVisible] = useState(false);
-  const [resultData, setResultData] = useState({
-    title: "",
-    message: "",
-    type: "success" as "success" | "error",
-  });
+  // Okutma hatası: tam ekran yerine altta bildirim. Sonraki okutmaya ya da
+  // kapat düğmesine kadar kalır, okutmayı engellemez.
+  const [scanError, setScanError] = useState<{
+    title: string;
+    message: string;
+    code: string;
+  } | null>(null);
 
   // --- Miktar Aşımı Onay Modalı State'leri ---
   const [showOverLimitModal, setShowOverLimitModal] = useState(false);
@@ -82,7 +88,6 @@ export default function BarcodeScannerScreen() {
   const [toastContent, setToastContent] = useState({
     title: "",
     message: "",
-    type: "success",
   });
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(50)).current;
@@ -95,12 +100,8 @@ export default function BarcodeScannerScreen() {
     };
   }, []);
 
-  const showSuccessToast = (
-    title: string,
-    message: string,
-    type: "success" | "error" = "success",
-  ) => {
-    setToastContent({ title, message, type });
+  const showSuccessToast = (title: string, message: string) => {
+    setToastContent({ title, message });
 
     Animated.parallel([
       Animated.timing(toastOpacity, {
@@ -138,7 +139,7 @@ export default function BarcodeScannerScreen() {
       inputRef.current?.focus();
     }, 300);
     return () => clearTimeout(timer);
-  }, [resultModalVisible]);
+  }, []);
 
   // --- API İŞLEMLERİ (MUTATION) ---
   const barcodeMutation = useMutation({
@@ -266,12 +267,11 @@ export default function BarcodeScannerScreen() {
       if (data.mode === "create_from_order") {
         if (isError) {
           playErrorSignal();
-          setResultData({
-            title: t("scanner.operationFailed"),
+          setScanError({
+            title: t("scanner.scanFailed"),
             message: explanation || t("scanner.createBoxError"),
-            type: "error",
+            code: variables.scannedBarcode,
           });
-          setResultModalVisible(true);
         } else {
           queryClient.invalidateQueries({ queryKey: ["koli-listesi"] });
           navigation.dispatch((state) => {
@@ -329,12 +329,11 @@ export default function BarcodeScannerScreen() {
         if (isError) {
           playErrorSignal();
           setSuccessMessage(null);
-          setResultData({
-            title: t("scanner.operationFailed"),
+          setScanError({
+            title: t("scanner.scanFailed"),
             message: explanation || t("scanner.systemError"),
-            type: "error",
+            code: variables.scannedBarcode,
           });
-          setResultModalVisible(true);
         } else {
           if (params.koliId) {
             queryClient.invalidateQueries({
@@ -347,7 +346,6 @@ export default function BarcodeScannerScreen() {
             data.mode === "add"
               ? t("scanner.itemAdded")
               : t("scanner.itemDeleted"),
-            "success",
           );
         }
         return;
@@ -356,12 +354,11 @@ export default function BarcodeScannerScreen() {
       if (data.mode === "search") {
         if (data.err === 99 || data.err === 1 || isError) {
           playErrorSignal();
-          setResultData({
+          setScanError({
             title: t("scanner.boxNotFoundTitle"),
             message: data.msg || t("scanner.boxNotFoundMsg"),
-            type: "error",
+            code: variables.scannedBarcode,
           });
-          setResultModalVisible(true);
         } else if (data.recId) {
           let cleanPackageNo = data.scannedBarcode || "";
           if (
@@ -415,16 +412,16 @@ export default function BarcodeScannerScreen() {
         }
       }
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables) => {
       playErrorSignal();
-      setResultData({
+      setScanError({
         title: t("scanner.systemError"),
         message: error.message,
-        type: "error",
+        code: variables.scannedBarcode,
       });
-      setResultModalVisible(true);
       setBarcode("");
       barcodeValueRef.current = "";
+      inputRef.current?.focus();
     },
     onSettled: (data) => {
       if (
@@ -444,6 +441,10 @@ export default function BarcodeScannerScreen() {
 
     isProcessingRef.current = true;
     setSuccessMessage(null);
+    setScanError(null);
+    // Yeni okutma eski bildirimin yerine geçer; altta iki bildirim üst üste binmez.
+    toastOpacity.setValue(0);
+    toastTranslateY.setValue(50);
 
     barcodeMutation.mutate({
       scannedBarcode: finalBarcode,
@@ -453,14 +454,12 @@ export default function BarcodeScannerScreen() {
 
   const getTitles = () => {
     if (params.mode === "create_from_order") {
-      const acc = params.accountName || t("scanner.titles.accountSelected");
-      const rec = params.receiptNo
-        ? t("scanner.titles.receiptNo", { no: params.receiptNo })
-        : "";
-
       return {
         title: t("scanner.titles.createFromOrder"),
-        subtitle: `${acc} - ${rec}\n${t("scanner.titles.firstItemPrompt")}`,
+        subtitle: "",
+        orderNo: params.receiptNo,
+        customer: params.accountName || t("scanner.titles.accountSelected"),
+        fieldLabel: t("scanner.titles.firstItemPrompt"),
       };
     }
     if (params.mode === "create_standalone") {
@@ -494,7 +493,7 @@ export default function BarcodeScannerScreen() {
     };
   };
 
-  const { title, subtitle } = getTitles();
+  const { title, subtitle, orderNo, customer, fieldLabel } = getTitles();
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.canvas }}>
@@ -519,11 +518,11 @@ export default function BarcodeScannerScreen() {
           <TouchableOpacity
             style={[
               styles.headerButton,
-              { backgroundColor: theme.colors.primary },
+              { backgroundColor: theme.colors.koliTile },
             ]}
             onPress={() => replace("/(app)/dashboard")}
           >
-            <Home size={24} color={theme.colors.onPrimary} />
+            <Home size={24} color={theme.colors.koliInk} />
           </TouchableOpacity>
         </View>
 
@@ -542,18 +541,28 @@ export default function BarcodeScannerScreen() {
             ]}
           >
             <ScanBarcode
-              size={64}
-              color={params.mode === "delete" ? theme.colors.error : theme.colors.primary}
+              size={60}
+              color={params.mode === "delete" ? theme.colors.error : theme.colors.koliInk}
             />
           </View>
 
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          {orderNo ? (
+            <View style={styles.orderChip}>
+              <FileText size={16} color={theme.colors.koliInk} />
+              <Text style={styles.orderChipText}>{orderNo}</Text>
+            </View>
+          ) : null}
+          {customer ? <Text style={styles.customer}>{customer}</Text> : null}
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
           <View style={styles.inputSection}>
+            {fieldLabel ? (
+              <Text style={styles.fieldLabel}>{fieldLabel}</Text>
+            ) : null}
             <TextInput
               ref={inputRef}
-              style={styles.barcodeInput}
+              style={[styles.barcodeInput, scanError && styles.barcodeInputError]}
               value={barcode}
               onChangeText={(text) => {
                 setBarcode(text);
@@ -564,7 +573,7 @@ export default function BarcodeScannerScreen() {
               placeholderTextColor={theme.colors.inkSubtle}
               autoFocus
               blurOnSubmit={false}
-              showSoftInputOnFocus={true}
+              {...manualKeyboard}
               selectTextOnFocus={true}
             />
             {successMessage && (
@@ -596,44 +605,64 @@ export default function BarcodeScannerScreen() {
           </View>
         </ScrollView>
 
-        {/* SONUÇ (HATA) MODALI */}
-        <ResultModal
-          visible={resultModalVisible}
-          onClose={() => {
-            setResultModalVisible(false);
-            inputRef.current?.focus();
-          }}
-          title={resultData.title}
-          message={resultData.message}
-          type={resultData.type as "success" | "error" | "warning"}
-        />
+        {/* OKUTMA HATASI BİLDİRİMİ */}
+        {scanError ? (
+          <View
+            style={[
+              styles.toastContainer,
+              { bottom: noticeBottom },
+            ]}
+          >
+            <View
+              style={[styles.toastContent, styles.toastError]}
+              accessibilityRole="alert"
+            >
+              <View style={[styles.toastMark, styles.toastMarkError]}>
+                <X size={20} color={theme.colors.errInk} />
+              </View>
+              <View style={styles.toastBody}>
+                <Text style={[styles.toastTitle, styles.toastTitleError]}>
+                  {scanError.title}
+                </Text>
+                <Text style={[styles.toastSubtitle, styles.toastMessageError]}>
+                  {scanError.message}
+                </Text>
+                <Text style={styles.toastCode}>{scanError.code}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.toastClose}
+                onPress={() => {
+                  setScanError(null);
+                  inputRef.current?.focus();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("scanner.closeNotice")}
+                testID="scan-error-close"
+              >
+                <X size={20} color={theme.colors.readMuted} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
 
         {/* BAŞARI BİLDİRİMİ */}
         <Animated.View
           style={[
             styles.toastContainer,
             {
+              bottom: noticeBottom,
               opacity: toastOpacity,
               transform: [{ translateY: toastTranslateY }],
             },
           ]}
           pointerEvents="none"
         >
-          <View
-            style={[
-              styles.toastContent,
-              toastContent.type === "error" && {
-                borderLeftColor: theme.colors.error,
-              },
-            ]}
-          >
-            {toastContent.type === "success" ? (
-              <CheckCircle size={24} color={theme.colors.success} />
-            ) : (
-              <X size={24} color={theme.colors.error} />
-            )}
+          <View style={styles.toastContent}>
+            <View style={styles.toastMark}>
+              <CheckCircle size={20} color={theme.colors.noticeOkInk} />
+            </View>
 
-            <View>
+            <View style={styles.toastBody}>
               <Text style={styles.toastTitle}>{toastContent.title}</Text>
               <Text style={styles.toastSubtitle}>{toastContent.message}</Text>
             </View>
@@ -653,14 +682,19 @@ export default function BarcodeScannerScreen() {
           }}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View
+              style={[
+                styles.modalContent,
+                { paddingBottom: insets.bottom + theme.spacing.lg },
+              ]}
+            >
               <View
                 style={[
                   styles.resultIconContainer,
-                  { backgroundColor: theme.colors.warningTint },
+                  { backgroundColor: theme.colors.warnTile },
                 ]}
               >
-                <AlertTriangle size={48} color={theme.colors.warning} />
+                <AlertTriangle size={32} color={theme.colors.warnInk} />
               </View>
               <Text style={styles.resultTitle}>
                 {overLimitType === 1
@@ -672,38 +706,24 @@ export default function BarcodeScannerScreen() {
                   ? t("scanner.outOfOrderMessage")
                   : t("scanner.overLimit.message")}
               </Text>
+              <Text style={styles.limitChip}>{pendingOverLimitBarcode}</Text>
 
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+              <View style={styles.limitActions}>
                 <TouchableOpacity
-                  style={[
-                    styles.resultButton,
-                    { flex: 1, backgroundColor: theme.colors.surface2 },
-                  ]}
+                  style={styles.resultButton}
                   onPress={() => {
                     setShowOverLimitModal(false);
                     isProcessingRef.current = false;
                     inputRef.current?.focus();
                   }}
                 >
-                  <Text
-                    style={[
-                      styles.resultButtonText,
-                      { color: theme.colors.inkMuted },
-                    ]}
-                  >
+                  <Text style={styles.resultButtonText}>
                     {t("scanner.overLimit.cancelBtn")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[
-                    styles.resultButton,
-                    {
-                      flex: 1,
-                      backgroundColor: theme.colors.warning,
-                      borderColor: theme.colors.warning,
-                    },
-                  ]}
+                  style={[styles.resultButton, styles.resultButtonWarn]}
                   onPress={() => {
                     setShowOverLimitModal(false);
                     // setAlwaysIgnoreLimit(true);
@@ -736,16 +756,16 @@ const makeStyles = (theme: Theme) => {
       justifyContent: "space-between",
       // paddingTop çalışma anında safe-area inset'inden gelir (çentik desteği)
       paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.lg,
+      paddingBottom: spacing.md,
       backgroundColor: colors.surface1,
       borderBottomWidth: 1,
-      borderBottomColor: colors.hairline,
+      borderBottomColor: colors.cardLine,
     },
     headerButton: {
-      width: 44,
-      height: 44,
+      width: 48,
+      height: 48,
       borderRadius: radius.pill,
-      backgroundColor: colors.surface2,
+      backgroundColor: colors.raised,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -760,7 +780,7 @@ const makeStyles = (theme: Theme) => {
       width: 120,
       height: 120,
       borderRadius: radius.pill,
-      backgroundColor: colors.surface1,
+      backgroundColor: colors.raised,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: spacing.xl,
@@ -768,83 +788,154 @@ const makeStyles = (theme: Theme) => {
       borderColor: colors.hairlineStrong,
     },
     title: {
-      ...type.displayLg,
-      fontSize: 24,
+      ...type.pageTitle,
+      fontSize: 23,
+      lineHeight: 30,
+      fontWeight: "700",
+      letterSpacing: -0.5,
       color: colors.ink,
-      marginBottom: spacing.xs,
       textAlign: "center",
     },
     subtitle: {
-      ...type.body,
+      ...type.bodyLg,
+      fontSize: 15,
+      lineHeight: 22,
       color: colors.inkMuted,
       textAlign: "center",
-      marginBottom: spacing.xxl,
+      marginTop: spacing.xs,
     },
-    inputSection: { width: "100%", position: "relative" },
+    orderChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      marginTop: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xxs,
+      borderRadius: radius.pill,
+      backgroundColor: colors.koliTile,
+    },
+    orderChipText: {
+      ...type.labelStrong,
+      fontSize: 13,
+      lineHeight: 19,
+      fontVariant: ["tabular-nums"],
+      color: colors.ink,
+    },
+    customer: {
+      ...type.bodyLg,
+      fontSize: 15,
+      lineHeight: 22,
+      fontWeight: "600",
+      color: colors.ink,
+      textAlign: "center",
+      marginTop: spacing.xs,
+    },
+    inputSection: {
+      width: "100%",
+      position: "relative",
+      marginTop: spacing.xxl,
+    },
+    fieldLabel: {
+      ...type.bodyLg,
+      fontSize: 15,
+      lineHeight: 22,
+      fontWeight: "600",
+      color: colors.ink,
+      textAlign: "center",
+      marginBottom: spacing.xs,
+    },
     barcodeInput: {
       ...type.bodyLg,
       width: "100%",
-      backgroundColor: colors.surface2,
-      borderRadius: radius.md,
-      padding: 18,
+      minHeight: 64,
+      backgroundColor: colors.raised,
+      borderRadius: radius.control,
+      paddingHorizontal: spacing.md,
       fontSize: 18,
+      fontWeight: "500",
+      fontVariant: ["tabular-nums"],
+      letterSpacing: 0.3,
       color: colors.ink,
       borderWidth: 1,
-      borderColor: colors.hairlineStrong,
+      borderColor: colors.controlLine,
       textAlign: "center",
+    },
+    barcodeInputError: {
+      borderWidth: 2,
+      borderColor: colors.errLine,
     },
     modalOverlay: {
       flex: 1,
       backgroundColor: colors.scrim,
-      justifyContent: "center",
-      alignItems: "center",
-      padding: spacing.lg,
+      justifyContent: "flex-end",
     },
     modalContent: {
       width: "100%",
-      maxWidth: 320,
-      backgroundColor: colors.surface1,
-      borderRadius: radius.xxl,
-      padding: spacing.xl,
-      borderWidth: 1,
-      borderColor: colors.hairline,
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: colors.card,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      paddingTop: spacing.xl,
+      paddingHorizontal: spacing.lg,
     },
     resultIconContainer: {
-      width: 80,
-      height: 80,
+      width: 64,
+      height: 64,
       borderRadius: radius.pill,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: spacing.md,
-      alignSelf: "center",
     },
     resultTitle: {
-      ...type.headline,
+      ...type.pageTitle,
+      fontWeight: "700" as const,
       color: colors.ink,
       textAlign: "center",
-      marginBottom: spacing.sm,
     },
     resultMessage: {
-      ...type.body,
-      color: colors.inkMuted,
+      ...type.bodyLg,
+      color: colors.ink,
       textAlign: "center",
-      marginBottom: spacing.xl,
+    },
+    limitChip: {
+      ...type.labelMd,
+      fontVariant: ["tabular-nums"],
+      color: colors.ink,
+      backgroundColor: colors.raised,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xxs,
+      overflow: "hidden",
+    },
+    limitActions: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      width: "100%",
+      marginTop: spacing.sm,
     },
     resultButton: {
-      paddingVertical: spacing.md,
-      borderRadius: radius.md,
+      flex: 1,
+      minHeight: 56,
+      borderRadius: radius.control,
       alignItems: "center",
       justifyContent: "center",
-      width: "100%",
-      minHeight: 48,
       borderWidth: 1,
-      borderColor: colors.hairlineStrong,
+      borderColor: colors.cardLine,
+      backgroundColor: colors.card,
     },
-    resultButtonText: { ...type.button },
+    resultButtonWarn: {
+      backgroundColor: colors.warning,
+      borderColor: colors.warning,
+    },
+    resultButtonText: {
+      ...type.bodyLg,
+      fontWeight: "600" as const,
+      color: colors.ink,
+    },
     submitButton: {
       marginTop: spacing.md,
-      backgroundColor: colors.primary,
-      borderRadius: radius.md,
+      backgroundColor: colors.koliHero,
+      borderRadius: radius.control,
       paddingVertical: spacing.md,
       alignItems: "center",
       justifyContent: "center",
@@ -852,41 +943,79 @@ const makeStyles = (theme: Theme) => {
       minHeight: 56,
     },
     submitButtonText: {
-      ...type.button,
+      ...type.bodyLg,
+      fontSize: 15,
+      lineHeight: 22,
+      fontWeight: "600",
       color: colors.onPrimary,
     },
     toastContainer: {
       position: "absolute",
-      bottom: spacing.xxl,
-      left: spacing.lg,
-      right: spacing.lg,
-      alignItems: "center",
+      left: spacing.md,
+      right: spacing.md,
       zIndex: 999,
     },
     toastContent: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.surface3,
-      paddingHorizontal: spacing.lg,
+      backgroundColor: colors.notice,
+      paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      borderRadius: radius.md,
-      borderLeftWidth: 4,
-      borderLeftColor: colors.success,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
-      elevation: 6,
+      borderRadius: radius.control,
+      borderWidth: 1,
+      borderColor: colors.noticeLine,
       gap: spacing.sm,
+      ...theme.noticeShadow,
+    },
+    toastError: {
+      alignItems: "flex-start",
+      borderColor: colors.errLine,
+      paddingRight: 0,
+    },
+    toastMark: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.noticeOkTile,
+    },
+    toastMarkError: {
+      backgroundColor: colors.errTile,
+    },
+    toastBody: {
+      flex: 1,
+      minWidth: 0,
     },
     toastTitle: {
-      ...type.bodySm,
-      fontWeight: "700",
+      ...type.bodyLg,
+      fontWeight: "700" as const,
       color: colors.ink,
     },
+    toastTitleError: {
+      color: colors.errInk,
+    },
     toastSubtitle: {
-      ...type.bodySm,
-      color: colors.inkMuted,
+      ...type.labelMd,
+      fontWeight: "400" as const,
+      color: colors.readMuted,
+      marginTop: spacing.xxs,
+    },
+    toastMessageError: {
+      color: colors.ink,
+    },
+    toastCode: {
+      ...type.labelMd,
+      fontVariant: ["tabular-nums"],
+      color: colors.readMuted,
+      marginTop: spacing.xxs,
+    },
+    toastClose: {
+      width: 48,
+      height: 48,
+      marginVertical: -spacing.xs,
+      alignItems: "center",
+      justifyContent: "center",
     },
     resultExplanationBox: {
       backgroundColor: colors.successTint,
