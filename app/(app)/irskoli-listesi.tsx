@@ -13,6 +13,7 @@ import {
 import {
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
@@ -22,14 +23,15 @@ import {
   Search,
   Truck,
   X,
-  CheckSquare,
-  Square,
+  Check,
+  ChevronRight,
 } from "lucide-react-native";
 import { TextInput } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useSafeNavigation } from "@/hooks/useSafeNavigation";
 import { api } from "@/services/api";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { Theme } from "@/constants/theme";
@@ -39,6 +41,7 @@ import ResultModal from "../components/ResultModal"; // SENİN HAZIR MODALIN
 export default function IrsKoliListesiScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { push } = useSafeNavigation();
   const { credentials } = useAuth();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -63,6 +66,29 @@ export default function IrsKoliListesiScreen() {
 
   // Çoklu seçim modunda mıyız? (En az 1 koli seçiliyse true)
   const isSelectionMode = selectedIds.size > 0;
+
+  // Koli detayında silinen, yeniden açılan ya da irsaliyesi kesilen koli seçimde
+  // kalmamalı;
+  // kalırsa toplu irsaliyeye yeniden gönderilirdi. Detay ekranı bu kolileri
+  // bu anahtara yazar; liste filtresi aramaya bağlı olduğu için seçim listeden
+  // değil buradan temizlenir.
+  const { data: removedBoxes } = useQuery<string[]>({
+    queryKey: ["irs-removed-boxes"],
+    queryFn: async () => [],
+    enabled: false,
+    staleTime: Infinity,
+  });
+
+  React.useEffect(() => {
+    if (!removedBoxes?.length) return;
+    setSelectedIds((prev) => {
+      const next = new Set(
+        [...prev].filter((id) => !removedBoxes.includes(String(id))),
+      );
+      return next.size === prev.size ? prev : next;
+    });
+    queryClient.setQueryData<string[]>(["irs-removed-boxes"], []);
+  }, [removedBoxes, queryClient]);
 
   // --- ARAMA DEBOUNCE (Yazmayı bitirince arama yapsın) ---
   React.useEffect(() => {
@@ -108,6 +134,30 @@ export default function IrsKoliListesiScreen() {
   const flatData = useMemo(() => {
     return data?.pages.flatMap((page) => page) || [];
   }, [data]);
+
+  // Koliler siparişe göre gruplanır; sıra servisin sırasıdır, sonraki sayfalardan
+  // gelen koliler aynı siparişin grubuna eklenir.
+  const groups = useMemo(() => {
+    const byOrder = new Map<
+      string,
+      { key: string; receiptNo: string; sipExp: string; items: any[] }
+    >();
+    for (const item of flatData as any[]) {
+      const receiptNo = String(item.ReceiptNo ?? "").trim();
+      let group = byOrder.get(receiptNo);
+      if (!group) {
+        group = {
+          key: receiptNo || "no-order",
+          receiptNo,
+          sipExp: item.SipExp || "",
+          items: [],
+        };
+        byOrder.set(receiptNo, group);
+      }
+      group.items.push(item);
+    }
+    return Array.from(byOrder.values());
+  }, [flatData]);
 
   // --- API: İRSALİYE OLUŞTURMA (Toplu) ---
   const createReceiptsMutation = useMutation({
@@ -210,15 +260,39 @@ export default function IrsKoliListesiScreen() {
     });
   }, []);
 
+  // "Tümünü seç": grubun yüklenmiş bütün kolileri. Hepsi seçiliyse seçim kalkar.
+  // Durumu "açık" (0) gelen koliler toplu seçime girmez.
+  const toggleGroup = useCallback((ids: number[]) => {
+    if (Platform.OS !== "web") Haptics.selectionAsync();
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (ids.every((id) => next.has(id))) {
+        ids.forEach((id) => next.delete(id));
+      } else {
+        ids.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }, []);
+
   const handleLongPress = (id: number) => {
     if (!isSelectionMode) {
       toggleSelection(id);
     }
   };
 
-  // Bu ekranda dokunma her durumda seçimi değiştirir (detay ekranı yok).
+  // Satıra dokunma her durumda seçimi değiştirir; detay sağdaki oktan açılır.
   const handlePress = (id: number) => {
     toggleSelection(id);
+  };
+
+  // Koli listesiyle aynı parametreler; ekran yığında kaldığı için geri dönünce
+  // seçim, arama ve kaydırma yeri korunur.
+  const handleOpenBox = (item: any, itemId: number) => {
+    push(
+      `/(app)/koli-detay?id=${itemId}&packageNo=${encodeURIComponent(item.PackageNo || "")}&receiptNo=${encodeURIComponent(item.ReceiptNo || "")}&recId=${itemId}&sipExp=${encodeURIComponent(item.SipExp || "")}` as any,
+    );
   };
 
   const handleClearSelection = () => {
@@ -236,49 +310,113 @@ export default function IrsKoliListesiScreen() {
   };
 
   // --- RENDER ITEM ---
-  const renderItem = ({ item }: { item: any }) => {
+  const renderBox = (item: any) => {
     const itemId = item.RecId || item.id || item.boxId;
     const isSelected = selectedIds.has(itemId);
+    const boxNo =
+      item.PackageNo || item.boxCode || t("irsKoli.boxPrefix", { id: itemId });
+    const cut = String(boxNo).lastIndexOf("-") + 1;
 
     return (
-      <TouchableOpacity
-        style={[styles.card, isSelected && styles.cardSelected]}
-        onPress={() => handlePress(itemId)}
-        onLongPress={() => handleLongPress(itemId)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.cardTitleContainer}>
-            <Package
-              size={24}
-              color={isSelected ? theme.colors.primary : theme.colors.inkSubtle}
-            />
-            <View style={{ marginLeft: 12 }}>
-              <Text style={styles.cardTitle}>
-                  {item.PackageNo || item.boxCode || t("irsKoli.boxPrefix", { id: itemId })}
-                </Text>
-                {item.Status !== undefined && (
-                  <Text style={styles.cardSubtitle}>
-                    {t("irsKoli.statusLabel")}
-                    {item.Status === 0
-                      ? t("irsKoli.statusOpen")
-                      : item.Status === 2
-                        ? t("irsKoli.statusClosed")
-                        : item.Status}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          <View>
+      <View key={itemId} style={[styles.row, isSelected && styles.rowSelected]}>
+        <TouchableOpacity
+          style={styles.pick}
+          onPress={() => handlePress(itemId)}
+          onLongPress={() => handleLongPress(itemId)}
+          activeOpacity={0.8}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: isSelected }}
+        >
+          <View style={[styles.check, isSelected && styles.checkOn]}>
             {isSelected ? (
-              <CheckSquare size={24} color={theme.colors.primary} />
-            ) : (
-              <Square size={24} color={theme.colors.inkSubtle} opacity={0.5} />
+              <Check size={16} color={theme.colors.onInfo} strokeWidth={3} />
+            ) : null}
+          </View>
+          <View style={styles.pickText}>
+            <Text style={styles.boxNo}>
+              <Text style={styles.boxNoOrder}>
+                {String(boxNo).slice(0, cut)}
+              </Text>
+              {String(boxNo).slice(cut)}
+            </Text>
+            {item.Status !== undefined && (
+              <Text style={styles.cardSubtitle}>
+                {t("irsKoli.statusLabel")}
+                {item.Status === 0
+                  ? t("irsKoli.statusOpen")
+                  : item.Status === 2
+                    ? t("irsKoli.statusClosed")
+                    : item.Status}
+              </Text>
             )}
           </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.openBox, isSelected && styles.openBoxSelected]}
+          onPress={() => handleOpenBox(item, itemId)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t("irsKoli.openBox", { no: boxNo })}
+          testID={`irs-box-open-${itemId}`}
+        >
+          <ChevronRight
+            size={20}
+            color={isSelected ? theme.colors.irsInk : theme.colors.inkSubtle}
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderItem = ({ item: group }: { item: (typeof groups)[number] }) => {
+    const groupIds = group.items
+      .filter((box) => box.Status !== 0)
+      .map((box) => box.RecId || box.id || box.boxId);
+    const selectedCount = group.items.filter((box) =>
+      selectedIds.has(box.RecId || box.id || box.boxId),
+    ).length;
+    const allSelected =
+      groupIds.length > 0 && groupIds.every((id) => selectedIds.has(id));
+
+    return (
+      <View style={styles.group}>
+        <View style={styles.groupHead}>
+          <View style={styles.groupText}>
+            <Text style={styles.groupTitle}>
+              {group.receiptNo || t("irsKoli.noOrderGroup")}
+            </Text>
+            {group.sipExp ? (
+              <Text style={styles.groupMeta} numberOfLines={1}>
+                {group.sipExp}
+              </Text>
+            ) : null}
+            <Text style={styles.groupMeta}>
+              {t("irsKoli.groupBoxes", { count: group.items.length })}
+              {selectedCount > 0 ? (
+                <>
+                  {" · "}
+                  <Text style={styles.groupSelected}>
+                    {t("irsKoli.groupSelected", { count: selectedCount })}
+                  </Text>
+                </>
+              ) : null}
+            </Text>
+          </View>
+          {groupIds.length > 0 ? (
+            <TouchableOpacity
+              style={styles.groupAll}
+              onPress={() => toggleGroup(groupIds)}
+              accessibilityRole="button"
+              testID={`irs-group-all-${group.key}`}
+            >
+              <Text style={styles.groupAllText}>
+                {allSelected ? t("irsKoli.clearGroup") : t("irsKoli.selectAll")}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
-      </TouchableOpacity>
+        {group.items.map(renderBox)}
+      </View>
     );
   };
 
@@ -305,6 +443,10 @@ export default function IrsKoliListesiScreen() {
       />
 
       <View style={styles.searchContainer}>
+        <View style={styles.hintRow}>
+          <Truck size={20} color={theme.colors.irsInk} />
+          <Text style={styles.hintText}>{t("irsKoli.hint")}</Text>
+        </View>
         <View style={styles.searchBox}>
           <Search size={20} color={theme.colors.inkSubtle} />
           <TextInput
@@ -335,11 +477,8 @@ export default function IrsKoliListesiScreen() {
         </View>
       ) : (
         <FlatList
-          data={flatData}
-          // TypeScript hatasını önlemek için item'ı any yapıyoruz
-          keyExtractor={(item: any, index) =>
-            `${item.RecId || item.id || index}`
-          }
+          data={groups}
+          keyExtractor={(group) => group.key}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           refreshControl={
@@ -378,7 +517,7 @@ export default function IrsKoliListesiScreen() {
         <View
           style={[
             styles.bottomPanel,
-            { paddingBottom: insets.bottom + theme.spacing.md },
+            { paddingBottom: insets.bottom + theme.spacing.xs },
           ]}
         >
           <TouchableOpacity
@@ -393,7 +532,7 @@ export default function IrsKoliListesiScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Truck size={24} color={theme.colors.onInfo} />
+                <Truck size={20} color={theme.colors.onInfo} />
                 <Text style={styles.submitButtonText}>
                   {t("irsKoli.submitButton", { count: selectedIds.size })}
                 </Text>
@@ -438,72 +577,172 @@ const makeStyles = (theme: Theme) => {
       padding: spacing.xl,
     },
     loadingText: {
-      ...type.body,
+      ...type.hint,
       marginTop: spacing.sm,
       color: colors.inkMuted,
     },
     errorText: {
-      ...type.body,
+      ...type.hint,
       color: colors.error,
       textAlign: "center",
     },
     emptyText: {
-      ...type.body,
+      ...type.hint,
       marginTop: spacing.sm,
       color: colors.inkMuted,
     },
     searchContainer: {
-      padding: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
       backgroundColor: colors.canvas,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.hairline,
+    },
+    hintRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    hintText: {
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      fontWeight: "400",
+      color: colors.readMuted,
     },
     searchBox: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.surface2,
+      backgroundColor: colors.card,
       borderRadius: radius.pill,
-      paddingHorizontal: spacing.md,
-      height: 46,
+      paddingHorizontal: spacing.lg,
+      minHeight: 48,
       borderWidth: 1,
-      borderColor: colors.hairlineStrong,
+      borderColor: colors.controlLine,
+      ...theme.cardShadow,
     },
     searchInput: {
       ...type.body,
       flex: 1,
-      marginLeft: spacing.xs,
+      marginLeft: spacing.sm,
       color: colors.ink,
     },
     listContent: {
-      padding: spacing.md,
+      paddingTop: spacing.xxs,
+      paddingHorizontal: spacing.md,
       paddingBottom: 100,
     },
-    card: {
-      backgroundColor: colors.surface1,
+    group: {
+      backgroundColor: colors.card,
       borderRadius: radius.lg,
-      padding: spacing.md,
       marginBottom: spacing.sm,
       borderWidth: 1,
-      borderColor: colors.hairline,
+      borderColor: colors.cardLine,
+      overflow: "hidden",
+      ...theme.cardShadow,
     },
-    cardSelected: {
-      borderColor: colors.primary,
-      borderWidth: 2,
-      backgroundColor: colors.primaryTint,
-    },
-    cardHeader: {
+    groupHead: {
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
       justifyContent: "space-between",
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      backgroundColor: colors.band,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.bandLine,
     },
-    cardTitleContainer: {
+    groupText: {
+      flex: 1,
+      minWidth: 0,
+    },
+    groupTitle: {
+      ...type.codeMd,
+      fontSize: 15,
+      lineHeight: 21,
+      fontWeight: "700",
+      color: colors.ink,
+    },
+    groupMeta: {
+      ...type.labelMd,
+      fontSize: 13,
+      lineHeight: 19,
+      fontWeight: "400",
+      color: colors.readMuted,
+      marginTop: spacing.xxs,
+    },
+    groupSelected: {
+      fontWeight: "700",
+      color: colors.irsInk,
+    },
+    groupAll: {
+      minHeight: 48,
+      justifyContent: "center",
+      marginVertical: -spacing.xs,
+      marginRight: -spacing.xs,
+      paddingHorizontal: spacing.xs,
+    },
+    groupAllText: {
+      ...type.labelStrong,
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.irsInk,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "stretch",
+      borderTopWidth: 1,
+      borderTopColor: colors.bandLine,
+    },
+    rowSelected: {
+      backgroundColor: colors.irsTile,
+    },
+    pick: {
+      flex: 1,
+      minWidth: 0,
       flexDirection: "row",
       alignItems: "center",
-      flex: 1,
+      gap: spacing.md,
+      minHeight: 56,
+      paddingVertical: spacing.xs,
+      paddingLeft: spacing.md,
+      paddingRight: spacing.xs,
     },
-    cardTitle: {
-      ...type.cardTitle,
+    openBox: {
+      width: 56,
+      alignItems: "center",
+      justifyContent: "center",
+      borderLeftWidth: 1,
+      borderLeftColor: colors.bandLine,
+    },
+    openBoxSelected: {
+      borderLeftColor: colors.irs,
+    },
+    check: {
+      width: 24,
+      height: 24,
+      borderRadius: 7,
+      borderWidth: 2,
+      borderColor: colors.controlLine,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkOn: {
+      backgroundColor: colors.irs,
+      borderColor: colors.irs,
+    },
+    pickText: {
+      flex: 1,
+      minWidth: 0,
+    },
+    boxNo: {
+      ...type.codeLg,
+      fontSize: 17,
+      lineHeight: 23,
       color: colors.ink,
+    },
+    boxNoOrder: {
+      fontWeight: "500",
+      color: colors.readMuted,
     },
     cardSubtitle: {
       ...type.bodySm,
@@ -515,25 +754,27 @@ const makeStyles = (theme: Theme) => {
       bottom: 0,
       left: 0,
       right: 0,
-      padding: spacing.md,
-      backgroundColor: colors.surface1,
+      paddingTop: spacing.xs,
+      paddingHorizontal: spacing.md,
+      backgroundColor: colors.canvas,
       borderTopWidth: 1,
-      borderTopColor: colors.hairline,
+      borderTopColor: colors.cardLine,
     },
     submitButton: {
-      backgroundColor: colors.info,
-      borderRadius: radius.md,
-      height: 54,
+      backgroundColor: colors.irs,
+      borderRadius: radius.control,
+      minHeight: 56,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: spacing.sm,
+      gap: spacing.xs,
     },
     submitButtonDisabled: {
       opacity: 0.6,
     },
     submitButtonText: {
-      ...type.button,
+      ...type.body,
+      fontWeight: "600",
       color: colors.onInfo,
     },
   });
